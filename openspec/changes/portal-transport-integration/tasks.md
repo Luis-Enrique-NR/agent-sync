@@ -46,9 +46,9 @@ Chain strategy: feature-branch chain
 
 ## Phase 4: Portal Administration
 
-- [ ] 4.1 Add RED tests for closed authorized commands, unknown shapes making zero calls, and timeouts not retrying mutations.
-- [ ] 4.2 Create typed commands/outcomes, `PortalAdmin`, lifespan-scoped `HttpPortalClient`, and recording fake using documented operations only.
-- [ ] 4.3 Pair PR 3 with next `docs/arquitectura/N. Portal administration seam.md` and `docs/pruebas/N. Portal adapter evidence.md`, with required metadata/evidence.
+- [x] 4.1 Add RED tests for closed authorized commands, unknown shapes making zero calls, and timeouts not retrying mutations.
+- [x] 4.2 Create typed commands/outcomes, `PortalAdmin`, lifespan-scoped `HttpPortalClient`, and recording fake using documented operations only.
+- [x] 4.3 Pair PR 3 with next `docs/arquitectura/N. Portal administration seam.md` and `docs/pruebas/N. Portal adapter evidence.md`, with required metadata/evidence.
 
 ## Phase 5: Rollout Boundary
 
