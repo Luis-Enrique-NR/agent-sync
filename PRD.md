@@ -165,11 +165,43 @@ Esta es probablemente la decisión de arquitectura más importante del documento
 
 ---
 
-## 9. Monetización — fuera de alcance para esta hackathon
+## 9. Roles del Equipo y Asignación de Esfuerzo (Hackathon 36h)
 
-**No aplica para las 36 horas.** Se deja documentado abajo únicamente como visión de negocio a futuro, por si algún juez pregunta "¿cómo generarían ingresos?" — pero no debe consumir ni un minuto de desarrollo ni aparecer como feature en la demo. Si el pitch necesita responder esto, basta con decir en una slide la recomendación de la sección 9.1, sin construir nada.
+Para evitar duplicidad de esfuerzos y conflictos durante el desarrollo, las responsabilidades del equipo de 4 personas se dividen en feudos claros:
 
-### 9.1 Visión a futuro (solo para responder si preguntan, no para construir)
+### 1. Frontend UI (Dueño de la experiencia visual)
+Responsable de que el loop sea fluido y genere confianza, operando sobre **React / Next.js**:
+*   **Core Loop:** Construir estrictamente las 6 pantallas completas y las 3 simplificadas del MVP.
+*   **Vistas Críticas:** Pantalla de configuración del agente (personalidad, límites, reglas de escalamiento) y bandeja de decisiones/notificaciones.
+*   **Transparencia:** Visualización detallada de la conversación agente-agente en tiempo real.
+*   **Diseño Agnóstico:** Asegurar que la interfaz soporte visualmente tanto los datos B2B como P2P sin duplicar código.
+
+### 2. AI Backend (Cerebro y escudos del agente)
+Responsable de la integración con los modelos de lenguaje mediante **LangChain y LangGraph**:
+*   **Motor de Conversación:** Orquestación de agentes conversando entre sí con control de turnos y *timeouts* para evitar bucles.
+*   **Guardrails Determinísticos:** Capa de validación fuera del LLM para evitar fugas de límites duros o datos personales en P2P.
+*   **Lógica de Escalamiento:** Motor de reglas que compara el flujo contra la configuración del usuario para pausar ante decisiones sensibles.
+*   **Mock Data:** Inyección de datos simulados (CRMs, calendarios, inventarios) al contexto del agente.
+
+### 3. Infraestructura de Transporte e Integración
+Responsable de la conectividad en tiempo real y el flujo de eventos:
+*   **Pipeline de Ingesta:** Ingesta y autenticación de webhooks desde Portal.
+*   **Resiliencia y Bus Interno:** Encolamiento de mensajes para asegurar el comportamiento asíncrono de los agentes.
+*   **SDK Interno:** Capa de abstracción para que el orquestador interactúe con los canales y accesos de Portal.
+
+### 4. Dominio, Persistencia y Orquestación
+Responsable de la persistencia de datos y las máquinas de estados:
+*   **Persistencia de Estado:** Estructuración de bases de datos para perfiles de agentes, historiales y manifiestos.
+*   **Modelo Agnóstico:** Garantizar el esquema genérico (`entidad + objetivos + personalidad + límites`) libre de acoplamientos industriales.
+*   **Matchmaking y Estados:** Motor de coincidencia de intenciones y gestión del ciclo de vida de las sesiones de negociación.
+
+---
+
+## 10. Monetización — fuera de alcance para esta hackathon
+
+**No aplica para las 36 horas.** Se deja documentado abajo únicamente como visión de negocio a futuro, por si algún juez pregunta "¿cómo generarían ingresos?" — pero no debe consumir ni un minuto de desarrollo ni aparecer como feature en la demo. Si el pitch necesita responder esto, basta con decir en una slide la recomendación de la sección 10.1, sin construir nada.
+
+### 10.1 Visión a futuro (solo para responder si preguntan, no para construir)
 
 | Modelo | Cómo funcionaría acá | A favor | En contra / riesgo |
 |---|---|---|---|
@@ -187,18 +219,18 @@ Esto es una recomendación de partida, no una decisión cerrada — conviene rev
 
 ---
 
-## 10. Consideraciones técnicas de alto nivel
+## 11. Consideraciones técnicas de alto nivel
 
 - **Orquestación de agentes:** cada agente necesita estado persistente (config, objetivos, límites, historial) y un motor de conversación que pueda ejecutarse de forma asíncrona (los agentes no negocian en tiempo real síncrono necesariamente).
 - **Modelo de datos agnóstico a B2B/P2P:** el agente se modela como "entidad + objetivos + personalidad + límites", sin campos específicos de empresa. Un campo simple de "tipo" (empresa/persona) puede usarse solo para mostrar la UI correcta (ej. ícono, terminología), pero no debe cambiar la lógica del motor.
-- **Capa de "guardrails" separada del LLM:** validación determinística de límites duros antes de que cualquier mensaje del agente se envíe o cualquier acuerdo se confirme. **En el caso P2P, esto incluye no solo límites numéricos sino datos personales sensibles** (dirección exacta, teléfono, ubicación en tiempo real) — el guardrail debe poder marcar categorías de dato personal como "nunca compartir sin aprobación humana explícita", no solo montos.
+- **Capa de "guardrails" separada del LLM:** validación determinística de límites duros antes de que cualquier mensaje del agente se envíe o cualquier acuerdo se confirme. **En el caso P2P, este segmento incluye no solo límites numéricos sino datos personales sensibles** (dirección exacta, teléfono, ubicación en tiempo real) — el guardrail debe poder marcar categorías de dato personal como "nunca compartir sin aprobación humana explícita", no solo montos.
 - **Detección de "decisión sensible" — configurable por el usuario, no una caja negra del sistema:** el usuario define, en su configuración, qué categorías de situación requieren su aprobación (ej. "cualquier precio final", "cualquier dato de contacto/ubicación", "montos sobre $X", "cualquier compromiso de fecha"). El motor solo necesita comparar cada punto de la negociación contra esas categorías — es una lógica de reglas simple, no una heurística "inteligente" de IA adivinando qué es sensible, lo cual además es más rápido de construir en 36h y más fácil de explicar/defender frente al jurado ("el usuario tiene el control total, no la caja negra"). **Recomendación:** venir con un set de categorías marcadas como sensibles por defecto (especialmente datos personales en P2P), que el usuario puede ampliar pero no puede desactivar del todo — esto evita que alguien configure mal su agente y termine sin ningún control humano.
 - **Guardrail de límites duros** sigue siendo una capa aparte y no negociable (sección 8) — la configurabilidad de la sección anterior es sobre *qué escalar al humano*, no sobre los límites duros que el agente *nunca* puede cruzar (esos no son opcionales ni configurables a la baja).
 - **Simulación de tools:** para el MVP, "acceso a CRM/calendario/precios" (B2B) o "presupuesto personal/disponibilidad" (P2P) puede ser data mockeada inyectada al contexto del agente, sin integración real — ahorra semanas de desarrollo sin sacrificar la validación del concepto.
 
 ---
 
-## 11. Riesgos y supuestos
+## 12. Riesgos y supuestos
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
@@ -215,7 +247,7 @@ Esto es una recomendación de partida, no una decisión cerrada — conviene rev
 
 ---
 
-## 12. Cronograma — 36 horas, equipo de 4
+## 13. Cronograma — 36 horas, equipo de 4
 
 Tu equipo maneja la asignación de roles como prefiera; esta es una referencia de secuencia por **riesgo**, no por tarea rígida — lo importante es el orden, no quién hace qué.
 
@@ -236,7 +268,7 @@ Tu equipo maneja la asignación de roles como prefiera; esta es una referencia d
 
 ---
 
-## 13. Qué mockear vs qué construir de verdad (crítico en 36h)
+## 14. Qué mockear vs qué construir de verdad (crítico en 36h)
 
 En una hackathon, el tiempo que se gasta en algo que el jurado no puede diferenciar de un mock es tiempo perdido. Sé agresivo mockeando todo lo que no sea el núcleo de la idea:
 
@@ -252,7 +284,7 @@ En una hackathon, el tiempo que se gasta en algo que el jurado no puede diferenc
 
 ---
 
-## 14. Plan de demo / pitch (esto puede valer más que el código)
+## 15. Plan de demo / pitch (esto puede valer más que el código)
 
 En una hackathon de 36h, un equipo con menos features pero un pitch claro casi siempre le gana a un equipo con más features y una demo confusa. Guion sugerido (ajusta a tu tiempo real de pitch):
 
@@ -266,7 +298,7 @@ En una hackathon de 36h, un equipo con menos features pero un pitch claro casi s
 
 ---
 
-## 15. Riesgos específicos de la demo en vivo
+## 16. Riesgos específicos de la demo en vivo
 
 | Riesgo | Mitigación |
 |---|---|
@@ -278,7 +310,7 @@ En una hackathon de 36h, un equipo con menos features pero un pitch claro casi s
 
 ---
 
-## 16. Preguntas abiertas
+## 17. Preguntas abiertas
 
 - ¿Qué vertical P2P específico usarán para la demo? (recomendación: algo simple y visual como "venta de artículo usado entre particulares" o "búsqueda de roomie" — evitar verticales sensibles como bienes raíces reales o transacciones financieras grandes para la demo)
 - ¿El ecosistema de la demo arranca con 2-3 agentes de prueba controlados por el propio equipo, o intentan simular más variedad? (para 36h, menos es más seguro)
