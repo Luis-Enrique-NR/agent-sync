@@ -22,7 +22,7 @@ from ai.domain.models import (
 )
 from ai.engine.graph import NegotiationEngine
 from persistence.database import get_session
-from persistence.models import NegotiationStateRow
+from persistence.models import NegotiationStateRow, AgentProfileRow
 from persistence.repository import (
     load_negotiation_state,
     save_negotiation_state,
@@ -30,6 +30,7 @@ from persistence.repository import (
 )
 from transport.bus import EventDelivery
 from transport.portal import PortalAdmin, PublishMessage
+from matchmaking.orchestrator import process_agent_matching
 from eda.trace import trace
 
 logger = logging.getLogger(__name__)
@@ -256,8 +257,8 @@ class NegotiationHandler:
     async def _handle_agent_event(self, delivery: EventDelivery) -> None:
         """Process agent.registered / intent.published events.
 
-        Extracts interests and capabilities from the agent profile
-        for future matchmaking.  Currently writes a registration audit.
+        Writes a registration audit and triggers matchmaking for the
+        newly published agent if its interests and capabilities allow it.
         """
         envelope = delivery.envelope
         logger.info("%s  event=%s", envelope.event_type, envelope.event_id)
@@ -281,6 +282,21 @@ class NegotiationHandler:
                 payload=envelope.model_dump(mode="json"),
                 session=session,
             )
+
+            # Trigger matchmaking if envelope carries an author_id as agent UUID
+            author = envelope.message.author_id if envelope.message else None
+            if author and _is_uuid(author):
+                agent_uuid = UUID(author)
+                row = session.get(AgentProfileRow, agent_uuid)  # noqa: F821
+                if row is not None:
+                    trace("MATCHMAKING", f"triggering matchmaking for agent={agent_uuid}")
+                    await process_agent_matching(
+                        agent_uuid,
+                        session=session,
+                        engine=self._engine,
+                        portal=self._portal,
+                    )
+
             session.commit()
         except Exception:
             session.rollback()
