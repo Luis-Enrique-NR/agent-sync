@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import { AgentSyncProvider } from "@/lib/store";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,7 +50,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           </nav>
         </header>
         <main className="mx-auto w-full max-w-[1080px] flex-1 px-6 pb-12 pt-7">
-          {children}
+          <AgentSyncProvider>{children}</AgentSyncProvider>
         </main>
         <footer className="border-t border-[var(--border)] px-6 py-4 text-center text-xs text-[var(--muted)]">
           AgentSync — demo MVP · entorno simulado · los agentes nunca cruzan un

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { MatchSession } from "@/lib/types";
+import { useAgentSync } from "@/lib/store";
 
 type Filter = "todas" | "match" | "rechazadas";
 
@@ -10,13 +11,8 @@ function isFinal(session: MatchSession): boolean {
   return session.status === "RESOLVED" || session.status === "REJECTED";
 }
 
-export function MatchHistory({
-  sessions,
-  agentsById,
-}: {
-  sessions: MatchSession[];
-  agentsById: Record<string, { display_name: string }>;
-}) {
+export function MatchHistory() {
+  const { sessions, agentsById } = useAgentSync();
   const [filter, setFilter] = useState<Filter>("todas");
 
   const finals = useMemo(() => sessions.filter(isFinal), [sessions]);

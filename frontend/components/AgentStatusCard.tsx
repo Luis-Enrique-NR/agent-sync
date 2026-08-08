@@ -1,15 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useAgentSync } from "@/lib/store";
 
 export function AgentStatusCard({
   agentName,
   pendingCount,
+  agentId = "agent-p2p-valentina",
 }: {
   agentName: string;
   pendingCount: number;
+  agentId?: string;
 }) {
-  const [paused, setPaused] = useState(false);
+  const { agents, toggleAgentActive } = useAgentSync();
+  const agent = agents.find((a) => a.agent_id === agentId);
+  const paused = agent ? !agent.active : false;
 
   return (
     <section className="flex flex-col justify-between gap-4 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:flex-row sm:items-center">
@@ -41,7 +45,7 @@ export function AgentStatusCard({
       </div>
       <button
         type="button"
-        onClick={() => setPaused((prev) => !prev)}
+        onClick={() => toggleAgentActive(agentId)}
         className={`inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition ${
           paused
             ? "bg-[var(--accent-2)]/15 text-[var(--accent-2)] hover:brightness-110"

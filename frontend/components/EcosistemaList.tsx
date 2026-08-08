@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import type { AgentProfile, MatchSession } from "@/lib/types";
+import type { AgentProfile } from "@/lib/types";
+import { useAgentSync } from "@/lib/store";
 
 type Filter = "todos" | "B2B" | "P2P";
 
@@ -9,13 +10,8 @@ function segmentOf(agent: AgentProfile): "B2B" | "P2P" {
   return agent.entity_type === "empresa" ? "B2B" : "P2P";
 }
 
-export function EcosistemaList({
-  agents,
-  sessions,
-}: {
-  agents: AgentProfile[];
-  sessions: MatchSession[];
-}) {
+export function EcosistemaList() {
+  const { agents, sessions } = useAgentSync();
   const [filter, setFilter] = useState<Filter>("todos");
 
   const visible =
@@ -68,9 +64,15 @@ export function EcosistemaList({
               <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
                 {segmentOf(agent)}
               </span>
-              <span className="rounded-full bg-[var(--accent-2)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-2)]">
-                activo
-              </span>
+              {agent.active ? (
+                <span className="rounded-full bg-[var(--accent-2)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-2)]">
+                  activo
+                </span>
+              ) : (
+                <span className="rounded-full bg-[var(--warning)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--warning)]">
+                  pausado
+                </span>
+              )}
             </div>
             <h3 className="text-base font-semibold leading-snug">
               {agent.display_name}

@@ -6,6 +6,7 @@ import type {
   DecisionStatus,
   MatchSession,
 } from "@/lib/types";
+import { useAgentSync } from "@/lib/store";
 import { DecisionPanel } from "@/components/DecisionPanel";
 
 const TURN_DELAY_MS = 1800;
@@ -24,14 +25,22 @@ export function ConversationView({
 }) {
   const queueRef = useRef<ChatMessage[]>(session.pending_script ?? []);
   const [messages, setMessages] = useState<ChatMessage[]>(session.messages);
-  const [phase, setPhase] = useState<Phase>(() =>
-    queueRef.current.length > 0 ? "live" : "idle",
-  );
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (session.status === "RESOLVED") return "resolved";
+    if (session.status === "REJECTED") return "rejected";
+    return queueRef.current.length > 0 ? "live" : "idle";
+  });
   const [typingAgent, setTypingAgent] = useState<string | null>(null);
   const [resolvedStatus, setResolvedStatus] =
-    useState<DecisionStatus | null>(null);
+    useState<DecisionStatus | null>(
+      session.pending_decision?.status &&
+        session.pending_decision.status !== "PENDING"
+        ? session.pending_decision.status
+        : null,
+    );
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const { resolveDecision } = useAgentSync();
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -79,6 +88,7 @@ export function ConversationView({
   };
 
   const handleResolve = (status: DecisionStatus) => {
+    resolveDecision(session.session_id, status);
     setResolvedStatus(status);
     if (status === "REJECTED") {
       clearTimer();

@@ -1,8 +1,4 @@
-import mockData from "@/data/mockData.json";
-import type { MockData } from "@/lib/types";
 import { EcosistemaList } from "@/components/EcosistemaList";
-
-const data = mockData as unknown as MockData;
 
 export default function EcosistemaPage() {
   return (
@@ -15,7 +11,7 @@ export default function EcosistemaPage() {
         </p>
       </div>
 
-      <EcosistemaList agents={data.agents} sessions={data.sessions} />
+      <EcosistemaList />
     </div>
   );
 }

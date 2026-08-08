@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { DecisionStatus, PendingDecision } from "@/lib/types";
 
 export function DecisionPanel({
@@ -10,23 +9,20 @@ export function DecisionPanel({
   decision: PendingDecision;
   onResolve?: (status: DecisionStatus) => void;
 }) {
-  const [status, setStatus] = useState(decision.status);
-
   const resolve = (nextStatus: DecisionStatus) => {
-    setStatus(nextStatus);
     onResolve?.(nextStatus);
   };
 
-  if (status !== "PENDING") {
+  if (decision.status !== "PENDING") {
     return (
       <div className="rounded-2xl border border-[var(--accent-2)]/40 bg-[var(--accent-2)]/10 p-5">
         <p className="text-sm font-semibold text-[var(--accent-2)]">
           Decisión resuelta
         </p>
         <p className="mt-1 text-sm text-[var(--muted)]">
-          {status === "APPROVED"
+          {decision.status === "APPROVED"
             ? "Aprobada: el agente continuó con la propuesta."
-            : status === "REPLACED"
+            : decision.status === "REPLACED"
               ? "Respondiste manualmente: la propuesta fue reemplazada por tu mensaje."
               : "Rechazada: la propuesta no fue publicada."}
         </p>
