@@ -11,7 +11,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from ai.domain.models import AgentProfile
-from matchmaking.evaluator import calculate_match_score
+from matchmaking.evaluator import calculate_match_score, is_in_cooldown
 from persistence.models import AgentProfileRow, NegotiationStateRow
 
 
@@ -62,6 +62,8 @@ def find_matches(
     scored: list[tuple[float, AgentProfileRow]] = []
     for row in available:
         if row.agent_id in excluded_ids:
+            continue
+        if is_in_cooldown(candidate_agent_id, row.agent_id, session=session):
             continue
         counterpart = AgentProfile.model_validate(row.raw_profile)
         score = calculate_match_score(candidate, counterpart)

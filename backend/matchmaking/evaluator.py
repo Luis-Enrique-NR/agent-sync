@@ -1,12 +1,42 @@
 """Bidirectional compatibility scoring for agent matchmaking.
 
-Evaluates hard filters (price range conflicts, logistics incompatibility),
-then computes a 0.0–1.0 score based on tag intersection and mutual fit.
+Evaluates hard filters (price range conflicts, logistics incompatibility,
+cooldown windows), then computes a 0.0–1.0 score based on tag intersection
+and mutual fit.
 """
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+from uuid import UUID
+
+from sqlmodel import Session, select
+
 from ai.domain.models import AgentProfile
+from persistence.models import NegotiationStateRow
+
+_CLOSED_STATES = {"REJECTED", "FAILED"}
+
+
+def is_in_cooldown(
+    agent_a_id: UUID,
+    agent_b_id: UUID,
+    *,
+    session: Session,
+    cooldown_minutes: int = 60,
+) -> bool:
+    """True if agents A and B had a closed session within the cooldown window."""
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=cooldown_minutes)
+    stmt = select(NegotiationStateRow).where(
+        NegotiationStateRow.status.in_(_CLOSED_STATES),
+        NegotiationStateRow.closed_at >= cutoff,
+    )
+    closed = session.exec(stmt).all()
+    for row in closed:
+        participants = {row.agent_1_id, row.agent_2_id}
+        if participants == {agent_a_id, agent_b_id}:
+            return True
+    return False
 
 
 def price_ranges_conflict(a: AgentProfile, b: AgentProfile) -> bool:

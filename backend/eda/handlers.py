@@ -16,6 +16,7 @@ from sqlmodel import select
 
 from ai.domain.models import (
     AgentProfile,
+    AgentStatus,
     AuditAction,
     NegotiationState,
     SessionStatus,
@@ -26,6 +27,7 @@ from persistence.models import NegotiationStateRow, AgentProfileRow
 from persistence.repository import (
     load_negotiation_state,
     save_negotiation_state,
+    update_agent_status,
     write_audit,
 )
 from transport.bus import EventDelivery
@@ -161,6 +163,8 @@ class NegotiationHandler:
             await handle_message_retracted(delivery)
         elif event_type in ("agent.registered", "intent.published"):
             await self._handle_agent_event(delivery)
+        elif event_type in ("negotiation.failed", "negotiation.rejected"):
+            await self._handle_negotiation_closed(delivery)
         else:
             logger.warning("unhandled event type %s — acking silently", event_type)
 
@@ -298,6 +302,67 @@ class NegotiationHandler:
                     )
 
             session.commit()
+        except Exception:
+            session.rollback()
+            logger.exception("failed to process %s %s", envelope.event_type, envelope.event_id)
+            raise
+        finally:
+            session.close()
+
+    async def _handle_negotiation_closed(self, delivery: EventDelivery) -> None:
+        """Process negotiation.failed / negotiation.rejected events.
+
+        Releases both agents back to AVAILABLE and triggers re-matchmaking
+        for the initiator so the next-best candidate can be evaluated.
+        """
+        envelope = delivery.envelope
+        channel = envelope.channel
+        logger.info("negotiation closed  event=%s channel=%s", envelope.event_type, channel)
+        trace("NEGOTIATION_CLOSED", f"{envelope.event_type} channel={channel}")
+
+        session = get_session()
+        try:
+            stmt = select(NegotiationStateRow).where(
+                NegotiationStateRow.portal_channel_id == channel,
+            )
+            state_row = session.exec(stmt).first()
+
+            if state_row is None:
+                logger.warning("no session found for channel=%s", channel)
+                return
+
+            # Release both agents
+            update_agent_status(state_row.agent_1_id, AgentStatus.AVAILABLE, session=session)
+            update_agent_status(state_row.agent_2_id, AgentStatus.AVAILABLE, session=session)
+
+            write_audit(
+                correlation_id=UUID(envelope.event_id) if _is_uuid(envelope.event_id) else None,
+                session_id=state_row.session_id,
+                agent_id=state_row.initiator_id,
+                user_id=None,
+                actor_type="SYSTEM",
+                actor_id="engine",
+                action=AuditAction.SESSION_FAILED if envelope.event_type == "negotiation.failed" else AuditAction.SESSION_REJECTED,
+                severity="WARNING",
+                entity_type="NegotiationState",
+                entity_id=state_row.session_id,
+                reason=f"{envelope.event_type} channel={channel}",
+                delivery_status="DELIVERED",
+                payload=envelope.model_dump(mode="json"),
+                session=session,
+            )
+
+            session.commit()
+            trace("RELEASE", f"agents {state_row.agent_1_id} and {state_row.agent_2_id} released to AVAILABLE")
+
+            # Re-trigger matchmaking for the initiator
+            await process_agent_matching(
+                state_row.initiator_id,
+                session=session,
+                engine=self._engine,
+                portal=self._portal,
+            )
+
         except Exception:
             session.rollback()
             logger.exception("failed to process %s %s", envelope.event_type, envelope.event_id)
