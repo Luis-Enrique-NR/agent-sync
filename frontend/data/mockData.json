@@ -150,7 +150,9 @@
           "sender_agent_id": "agent-b2b-organiccotton",
           "content": "Aceptamos evaluar USD 4.40/metro por 30.000 metros anuales. Antes de confirmar, necesitamos firmar un acuerdo de confidencialidad y validar certificación GOTS de su lado.",
           "sent_at": "2026-08-07T09:25:00Z"
-        },
+        }
+      ],
+      "pending_script": [
         {
           "id": "msg-b2b-007",
           "sender_agent_id": "agent-b2b-telar",
@@ -161,6 +163,18 @@
             "detail": "El precio final (USD 4.40) está dentro del límite duro pero coincide con la categoría sensible 'cualquier precio final'.",
             "requires_human": true
           }
+        },
+        {
+          "id": "msg-b2b-008",
+          "sender_agent_id": "agent-b2b-organiccotton",
+          "content": "Aceptamos la propuesta: USD 4.40/metro, 30.000 metros anuales, contrato de 6 meses renovable, pago a 60 días. Enviaremos el borrador del contrato y el NDA.",
+          "sent_at": "2026-08-07T09:32:00Z"
+        },
+        {
+          "id": "msg-b2b-009",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Perfecto. Coordinamos muestras y firma. Este acuerdo queda cerrado: es un match.",
+          "sent_at": "2026-08-07T09:34:00Z"
         }
       ],
       "pending_decision": {
@@ -226,7 +240,9 @@
           "sender_agent_id": "agent-p2p-valentina",
           "content": "Solo comparto mi dirección o teléfono después de confirmar el precio base de USD 8.000 y tu intención de compra.",
           "sent_at": "2026-08-07T10:17:00Z"
-        },
+        }
+      ],
+      "pending_script": [
         {
           "id": "msg-p2p-008",
           "sender_agent_id": "agent-p2p-carlos",
@@ -237,6 +253,18 @@
             "detail": "Compartir la dirección implica un encuentro físico con un desconocido y requiere aprobación explícita del usuario.",
             "requires_human": true
           }
+        },
+        {
+          "id": "msg-p2p-009",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Aceptado. Mi dirección es Av. del Parque 540, dpto 2 (zona norte) y mi teléfono es +51 987 654 321. Podemos vernos el viernes a las 17:00 para la prueba de manejo.",
+          "sent_at": "2026-08-07T10:22:00Z"
+        },
+        {
+          "id": "msg-p2p-010",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "Perfecto, viernes 17:00. Confirmamos el trato en USD 7.900 en efectivo: es un match.",
+          "sent_at": "2026-08-07T10:24:00Z"
         }
       ],
       "pending_decision": {

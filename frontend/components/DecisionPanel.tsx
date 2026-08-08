@@ -1,59 +1,67 @@
 "use client";
 
 import { useState } from "react";
-import type { PendingDecision } from "@/lib/types";
+import type { DecisionStatus, PendingDecision } from "@/lib/types";
 
 export function DecisionPanel({
   decision,
+  onResolve,
 }: {
   decision: PendingDecision;
+  onResolve?: (status: DecisionStatus) => void;
 }) {
   const [status, setStatus] = useState(decision.status);
 
+  const resolve = (nextStatus: DecisionStatus) => {
+    setStatus(nextStatus);
+    onResolve?.(nextStatus);
+  };
+
   if (status !== "PENDING") {
     return (
-      <div className="card" style={{ borderColor: "var(--accent-2)" }}>
-        <div className="cardTitle">Decisión resuelta</div>
-        <p className="cardMeta">
+      <div className="rounded-2xl border border-[var(--accent-2)]/40 bg-[var(--accent-2)]/10 p-5">
+        <p className="text-sm font-semibold text-[var(--accent-2)]">
+          Decisión resuelta
+        </p>
+        <p className="mt-1 text-sm text-[var(--muted)]">
           {status === "APPROVED"
-            ? "Aprobada: el agente continuará con la propuesta."
-            : "Rechazada: la propuesta no será publicada."}
+            ? "Aprobada: el agente continuó con la propuesta."
+            : status === "REPLACED"
+              ? "Respondiste manualmente: la propuesta fue reemplazada por tu mensaje."
+              : "Rechazada: la propuesta no fue publicada."}
         </p>
       </div>
     );
   }
 
   return (
-    <div
-      className="card"
-      style={{ borderColor: "rgba(255, 200, 107, 0.5)" }}
-    >
-      <div className="cardTitle">
+    <div className="rounded-2xl border border-[var(--warning)]/50 bg-[var(--surface)] p-5">
+      <p className="text-sm font-semibold">
         Decisión sensible — {decision.category}
-      </div>
-      <p style={{ fontSize: 14, margin: "8px 0" }}>{decision.summary}</p>
-      <p className="mono cardMeta" style={{ marginBottom: 12 }}>
+      </p>
+      <p className="mt-2 text-sm">{decision.summary}</p>
+      <p className="mt-2 font-mono text-xs text-[var(--muted)]">
         Propuesta: {decision.proposal}
       </p>
-      <div style={{ display: "flex", gap: 12 }}>
+      <div className="mt-4 flex flex-wrap gap-3">
         <button
-          className="btn btn-primary"
           type="button"
-          onClick={() => setStatus("APPROVED")}
+          onClick={() => resolve("APPROVED")}
+          className="rounded-xl bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110"
         >
           Aprobar
         </button>
         <button
-          className="btn btn-danger"
           type="button"
-          onClick={() => setStatus("REJECTED")}
+          onClick={() => resolve("REJECTED")}
+          className="rounded-xl bg-[var(--danger)]/15 px-4 py-2 text-sm font-semibold text-[var(--danger)] transition hover:brightness-110"
         >
           Rechazar
         </button>
         <button
-          className="btn"
           type="button"
-          onClick={() => setStatus("REPLACED")}
+          onClick={() => resolve("REPLACED")}
+          className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-4 py-2 text-sm font-semibold transition hover:brightness-110"
         >
           Responder manualmente
         </button>

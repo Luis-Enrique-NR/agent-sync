@@ -70,6 +70,7 @@ export interface MatchSession {
   max_turns: number;
   current_turn: number;
   messages: ChatMessage[];
+  pending_script?: ChatMessage[];
   pending_decision?: PendingDecision;
   revealed_contact?: {
     agent_id: string;
