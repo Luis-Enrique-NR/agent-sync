@@ -28,6 +28,13 @@ def _non_negative_int(name: str, default: int) -> int:
     return value
 
 
+def _bounded_int(name: str, default: int, *, maximum: int) -> int:
+    value = _non_negative_int(name, default)
+    if value > maximum:
+        raise ValueError(f"{name} cannot exceed {maximum}")
+    return value
+
+
 def _non_negative_float(name: str, default: float) -> float:
     raw_value = os.getenv(name, str(default))
     try:
@@ -57,6 +64,7 @@ class AISettings:
     user_max_cost_usd_per_hour: float = 5.0
     user_max_session_seconds: int = 900
     estimated_llm_cost_usd: float = 0.01
+    max_tool_calls: int = 6
 
     @classmethod
     def from_env(cls) -> "AISettings":
@@ -82,6 +90,9 @@ class AISettings:
             max_turns=_positive_int("AGENTSYNC_MAX_TURNS", 8),
             session_timeout_seconds=_positive_int(
                 "AGENTSYNC_SESSION_TIMEOUT_SECONDS", 90
+            ),
+            max_tool_calls=_bounded_int(
+                "AGENTSYNC_MAX_TOOL_CALLS", 6, maximum=50
             ),
             llm_provider=llm_provider,
             openai_api_key_env=api_key_env,

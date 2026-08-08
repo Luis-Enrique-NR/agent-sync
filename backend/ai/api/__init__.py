@@ -2,6 +2,8 @@
 
 from ai.api.dto import (
     AgentProfileDTO,
+    API_SCHEMA_VERSION,
+    DecisionRequestDTO,
     EngineEventDTO,
     EngineResultDTO,
     HumanDecisionDTO,
@@ -13,6 +15,8 @@ from ai.api.dto import (
 
 __all__ = [
     "AgentProfileDTO",
+    "API_SCHEMA_VERSION",
+    "DecisionRequestDTO",
     "EngineEventDTO",
     "EngineResultDTO",
     "HumanDecisionDTO",

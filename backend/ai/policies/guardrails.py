@@ -68,6 +68,11 @@ class GuardrailPipeline:
         r"(?:meet|meeting|call)\b)",
         re.IGNORECASE,
     )
+    _private_reference_pattern = re.compile(
+        r"(?<![\w-])[A-Za-z][\w-]{2,}[_-](?:ref|reference)"
+        r"(?:[_-][A-Za-z0-9][\w-]*)*(?![\w-])",
+        re.IGNORECASE,
+    )
 
     def evaluate(self, profile: AgentProfile, turn: AgentTurn) -> GuardrailResult:
         violations: list[Violation] = []
@@ -245,6 +250,24 @@ class GuardrailPipeline:
                     )
                 )
 
+        # Known references are checked against the speaker's vault below. This
+        # additional fail-closed check also catches an invented opaque token
+        # that the model tries to publish before the vault lookup can recognize
+        # it as a real value reference.
+        if any(
+            self._private_reference_pattern.search(text)
+            for text in public_text_fields
+        ) and not any(
+            violation.code == "PRIVATE_REFERENCE_IN_PUBLIC_TEXT"
+            for violation in violations
+        ):
+            violations.append(
+                Violation(
+                    code="PRIVATE_REFERENCE_IN_PUBLIC_TEXT",
+                    detail="opaque private references cannot be published",
+                )
+            )
+
         for fact in profile.tool_facts:
             if (
                 fact.visibility is ToolFactVisibility.PRIVATE_REFERENCE
@@ -254,10 +277,14 @@ class GuardrailPipeline:
                     for text in public_text_fields
                 )
             ):
-                violations.append(
-                    Violation(
-                        code="PRIVATE_REFERENCE_IN_PUBLIC_TEXT",
-                        detail="opaque references are internal and cannot be published",
+                if not any(
+                    violation.code == "PRIVATE_REFERENCE_IN_PUBLIC_TEXT"
+                    for violation in violations
+                ):
+                    violations.append(
+                        Violation(
+                            code="PRIVATE_REFERENCE_IN_PUBLIC_TEXT",
+                            detail="opaque references are internal and cannot be published",
+                        )
                     )
-                )
         return violations

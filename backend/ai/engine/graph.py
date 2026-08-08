@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from datetime import datetime, timedelta
 from typing import TypedDict
 from uuid import UUID
@@ -64,6 +65,10 @@ class _GraphState(TypedDict):
     route: str
 
 
+class LLMTimeoutError(TimeoutError):
+    """Raised when one provider step exceeds the engine's hard time budget."""
+
+
 class NegotiationEngine:
     """Run until a human decision or terminal state is reached."""
 
@@ -81,11 +86,23 @@ class NegotiationEngine:
         budget_manager: UserBudgetManager | None = None,
         telemetry_sink: TelemetrySink | None = None,
         estimated_llm_cost_usd: float = 0.0,
+        llm_timeout_seconds: float = 25.0,
+        default_max_turns: int = 8,
+        default_session_timeout_seconds: int = 90,
+        default_max_tool_calls: int = 6,
     ) -> None:
         if max_candidate_retries < 0:
             raise ValueError("max_candidate_retries cannot be negative")
         if history_window <= 0:
             raise ValueError("history_window must be positive")
+        if llm_timeout_seconds <= 0:
+            raise ValueError("llm_timeout_seconds must be positive")
+        if default_max_turns <= 0:
+            raise ValueError("default_max_turns must be positive")
+        if default_session_timeout_seconds <= 0:
+            raise ValueError("default_session_timeout_seconds must be positive")
+        if default_max_tool_calls < 0:
+            raise ValueError("default_max_tool_calls cannot be negative")
         self._provider = provider
         self._guardrails = guardrails or GuardrailPipeline()
         self._escalation = escalation or EscalationEvaluator()
@@ -101,6 +118,10 @@ class NegotiationEngine:
         if estimated_llm_cost_usd < 0:
             raise ValueError("estimated_llm_cost_usd cannot be negative")
         self._estimated_llm_cost_usd = estimated_llm_cost_usd
+        self._llm_timeout_seconds = llm_timeout_seconds
+        self._default_max_turns = default_max_turns
+        self._default_session_timeout_seconds = default_session_timeout_seconds
+        self._default_max_tool_calls = default_max_tool_calls
         self._provider_name = type(provider).__name__
         self._provider_model = getattr(provider, "model", None)
         if hasattr(self._tool_gateway, "set_telemetry"):
@@ -112,23 +133,40 @@ class NegotiationEngine:
         agent_a: AgentProfile,
         agent_b: AgentProfile,
         *,
-        max_turns: int = 8,
-        timeout_seconds: int = 90,
-        max_tool_calls: int = 6,
+        max_turns: int | None = None,
+        timeout_seconds: int | None = None,
+        max_tool_calls: int | None = None,
         user_id: UUID | None = None,
     ) -> EngineResult:
-        if timeout_seconds <= 0:
+        resolved_max_turns = (
+            self._default_max_turns if max_turns is None else max_turns
+        )
+        resolved_timeout_seconds = (
+            self._default_session_timeout_seconds
+            if timeout_seconds is None
+            else timeout_seconds
+        )
+        resolved_max_tool_calls = (
+            self._default_max_tool_calls
+            if max_tool_calls is None
+            else max_tool_calls
+        )
+        if resolved_max_turns <= 0:
+            raise ValueError("max_turns must be positive")
+        if resolved_timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be positive")
+        if resolved_max_tool_calls < 0:
+            raise ValueError("max_tool_calls cannot be negative")
         started_at = self._clock()
         state = NegotiationState(
             owner_user_id=user_id,
             agents=(agent_a, agent_b),
             current_speaker_id=agent_a.agent_id,
-            max_turns=max_turns,
+            max_turns=resolved_max_turns,
             started_at=started_at,
-            deadline_at=started_at + timedelta(seconds=timeout_seconds),
-            execution_timeout_seconds=timeout_seconds,
-            max_tool_calls=max_tool_calls,
+            deadline_at=started_at + timedelta(seconds=resolved_timeout_seconds),
+            execution_timeout_seconds=resolved_timeout_seconds,
+            max_tool_calls=resolved_max_tool_calls,
         )
         if user_id is not None and self._budget_manager is not None:
             self._budget_manager.start_session(
@@ -669,7 +707,7 @@ class NegotiationEngine:
                     estimated_cost_usd=self._estimated_llm_cost_usd,
                     now=started_at or self._clock(),
                 )
-            step = self._provider.generate_step(
+            step = self._generate_with_timeout(
                 GenerationRequest(
                     speaker=session.speaker(),
                     counterpart=session.counterpart(),
@@ -692,7 +730,8 @@ class NegotiationEngine:
                         == session.current_speaker_id
                     ),
                     guardrail_feedback=tuple(state["guardrail_feedback"]),
-                )
+                ),
+                timeout_seconds=self._llm_timeout_seconds,
             )
             if observe_call:
                 completed_at = self._clock()
@@ -722,6 +761,33 @@ class NegotiationEngine:
                     session,
                     EngineEventType.SESSION_FAILED,
                     {"error_code": exc.code},
+                )
+            )
+            state["route"] = "end"
+            return state
+        except LLMTimeoutError:
+            if observe_call:
+                completed_at = self._clock()
+                self._telemetry.record_llm(
+                    LLMObservation(
+                        session_id=session.session_id,
+                        user_id=session.owner_user_id,
+                        provider=self._provider_name,
+                        model=self._provider_model,
+                        started_at=started_at or completed_at,
+                        completed_at=completed_at,
+                        success=False,
+                        estimated_cost_usd=self._estimated_llm_cost_usd,
+                        error_code="LLM_TIMEOUT",
+                    )
+                )
+            session.status = SessionStatus.FAILED
+            session.last_error_code = "LLM_TIMEOUT"
+            state["events"].append(
+                self._event(
+                    session,
+                    EngineEventType.SESSION_FAILED,
+                    {"error_code": session.last_error_code},
                 )
             )
             state["route"] = "end"
@@ -762,6 +828,30 @@ class NegotiationEngine:
             "tool" if state["tool_call"] is not None else "guardrail"
         )
         return state
+
+    def _generate_with_timeout(
+        self,
+        request: GenerationRequest,
+        *,
+        timeout_seconds: float,
+    ):
+        """Run one provider step behind an engine-level hard timeout.
+
+        Providers normally have their own network timeout, but the engine also
+        needs a bound when a custom provider blocks or ignores that setting.
+        The worker is asked to cancel on timeout; a provider implementation must
+        still honor its own cancellation/network timeout to stop promptly.
+        """
+
+        executor = ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(self._provider.generate_step, request)
+        try:
+            return future.result(timeout=timeout_seconds)
+        except FutureTimeoutError as exc:
+            future.cancel()
+            raise LLMTimeoutError("provider step exceeded engine timeout") from exc
+        finally:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def _tool_node(self, state: _GraphState) -> _GraphState:
         session = state["session"]

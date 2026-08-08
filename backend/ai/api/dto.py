@@ -24,6 +24,8 @@ from ai.domain.models import (
 )
 from persistence.sanitize import sanitize_for_persistence, sanitize_text
 
+API_SCHEMA_VERSION = "ai.v1"
+
 
 class PublicTranscriptMessageDTO(StrictModel):
     speaker_id: UUID
@@ -63,7 +65,31 @@ class AgentProfileDTO(StrictModel):
     remaining_goal_units: int | None
 
 
+class DecisionRequestDTO(StrictModel):
+    """Stable owner-facing representation of a pending AI decision."""
+
+    schema_version: str = API_SCHEMA_VERSION
+    decision_id: UUID
+    session_id: UUID
+    owner_agent_id: UUID
+    requester_agent_id: UUID | None = None
+    kind: str
+    reasons: list[str]
+    matched_rule_ids: list[str] = Field(default_factory=list)
+    candidate_turn: dict[str, Any] | None = None
+    proposal_id: UUID | None = None
+    proposal_revision: int | None = Field(default=None, ge=1)
+    requested_actions: list[dict[str, Any]] = Field(default_factory=list)
+    tool_call: dict[str, Any] | None = None
+    requires_revalidation: bool = False
+    status: str
+    created_at: datetime
+    resolved_at: datetime | None = None
+    resolution: str | None = None
+
+
 class NegotiationStateDTO(StrictModel):
+    schema_version: str = API_SCHEMA_VERSION
     session_id: UUID
     owner_user_id: UUID | None
     status: SessionStatus
@@ -71,15 +97,17 @@ class NegotiationStateDTO(StrictModel):
     turn_count: int
     max_turns: int
     deadline_at: datetime
-    pending_decision: dict[str, Any] | None
+    pending_decision: DecisionRequestDTO | None
     pending_revalidation: dict[str, Any] | None
     transcript: list[PublicTranscriptMessageDTO]
     last_error_code: str | None
 
 
 class EngineEventDTO(StrictModel):
+    schema_version: str = API_SCHEMA_VERSION
     event_id: UUID
     session_id: UUID
+    correlation_id: UUID | None
     event_type: str
     audience: EngineEventAudience
     occurred_at: datetime
@@ -87,6 +115,7 @@ class EngineEventDTO(StrictModel):
 
 
 class EngineResultDTO(StrictModel):
+    schema_version: str = API_SCHEMA_VERSION
     state: NegotiationStateDTO
     events: list[EngineEventDTO]
 
@@ -143,10 +172,10 @@ def to_public_transcript_dto(message: TranscriptMessage) -> PublicTranscriptMess
     )
 
 
-def _decision_payload(decision: DecisionRequest | None) -> dict[str, Any] | None:
+def _decision_payload(decision: DecisionRequest | None) -> DecisionRequestDTO | None:
     if decision is None:
         return None
-    return decision.model_dump(mode="json")
+    return DecisionRequestDTO.model_validate(decision.model_dump(mode="json"))
 
 
 def to_negotiation_state_dto(state: NegotiationState) -> NegotiationStateDTO:
@@ -175,6 +204,7 @@ def to_public_event_dto(event: EngineEvent) -> EngineEventDTO | None:
     return EngineEventDTO(
         event_id=event.event_id,
         session_id=event.session_id,
+        correlation_id=event.correlation_id or event.session_id,
         event_type=event.event_type.value,
         audience=event.audience,
         occurred_at=event.occurred_at,
@@ -189,6 +219,7 @@ def to_engine_result_dto(result: EngineResult) -> EngineResultDTO:
             EngineEventDTO(
                 event_id=event.event_id,
                 session_id=event.session_id,
+                correlation_id=event.correlation_id or event.session_id,
                 event_type=event.event_type.value,
                 audience=event.audience,
                 occurred_at=event.occurred_at,

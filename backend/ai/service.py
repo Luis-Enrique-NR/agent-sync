@@ -76,6 +76,10 @@ def build_engine_from_env(settings: AISettings | None = None) -> NegotiationEngi
         budget_manager=budget,
         telemetry_sink=telemetry,
         estimated_llm_cost_usd=configured.estimated_llm_cost_usd,
+        llm_timeout_seconds=configured.llm_timeout_seconds,
+        default_max_turns=configured.max_turns,
+        default_session_timeout_seconds=configured.session_timeout_seconds,
+        default_max_tool_calls=configured.max_tool_calls,
     )
 
 
@@ -102,9 +106,9 @@ class AIBackendService:
         agent_a: AgentProfile,
         agent_b: AgentProfile,
         *,
-        max_turns: int = 8,
-        timeout_seconds: int = 90,
-        max_tool_calls: int = 6,
+        max_turns: int | None = None,
+        timeout_seconds: int | None = None,
+        max_tool_calls: int | None = None,
     ) -> EngineResultDTO:
         result = self._engine.start_session(
             agent_a,
@@ -161,3 +165,23 @@ class AIBackendService:
         if state.owner_user_id != user_id:
             raise SessionOwnershipError("session does not belong to the authenticated user")
         return state
+
+
+def build_service_from_env(
+    settings: AISettings | None = None,
+    *,
+    repository: PersistenceRepository | None = None,
+) -> AIBackendService:
+    """Compose the complete AI facade using one validated environment snapshot.
+
+    Keeping this factory next to ``build_engine_from_env`` prevents API handlers
+    from accidentally using hard-coded turn, tool, or timeout limits that differ
+    from the engine/provider configuration.
+    """
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env", override=False)
+    configured = settings or AISettings.from_env()
+    return AIBackendService(
+        build_engine_from_env(configured),
+        repository=repository,
+    )

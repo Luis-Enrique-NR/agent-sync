@@ -173,8 +173,9 @@ def test_api_dtos_do_not_publish_private_event_payload(b2b_agents, fixed_now) ->
 
 
 class _Response:
-    def __init__(self, payload: dict) -> None:
+    def __init__(self, payload: dict, *, content_type: str = "application/json") -> None:
         self._payload = payload
+        self.headers = {"Content-Type": content_type}
 
     def __enter__(self):
         return self
@@ -191,7 +192,14 @@ def test_http_mcp_client_sends_server_side_authentication() -> None:
 
     def opener(request, timeout):
         calls.append((request, timeout))
-        return _Response({"jsonrpc": "2.0", "id": "1", "result": {"structuredContent": {"ok": True}}})
+        request_id = json.loads(request.data.decode())["id"]
+        return _Response(
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "result": {"structuredContent": {"ok": True}},
+            }
+        )
 
     client = HTTPMCPClient.from_json(
         '{"default":{"endpoint":"https://mcp.invalid","token_env_var":"MCP_TOKEN"}}',

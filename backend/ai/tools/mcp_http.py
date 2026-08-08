@@ -12,6 +12,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Callable, Mapping
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 from uuid import uuid4
 
@@ -22,12 +23,21 @@ class MCPServerConfig:
     endpoint: str
     token_env_var: str | None = None
     max_response_bytes: int = 1_000_000
+    allowed_tools: frozenset[str] = frozenset()
 
     def __post_init__(self) -> None:
         if not self.label.strip() or not self.endpoint.strip():
             raise ValueError("MCP server label and endpoint are required")
         if self.max_response_bytes < 1_024:
             raise ValueError("max_response_bytes is too small")
+        scheme = urlparse(self.endpoint).scheme.lower()
+        if scheme not in {"http", "https"}:
+            raise ValueError("MCP endpoint must use http or https")
+        if any(
+            not isinstance(tool, str) or not tool.strip()
+            for tool in self.allowed_tools
+        ):
+            raise ValueError("MCP allowed tool names cannot be empty")
 
 
 class MCPProtocolError(RuntimeError):
@@ -66,6 +76,9 @@ class HTTPMCPClient:
         for label, value in payload.items():
             if not isinstance(value, dict):
                 raise ValueError(f"MCP server {label!r} must be an object")
+            raw_allowed_tools = value.get("allowed_tools", [])
+            if not isinstance(raw_allowed_tools, list):
+                raise ValueError(f"MCP server {label!r} allowed_tools must be a list")
             servers[str(label)] = MCPServerConfig(
                 label=str(label),
                 endpoint=str(value.get("endpoint", "")),
@@ -75,6 +88,7 @@ class HTTPMCPClient:
                     else None
                 ),
                 max_response_bytes=int(value.get("max_response_bytes", 1_000_000)),
+                allowed_tools=frozenset(str(tool) for tool in raw_allowed_tools),
             )
         return cls(servers, environ=environ, opener=opener)
 
@@ -90,10 +104,13 @@ class HTTPMCPClient:
         config = self._servers.get(server_label)
         if config is None:
             raise MCPProtocolError("MCP_SERVER_NOT_CONFIGURED")
+        if config.allowed_tools and tool_name not in config.allowed_tools:
+            raise MCPProtocolError("MCP_TOOL_NOT_ALLOWLISTED")
+        request_id = str(uuid4())
         body = json.dumps(
             {
                 "jsonrpc": "2.0",
-                "id": str(uuid4()),
+                "id": request_id,
                 "method": "tools/call",
                 "params": {"name": tool_name, "arguments": arguments},
             },
@@ -114,18 +131,20 @@ class HTTPMCPClient:
         try:
             with self._opener(request, timeout=timeout_seconds) as response:
                 raw_response = response.read(config.max_response_bytes + 1)
+                content_type = str(
+                    getattr(response, "headers", {}).get("Content-Type", "")
+                )
         except HTTPError as exc:
             raise MCPProtocolError(f"MCP_HTTP_{exc.code}") from exc
         except URLError as exc:
             raise MCPProtocolError("MCP_NETWORK_ERROR") from exc
         if len(raw_response) > config.max_response_bytes:
             raise MCPProtocolError("MCP_RESPONSE_TOO_LARGE")
-        try:
-            payload = json.loads(raw_response.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise MCPProtocolError("MCP_INVALID_JSON") from exc
-        if not isinstance(payload, dict):
-            raise MCPProtocolError("MCP_INVALID_RESPONSE")
+        payload = self._decode_rpc_response(
+            raw_response,
+            content_type=content_type,
+            request_id=request_id,
+        )
         if payload.get("error"):
             error = payload["error"]
             code = error.get("code", "UNKNOWN") if isinstance(error, dict) else "UNKNOWN"
@@ -140,3 +159,42 @@ class HTTPMCPClient:
         if isinstance(content, list):
             return {"content": content}
         return {key: value for key, value in result.items() if key != "_meta"}
+
+    @staticmethod
+    def _decode_rpc_response(
+        raw_response: bytes,
+        *,
+        content_type: str,
+        request_id: str,
+    ) -> dict[str, Any]:
+        try:
+            decoded = raw_response.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise MCPProtocolError("MCP_INVALID_UTF8") from exc
+
+        candidates = [decoded]
+        if "text/event-stream" in content_type.lower():
+            candidates = [
+                line[5:].strip()
+                for line in decoded.splitlines()
+                if line.startswith("data:") and line[5:].strip()
+            ]
+        payload: dict[str, Any] | None = None
+        for candidate in candidates:
+            try:
+                parsed = json.loads(candidate)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                if str(parsed.get("id")) == request_id:
+                    payload = parsed
+                    break
+                if payload is None:
+                    payload = parsed
+        if payload is None:
+            raise MCPProtocolError("MCP_INVALID_RESPONSE")
+        if payload.get("jsonrpc") != "2.0":
+            raise MCPProtocolError("MCP_INVALID_JSONRPC_VERSION")
+        if str(payload.get("id")) != request_id:
+            raise MCPProtocolError("MCP_RESPONSE_ID_MISMATCH")
+        return payload
