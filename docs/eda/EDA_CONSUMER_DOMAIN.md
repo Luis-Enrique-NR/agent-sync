@@ -140,7 +140,79 @@ agentsync.db (SQLite)
 | `tests/test_eda_consumer.py` | 8 tests unitarios (FakeBus + FakeEngine + FakePortal) |
 | `tests/test_eda_e2e_trace.py` | 1 test E2E con trazabilidad completa de 6 pasos |
 
-## 7. Trabajo pendiente
+---
+
+## 7. Protocolo de Testing y Diagnóstico de Entorno
+
+### Comandos de prueba
+
+```bash
+# 1. Verificar variables y servicios del entorno local
+python scripts/check_eda_env.py
+
+# 2. Ejecutar la suite completa de pruebas EDA con trazabilidad
+pytest backend/tests/test_eda_consumer.py backend/tests/test_eda_e2e_trace.py -v
+
+# 3. Suite completa del proyecto
+pytest
+
+# 4. Inspeccionar el log generado tras la ejecución
+cat logs/eda_e2e_trace.log         # Linux/macOS
+type logs\eda_e2e_trace.log        # Windows (PowerShell)
+```
+
+### Salida esperada de `check_eda_env.py`
+
+```
+[ENV_OK]    Python 3.14.6
+[ENV_OK]    SQLite initialized (dev_eda.db)
+[ENV_WARN]  Redis not available on localhost:6379 (tests will skip)
+[ENV_OK]    MATCHMAKING_ENABLED=false (correcto para esta fase)
+[ENV_OK]    All 9 dependencies installed
+[ENV_OK]    Core EDA modules import correctly
+[ENV_OK]    Trace log ready (logs\eda_e2e_trace.log)
+
+============================================================
+  [ENV_OK] Entorno EDA correctamente configurado
+============================================================
+```
+
+### Traza E2E esperada (6 pasos)
+
+```
+[EDA_TRACE][...][ADMISSION]     simulated POST /webhooks/portal
+[EDA_TRACE][...][BUS_ACCEPT]    deduplicating event_id=...
+[EDA_TRACE][...][BUS_ACCEPT]    accepted — delivery_id=msg_0
+[EDA_TRACE][...][WORKER_POLL]   received delivery msg_0
+[EDA_TRACE][...][HANDLER_LOOKUP] querying negotiation_states by portal_channel_id=...
+[EDA_TRACE][...][AUDIT_WRITE]   TURN_PUBLISHED session=...
+[EDA_TRACE][...][BUS_ACK]       acked delivery msg_0
+[EDA_TRACE][...][E2E_END]       VERIFIED: 1 audit record
+```
+
+### Matriz de diagnóstico
+
+| Síntoma | Causa Probable | Solución |
+|---------|---------------|----------|
+| `ConnectionRefusedError: Redis` | Servicio de Redis apagado | Iniciar Docker/Redis local o ignorar — tests usan `TracedFakeBus` |
+| `OperationalError: no such table` | Migraciones no aplicadas | Ejecutar `python -c "from persistence.database import init_db; init_db()"` |
+| `ModuleNotFoundError: langgraph` | Dependencias no instaladas | `pip install -e ".[test]"` en venv |
+| `HMAC Verification Failed` | Secret mismatch en `.env` | Copiar `.env.example` a `.env` |
+| `2 skipped` en test summary | Redis no disponible | **Esperado** — `test_redis_bus.py` requiere Redis |
+| `ImportError: cannot import NegotiationHandler` | Rama incorrecta | `git checkout feat/eda-worker` |
+| `MATCHMAKING_ENABLED=true` | Flag activado prematuramente | Setear `MATCHMAKING_ENABLED=false` en `.env` |
+
+### Alcance excluido en esta fase
+
+| Componente | Estado |
+|-----------|--------|
+| Motor de matchmaking | ❌ `MATCHMAKING_ENABLED=false` |
+| Algoritmo de compatibilidad (intereses ∩ capacidades) | ❌ No implementado |
+| `resume_session()` desde bandeja humana | ❌ Pendiente |
+
+---
+
+## 8. Trabajo pendiente
 
 - Activar `agent.registered` / `intent.published` como eventos reales del bus (hoy están limitados por `TransportEnvelopeV1.event_type` Literal)
 - Integrar `seed_private_resolutions()` en el handler para resolver PII post-aprobación
