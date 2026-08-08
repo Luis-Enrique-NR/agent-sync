@@ -1,0 +1,113 @@
+{
+  "scenario_id": "p2p-used-bicycle",
+  "title": "Venta de bicicleta usada entre particulares",
+  "agents": [
+    {
+      "agent_id": "20000000-0000-0000-0000-000000000001",
+      "display_name": "Valentina",
+      "entity_type": "person",
+      "public_description": "Persona que vende una bicicleta urbana usada en buen estado.",
+      "personality": "Amable, directa y cuidadosa con sus datos personales.",
+      "objectives": [
+        "Vender la bicicleta dentro del rango autorizado",
+        "No revelar datos personales sin aprobación"
+      ],
+      "hard_limits": [
+        {
+          "key": "price_usd",
+          "operator": "gte",
+          "value": 300,
+          "unit": "USD"
+        }
+      ],
+      "never_disclose": ["EXACT_ADDRESS", "LIVE_LOCATION"],
+      "escalation_rules": [
+        {
+          "rule_id": "approve-final-sale",
+          "rule_type": "FINAL_AGREEMENT",
+          "key": null,
+          "threshold": null,
+          "categories": [],
+          "enabled": true
+        },
+        {
+          "rule_id": "approve-contact",
+          "rule_type": "SHARE_PERSONAL_DATA",
+          "key": null,
+          "threshold": null,
+          "categories": ["PHONE", "MEETING_POINT"],
+          "enabled": true
+        }
+      ],
+      "tool_facts": [
+        {
+          "key": "item_condition",
+          "visibility": "PUBLIC",
+          "value": "Buen estado, mantenimiento reciente",
+          "value_ref": null,
+          "category": null
+        },
+        {
+          "key": "availability",
+          "visibility": "PUBLIC",
+          "value": "Sábado de 10:00 a 14:00",
+          "value_ref": null,
+          "category": null
+        },
+        {
+          "key": "phone",
+          "visibility": "PRIVATE_REFERENCE",
+          "value": null,
+          "value_ref": "contact_ref_valentina_phone",
+          "category": "PHONE"
+        },
+        {
+          "key": "safe_meeting_point",
+          "visibility": "PRIVATE_REFERENCE",
+          "value": null,
+          "value_ref": "location_ref_public_meeting_point",
+          "category": "MEETING_POINT"
+        }
+      ]
+    },
+    {
+      "agent_id": "20000000-0000-0000-0000-000000000002",
+      "display_name": "Mateo",
+      "entity_type": "person",
+      "public_description": "Persona interesada en comprar una bicicleta para transporte diario.",
+      "personality": "Respetuoso, práctico y orientado a coordinar con seguridad.",
+      "objectives": [
+        "Comprar la bicicleta sin superar el presupuesto",
+        "Coordinar una revisión en un lugar público"
+      ],
+      "hard_limits": [
+        {
+          "key": "price_usd",
+          "operator": "lte",
+          "value": 360,
+          "unit": "USD"
+        }
+      ],
+      "never_disclose": ["EXACT_ADDRESS", "LIVE_LOCATION"],
+      "escalation_rules": [
+        {
+          "rule_id": "approve-final-purchase",
+          "rule_type": "FINAL_AGREEMENT",
+          "key": null,
+          "threshold": null,
+          "categories": [],
+          "enabled": true
+        }
+      ],
+      "tool_facts": [
+        {
+          "key": "budget_usd",
+          "visibility": "PUBLIC",
+          "value": 360,
+          "value_ref": null,
+          "category": null
+        }
+      ]
+    }
+  ]
+}
