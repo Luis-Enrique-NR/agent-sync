@@ -11,6 +11,9 @@ dependencies = [
     "langgraph>=1.0,<2.0",
     "openai>=2.0,<3.0",
     "pydantic>=2.11,<3.0",
+    "python-dotenv>=1.0,<2.0",
+    "sqlmodel>=0.0.22,<1.0",
+    "aiosqlite>=0.20,<1.0",
 ]
 
 [project.optional-dependencies]
@@ -18,7 +21,7 @@ test = ["pytest>=8.0,<10.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["ai*"]
+include = ["ai*", "persistence*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

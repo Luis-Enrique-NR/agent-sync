@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from ai.domain.models import (
+    ActionType,
     AgentProfile,
     AgentTurn,
     NumericLimit,
@@ -54,11 +55,25 @@ class GuardrailPipeline:
         r"(?P<code_value>\d+(?:[.,]\d+)?)\s*(?P<code>USD|COP|EUR|GBP))",
         re.IGNORECASE,
     )
+    _meeting_request_pattern = re.compile(
+        r"(?:\b(?:podemos|podr[ií]amos|quieres|quisieras|aceptas|agendamos|"
+        r"coordinamos)\b.{0,80}\b(?:reunirnos|reuni[oó]n|cita|encuentro|"
+        r"llamada|videollamada)\b|"
+        r"\bte\s+gustar[ií]a\b.{0,80}\b(?:reunirnos|reuni[oó]n|cita|"
+        r"encuentro|llamada|videollamada)\b|"
+        r"\b(?:quiero|quisiera|propongo|solicito|te\s+propongo)\b.{0,40}"
+        r"\b(?:agendar|programar|coordinar)\b.{0,60}\b(?:una\s+)?"
+        r"(?:reuni[oó]n|cita|encuentro|llamada|videollamada)\b|"
+        r"\b(?:can|could|would)\s+(?:we|you)\b.{0,80}\b"
+        r"(?:meet|meeting|call)\b)",
+        re.IGNORECASE,
+    )
 
     def evaluate(self, profile: AgentProfile, turn: AgentTurn) -> GuardrailResult:
         violations: list[Violation] = []
         violations.extend(self._numeric_violations(profile, turn))
         violations.extend(self._unstructured_currency_violations(turn))
+        violations.extend(self._unstructured_action_violations(turn))
         violations.extend(self._disclosure_violations(profile, turn))
         violations.extend(self._public_text_violations(profile, turn))
         return GuardrailResult(
@@ -102,6 +117,27 @@ class GuardrailPipeline:
                         )
                     )
         return violations
+
+    def _unstructured_action_violations(
+        self, turn: AgentTurn
+    ) -> list[Violation]:
+        has_meeting_action = any(
+            action.action_type is ActionType.MEETING
+            for action in turn.requested_actions
+        )
+        if self._meeting_request_pattern.search(turn.public_message) and not (
+            has_meeting_action
+        ):
+            return [
+                Violation(
+                    code="UNSTRUCTURED_MEETING_REQUEST",
+                    detail=(
+                        "meeting requests in public text require a structured "
+                        "MEETING action"
+                    ),
+                )
+            ]
+        return []
 
     def _unstructured_currency_violations(
         self, turn: AgentTurn
@@ -153,7 +189,7 @@ class GuardrailPipeline:
             if fact.visibility is ToolFactVisibility.PRIVATE_REFERENCE
         }
         violations: list[Violation] = []
-        for disclosure in turn.disclosure_requests:
+        for disclosure in turn.proposed_disclosures:
             fact = private_facts.get(disclosure.value_ref)
             if fact is None:
                 violations.append(
@@ -182,7 +218,17 @@ class GuardrailPipeline:
     def _public_text_violations(
         self, profile: AgentProfile, turn: AgentTurn
     ) -> list[Violation]:
-        text = turn.public_message
+        public_text_fields = [
+            turn.public_message,
+            *(request.purpose for request in turn.data_requests),
+            *(action.purpose for action in turn.requested_actions),
+            *(
+                value
+                for action in turn.requested_actions
+                for value in action.parameters.values()
+                if isinstance(value, str)
+            ),
+        ]
         violations: list[Violation] = []
         pattern_checks = (
             (self._email_pattern, "RAW_EMAIL_IN_PUBLIC_TEXT"),
@@ -191,21 +237,27 @@ class GuardrailPipeline:
             (self._address_pattern, "RAW_ADDRESS_IN_PUBLIC_TEXT"),
         )
         for pattern, code in pattern_checks:
-            if pattern.search(text):
+            if any(pattern.search(text) for text in public_text_fields):
                 violations.append(
-                    Violation(code=code, detail="public message contains protected data")
+                    Violation(
+                        code=code,
+                        detail="public turn contains protected data",
+                    )
                 )
 
         for fact in profile.tool_facts:
             if (
                 fact.visibility is ToolFactVisibility.PRIVATE_REFERENCE
                 and fact.value_ref
-                and fact.value_ref.casefold() in text.casefold()
+                and any(
+                    fact.value_ref.casefold() in text.casefold()
+                    for text in public_text_fields
+                )
             ):
                 violations.append(
                     Violation(
                         code="PRIVATE_REFERENCE_IN_PUBLIC_TEXT",
-                        detail="opaque references are internal and cannot be spoken",
+                        detail="opaque references are internal and cannot be published",
                     )
                 )
         return violations

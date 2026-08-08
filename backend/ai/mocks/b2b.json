@@ -46,6 +46,18 @@
           "value_ref": "contact_ref_ecotextiles_sales",
           "category": "EMAIL"
         }
+      ],
+      "tool_grants": [
+        {
+          "tool_name": "web.search",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "email.send_notification",
+          "enabled": true,
+          "approval_mode": "ALWAYS"
+        }
       ]
     },
     {
@@ -91,6 +103,23 @@
           "value": "2026-08-12 o 2026-08-13",
           "value_ref": null,
           "category": null
+        }
+      ],
+      "tool_grants": [
+        {
+          "tool_name": "web.search",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "calendar.check_availability",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "email.send_notification",
+          "enabled": true,
+          "approval_mode": "ALWAYS"
         }
       ]
     }
