@@ -40,9 +40,9 @@ Chain strategy: feature-branch chain
 
 ## Phase 3: Durable Internal Bus
 
-- [ ] 3.1 Add RED Redis tests for duplicate ID, atomic failure (no records), restart/reclaim, success-only `XACK`, and failure pending.
-- [ ] 3.2 Create `DurableEventBus` and Redis Streams adapter: prevalidated atomic Lua acceptance, group setup, `XAUTOCLAIM`, `ack`, and failure metadata.
-- [ ] 3.3 Pair PR 2 with next `docs/arquitectura/N. Durable transport bus.md` and `docs/pruebas/N. Redis evidence.md`, with required metadata/evidence.
+- [x] 3.1 Add RED Redis tests for duplicate ID, atomic failure (no records), restart/reclaim, success-only `XACK`, and failure pending.
+- [x] 3.2 Create `DurableEventBus` and Redis Streams adapter: prevalidated atomic Lua acceptance, group setup, `XAUTOCLAIM`, `ack`, and failure metadata.
+- [x] 3.3 Pair PR 2 with next `docs/arquitectura/N. Durable transport bus.md` and `docs/pruebas/N. Redis evidence.md`, with required metadata/evidence.
 
 ## Phase 4: Portal Administration
 
