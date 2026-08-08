@@ -30,32 +30,43 @@ async def consume_forever(
 ) -> None:
     """Poll ``bus`` forever and invoke ``handler`` for each leased delivery.
 
-    A graceful shutdown mechanism (signal handler) should cancel the
-    running task from the caller side.
+    A graceful shutdown is triggered when the calling task is cancelled
+    (``asyncio.CancelledError``).  The caller should wrap this coroutine
+    with ``asyncio.create_task()`` and cancel it externally.
     """
     logger.info("consumer %r started (lease=%dms)", consumer, lease_ms)
-    while True:
-        try:
-            delivery = await bus.receive(consumer, lease_ms=lease_ms)
-        except Exception:
-            logger.exception("bus.receive failed, retrying in %.1fs", poll_interval_seconds)
-            await asyncio.sleep(poll_interval_seconds)
-            continue
-
-        if delivery is None:
-            await asyncio.sleep(poll_interval_seconds)
-            continue
-
-        try:
-            await handler.handle(delivery)
-        except Exception:
-            logger.exception("handler failed for delivery %s", delivery.message_id)
+    try:
+        while True:
             try:
-                await bus.fail(delivery, "HANDLER_ERROR")
+                delivery = await bus.receive(consumer, lease_ms=lease_ms)
+            except asyncio.CancelledError:
+                raise
             except Exception:
-                logger.exception("bus.fail failed for %s", delivery.message_id)
-        else:
+                logger.exception(
+                    "bus.receive failed, retrying in %.1fs", poll_interval_seconds
+                )
+                await asyncio.sleep(poll_interval_seconds)
+                continue
+
+            if delivery is None:
+                await asyncio.sleep(poll_interval_seconds)
+                continue
+
             try:
-                await bus.ack(delivery)
+                await handler.handle(delivery)
+            except asyncio.CancelledError:
+                raise
             except Exception:
-                logger.exception("bus.ack failed for %s", delivery.message_id)
+                logger.exception("handler failed for delivery %s", delivery.message_id)
+                try:
+                    await bus.fail(delivery, "HANDLER_ERROR")
+                except Exception:
+                    logger.exception("bus.fail failed for %s", delivery.message_id)
+            else:
+                try:
+                    await bus.ack(delivery)
+                except Exception:
+                    logger.exception("bus.ack failed for %s", delivery.message_id)
+    except asyncio.CancelledError:
+        logger.info("consumer %r shutting down gracefully", consumer)
+        raise
