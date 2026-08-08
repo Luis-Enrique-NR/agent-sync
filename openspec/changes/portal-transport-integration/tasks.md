@@ -33,10 +33,10 @@ Chain strategy: feature-branch chain
 
 ## Phase 2: Webhook Admission
 
-- [ ] 2.1 Add RED tests for invalid, missing, altered, and stale exact-byte signatures rejecting before parse/enqueue; then add strict models, settings, verifier, and normalizer.
-- [ ] 2.2 Create `backend/api/app.py` and `portal_webhooks.py`: verify raw bytes first; map `200`/`400`/`401`/`503` contract outcomes.
-- [ ] 2.3 Add RED/green tests for published and audit-only retracted envelopes, unsupported no-write behavior, and no AI/Portal-administration invocation.
-- [ ] 2.4 Pair PR 1 with next `docs/seguridad/N. Portal webhook admission.md` and `docs/pruebas/N. Webhook evidence.md`, with required metadata/evidence.
+- [x] 2.1 Add RED tests for invalid, missing, altered, and stale exact-byte signatures rejecting before parse/enqueue; then add strict models, settings, verifier, and normalizer.
+- [x] 2.2 Create `backend/api/app.py` and `portal_webhooks.py`: verify raw bytes first; map `200`/`400`/`401`/`503` contract outcomes.
+- [x] 2.3 Add RED/green tests for published and audit-only retracted envelopes, unsupported no-write behavior, and no AI/Portal-administration invocation.
+- [x] 2.4 Pair PR 1 with next `docs/seguridad/N. Portal webhook admission.md` and `docs/pruebas/N. Webhook evidence.md`, with required metadata/evidence.
 
 ## Phase 3: Durable Internal Bus
 
