@@ -46,7 +46,10 @@
           "value_ref": "contact_ref_ecotextiles_sales",
           "category": "EMAIL"
         }
-      ]
+      ],
+      "interests": ["raw_materials", "organic_textiles"],
+      "capabilities": ["supply_textiles", "bulk_shipping"],
+      "status": "AVAILABLE"
     },
     {
       "agent_id": "10000000-0000-0000-0000-000000000002",
@@ -92,7 +95,10 @@
           "value_ref": null,
           "category": null
         }
-      ]
+      ],
+      "interests": ["manufactured_goods", "sustainable_textiles"],
+      "capabilities": ["brand_design", "quality_assurance"],
+      "status": "AVAILABLE"
     }
   ]
 }

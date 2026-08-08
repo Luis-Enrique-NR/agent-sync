@@ -23,6 +23,12 @@ class EntityType(str, Enum):
     PERSON = "person"
 
 
+class AgentStatus(str, Enum):
+    AVAILABLE = "AVAILABLE"
+    BUSY = "BUSY"
+    PAUSED = "PAUSED"
+
+
 class SessionStatus(str, Enum):
     SEARCHING = "SEARCHING"
     ACTIVE = "ACTIVE"
@@ -115,6 +121,42 @@ class EngineEventType(str, Enum):
     SESSION_FAILED = "SESSION_FAILED"
 
 
+class AuditAction(str, Enum):
+    """Canonical actions for audit_records consumed by Backend API and Frontend."""
+
+    # Agent lifecycle
+    AGENT_CREATED = "AGENT_CREATED"
+    AGENT_UPDATED = "AGENT_UPDATED"
+    AGENT_PUBLISHED = "AGENT_PUBLISHED"
+    AGENT_PAUSED = "AGENT_PAUSED"
+    AGENT_RESUMED = "AGENT_RESUMED"
+    AGENT_UNPUBLISHED = "AGENT_UNPUBLISHED"
+
+    # Session lifecycle
+    SESSION_CREATED = "SESSION_CREATED"
+    SESSION_SEARCHING = "SESSION_SEARCHING"
+    MATCHMAKING_EVALUATED = "MATCHMAKING_EVALUATED"
+
+    # Engine / AI execution
+    TURN_PUBLISHED = "TURN_PUBLISHED"
+    GUARDRAIL_PASSED = "GUARDRAIL_PASSED"
+    GUARDRAIL_RETRY = "GUARDRAIL_RETRY"
+    CANDIDATE_BLOCKED = "CANDIDATE_BLOCKED"
+
+    # Human supervision / PII
+    APPROVAL_REQUESTED = "APPROVAL_REQUESTED"
+    DECISION_APPROVED = "DECISION_APPROVED"
+    DECISION_REJECTED = "DECISION_REJECTED"
+    DECISION_REPLACED = "DECISION_REPLACED"
+    PRIVATE_DATA_RESOLVED = "PRIVATE_DATA_RESOLVED"
+    PRIVATE_DATA_DISCLOSED = "PRIVATE_DATA_DISCLOSED"
+
+    # Terminal events
+    SESSION_RESOLVED = "SESSION_RESOLVED"
+    SESSION_REJECTED = "SESSION_REJECTED"
+    SESSION_FAILED = "SESSION_FAILED"
+
+
 class NumericTerm(StrictModel):
     key: str = Field(min_length=1, max_length=80)
     value: float
@@ -189,6 +231,9 @@ class AgentProfile(StrictModel):
     never_disclose: set[SensitiveDataCategory] = Field(default_factory=set)
     escalation_rules: list[EscalationRule] = Field(default_factory=list)
     tool_facts: list[ToolFact] = Field(default_factory=list)
+    interests: list[str] = Field(default_factory=list, max_length=20)
+    capabilities: list[str] = Field(default_factory=list, max_length=20)
+    status: AgentStatus = AgentStatus.AVAILABLE
 
 
 class AgentTurn(StrictModel):

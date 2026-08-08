@@ -68,7 +68,10 @@
           "value_ref": "location_ref_public_meeting_point",
           "category": "MEETING_POINT"
         }
-      ]
+      ],
+      "interests": ["sell_used_bicycle", "find_buyer_nearby"],
+      "capabilities": ["sell_bicycle", "weekend_availability"],
+      "status": "AVAILABLE"
     },
     {
       "agent_id": "20000000-0000-0000-0000-000000000002",
@@ -107,7 +110,10 @@
           "value_ref": null,
           "category": null
         }
-      ]
+      ],
+      "interests": ["buy_used_bicycle", "urban_transport"],
+      "capabilities": ["cash_payment", "weekday_pickup"],
+      "status": "AVAILABLE"
     }
   ]
 }
