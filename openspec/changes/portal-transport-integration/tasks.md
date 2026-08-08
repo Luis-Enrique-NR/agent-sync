@@ -20,15 +20,15 @@ Chain strategy: feature-branch chain
 
 | Unit | Goal | Likely PR | Focused test command | Runtime harness | Rollback boundary |
 |---|---|---|---|---|---|
-| 0 | Confirm backend handoff | Coordination | `git show origin/codex/ai-backend:backend/pyproject.toml` | N/A: no runtime behavior | Handoff record |
+| 0 | Confirm backend handoff | Coordination | `git show 094c444:backend/pyproject.toml` | N/A: no runtime behavior | Handoff record |
 | 1 | Verified admission | PR 1 | `cd backend; python -m pytest tests/test_portal_webhooks.py tests/test_portal_api.py` | ASGI with injected fakes | `api/`, webhook transport, docs/tests |
 | 2 | Durable delivery | PR 2 | `cd backend; python -m pytest tests/test_redis_bus.py` | Disposable Redis restart/reclaim | Bus transport, docs/tests |
 | 3 | Typed administration | PR 3 | `cd backend; python -m pytest tests/test_portal_client.py` | MockTransport and offline fake | Portal adapters, docs/tests |
 
 ## Phase 1: Coordination and Compatibility
 
-- [ ] 1.1 Confirm `origin/codex/ai-backend` is available and agree its branch-based incorporation/handoff; do not merge, copy, modify, or own `backend/ai`.
-- [ ] 1.2 Record the gate in next `docs/seguimiento/N. Portal transport integration handoff.md` with all required documentation metadata.
+- [x] 1.1 Confirm executable AI base `origin/backend/ai` at `5dc00c5` was incorporated by tracker `094c444`; do not modify or own `backend/ai`.
+- [x] 1.2 Record the gate in next `docs/seguimiento/N. Portal transport integration handoff.md` with all required documentation metadata.
 - [ ] 1.3 Provision Redis ownership, Portal secret/webhook configuration, and only MCP-documented Portal operations before enabling any route or consumer.
 
 ## Phase 2: Webhook Admission
@@ -52,5 +52,5 @@ Chain strategy: feature-branch chain
 
 ## Phase 5: Rollout Boundary
 
-- [ ] 5.1 Update `backend/pyproject.toml`, `.env.example`, and `README.md` with transport dependencies, settings, run/test steps, and preserve-Redis rollback.
-- [ ] 5.2 Before each PR, verify its focused command and runtime harness, document the exact result, and keep docs/tests in that same work unit; mark superseded historical docs `Replaced`, never delete them.
+- [x] 5.1 Update `backend/pyproject.toml`, `.env.example`, and `README.md` with transport dependencies, settings, run/test steps, and preserve-Redis rollback.
+- [x] 5.2 Before each PR, verify its focused command and runtime harness, document the exact result, and keep docs/tests in that same work unit; mark superseded historical docs `Replaced`, never delete them.

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentsync-backend"
 version = "0.1.0"
-description = "AI Brain for AgentSync"
+description = "AgentSync backend AI and transport services"
 requires-python = ">=3.11"
 dependencies = [
     "langgraph>=1.0,<2.0",

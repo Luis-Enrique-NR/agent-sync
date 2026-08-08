@@ -2,7 +2,7 @@
 
 ## Technical Approach
 
-Add a FastAPI imperative shell under `backend/api/` and keep transport models, verification, and adapters under `backend/transport/`. This follows the AI branch's strict Pydantic models, `Protocol` seams, injected fakes, and environment composition. The current checkout has no backend; implementation targets the layout on `origin/codex/ai-backend` and must incorporate that branch first. No transport module imports `backend/ai` or initiates domain work.
+Add a FastAPI imperative shell under `backend/api/` and keep transport models, verification, and adapters under `backend/transport/`. This follows the AI branch's strict Pydantic models, `Protocol` seams, injected fakes, and environment composition. The executable AI base is `origin/backend/ai` at `5dc00c5`, incorporated by tracker merge `094c444`; the transport chain extends it without owning `backend/ai`. No transport module imports `backend/ai` or initiates domain work.
 
 ## Architecture Decisions
 
@@ -87,7 +87,7 @@ The fixed HTTP route is applicable routing, so the matrix was reviewed; its exec
 
 ## Migration / Rollout
 
-No data migration required. Incorporate `origin/codex/ai-backend`, provision Redis persistence, create the consumer group idempotently, then enable the route. Rollback disables route/consumers without deleting streams or dedupe records.
+No data migration required. The AI base is already incorporated through `094c444`; provision owned Redis persistence, create the consumer group idempotently, then enable the route after Portal webhook activation and server-side secret retrieval. Rollback disables route/consumers without deleting streams or dedupe records.
 
 ## Open Questions
 
