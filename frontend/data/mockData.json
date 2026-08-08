@@ -1,0 +1,280 @@
+{
+  "schemaVersion": "1.0",
+  "meta": {
+    "source": "Equipo AgentSync — demo hackathon",
+    "environment": "simulado",
+    "purpose": "Datos de ejemplo para la demo B2B y P2P. El motor es agnóstico: cada agente es 'una entidad con objetivos'."
+  },
+  "agents": [
+    {
+      "agent_id": "agent-b2b-telar",
+      "entity_type": "empresa",
+      "display_name": "Telar Textil S.A.",
+      "personality": "Formal y directa. Prioriza costo por metro y estabilidad de suministro. No acepta precios que rompan su límite duro.",
+      "objectives": [
+        "Encontrar hasta 3 proveedores de tela orgánica bajo USD 4.50/metro",
+        "Pedir muestras físicas antes de firmar cualquier contrato",
+        "Cerrar contratos de suministro de 6 meses con pago a 60 días"
+      ],
+      "hard_limits": {
+        "max_unit_price_usd": 4.5,
+        "min_annual_volume_units": 20000,
+        "no_personal_data": true
+      },
+      "sensitive_defaults": [
+        "cualquier precio final",
+        "cualquier compromiso contractual"
+      ],
+      "tools": [
+        { "id": "crm", "name": "CRM simulado", "simulated": true, "notes": "Lista de leads y estado de cada negociación." },
+        { "id": "inventario", "name": "Inventario simulado", "simulated": true, "notes": "Consumo mensual estimado de tela." }
+      ],
+      "active": true
+    },
+    {
+      "agent_id": "agent-b2b-organiccotton",
+      "entity_type": "empresa",
+      "display_name": "OrganicCotton Supply",
+      "personality": "Comercial y flexible dentro de rangos. Ofrece descuentos por volumen. No comparte logística interna sin aprobación.",
+      "objectives": [
+        "Vender tela orgánica certificada GOTS con precio de partida de USD 4.80/metro",
+        "Conseguir al menos 2 clientes con contratos de 12 meses",
+        "Ofrecer descuento de hasta 8% para pedidos sobre 30.000 metros/año"
+      ],
+      "hard_limits": {
+        "min_unit_price_usd": 3.9,
+        "no_share_logistics": true
+      },
+      "sensitive_defaults": [
+        "cualquier precio final",
+        "detalles de logística y almacenes"
+      ],
+      "tools": [
+        { "id": "erp", "name": "ERP simulado", "simulated": true, "notes": "Precios y disponibilidad por lote." }
+      ],
+      "active": true
+    },
+    {
+      "agent_id": "agent-p2p-valentina",
+      "entity_type": "persona",
+      "display_name": "Valentina R. — vendedora de auto",
+      "personality": "Amable pero firme. Vende su auto usado al mejor precio posible y no quiere compartir dirección hasta tener un acuerdo.",
+      "objectives": [
+        "Vender mi auto usado sobre USD 8.000",
+        "Coordinarme para una prueba de manejo en zona norte de la ciudad",
+        "Cobrar en efectivo o transferencia bancaria"
+      ],
+      "hard_limits": {
+        "min_sale_price_usd": 8000,
+        "no_share_address_without_approval": true,
+        "no_share_phone_without_approval": true
+      },
+      "sensitive_defaults": [
+        "cualquier dato de contacto",
+        "dirección exacta",
+        "punto de encuentro físico"
+      ],
+      "tools": [
+        { "id": "avaluo", "name": "Avaluo simulado", "simulated": true, "notes": "Precio de referencia de mercado del vehículo." },
+        { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Horarios libres para prueba de manejo." }
+      ],
+      "active": true
+    },
+    {
+      "agent_id": "agent-p2p-carlos",
+      "entity_type": "persona",
+      "display_name": "Carlos M. — comprador",
+      "personality": "Práctico y escéptico. Busca un auto en buen estado dentro de su presupuesto y verifica cada detalle antes de avanzar.",
+      "objectives": [
+        "Comprar un auto usado del año 2019+ por menos de USD 8.500",
+        "Revisar historial de mantenimiento y kilometraje real",
+        "Cerrar en una semana, pagando en efectivo"
+      ],
+      "hard_limits": {
+        "max_budget_usd": 8500,
+        "min_vehicle_year": 2019
+      },
+      "sensitive_defaults": [
+        "cualquier dato de contacto"
+      ],
+      "tools": [
+        { "id": "presupuesto", "name": "Presupuesto personal", "simulated": true, "notes": "Capacidad máxima de pago y fecha de cierre." }
+      ],
+      "active": true
+    }
+  ],
+  "sessions": [
+    {
+      "session_id": "ses-b2b-001",
+      "segment": "B2B",
+      "agent_1_id": "agent-b2b-telar",
+      "agent_2_id": "agent-b2b-organiccotton",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "summary": "Telar Textil negocia precio de tela orgánica con OrganicCotton Supply",
+      "started_at": "2026-08-07T09:12:00Z",
+      "max_turns": 12,
+      "current_turn": 7,
+      "messages": [
+        {
+          "id": "msg-b2b-001",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Hola, represento a Telar Textil S.A. Buscamos proveedores de tela orgánica certificada para un contrato de 6 meses, volumen mínimo anual de 20.000 metros. ¿Podrían compartir su tarifa por metro?",
+          "sent_at": "2026-08-07T09:12:00Z"
+        },
+        {
+          "id": "msg-b2b-002",
+          "sender_agent_id": "agent-b2b-organiccotton",
+          "content": "Buen día. Somos OrganicCotton Supply, certificación GOTS vigente. Precio de partida: USD 4.80/metro con contratos de 12 meses. Para volúmenes sobre 30.000 metros/año ofrecemos hasta 8% de descuento.",
+          "sent_at": "2026-08-07T09:14:00Z"
+        },
+        {
+          "id": "msg-b2b-003",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "El precio de partida excede nuestro límite máximo de USD 4.50/metro. ¿Qué descuento por volumen aplicarían para 20.000 metros anuales?",
+          "sent_at": "2026-08-07T09:16:00Z"
+        },
+        {
+          "id": "msg-b2b-004",
+          "sender_agent_id": "agent-b2b-organiccotton",
+          "content": "Para 20.000 metros anuales podemos ofrecer un 4% de descuento, quedando en USD 4.60/metro. ¿Les interesa negociar el volumen mínimo para alcanzar el 8%?",
+          "sent_at": "2026-08-07T09:19:00Z"
+        },
+        {
+          "id": "msg-b2b-005",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Podríamos considerar ampliar a 30.000 metros si el precio final baja a USD 4.40/metro. Ese precio requiere aprobación de nuestro equipo comercial.",
+          "sent_at": "2026-08-07T09:22:00Z"
+        },
+        {
+          "id": "msg-b2b-006",
+          "sender_agent_id": "agent-b2b-organiccotton",
+          "content": "Aceptamos evaluar USD 4.40/metro por 30.000 metros anuales. Antes de confirmar, necesitamos firmar un acuerdo de confidencialidad y validar certificación GOTS de su lado.",
+          "sent_at": "2026-08-07T09:25:00Z"
+        },
+        {
+          "id": "msg-b2b-007",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Aceptamos el marco. Propuesta concreta: USD 4.40/metro, 30.000 metros anuales, contrato de 6 meses renovable, pago a 60 días.",
+          "sent_at": "2026-08-07T09:27:00Z",
+          "flagged": {
+            "category": "precio final",
+            "detail": "El precio final (USD 4.40) está dentro del límite duro pero coincide con la categoría sensible 'cualquier precio final'.",
+            "requires_human": true
+          }
+        }
+      ],
+      "pending_decision": {
+        "id": "dec-b2b-001",
+        "session_id": "ses-b2b-001",
+        "category": "precio final",
+        "summary": "Telar Textil propone cerrar en USD 4.40/metro, 30.000 metros anuales, 6 meses renovable, pago a 60 días.",
+        "proposal": "USD 4.40/metro por 30.000 metros/año, contrato 6 meses renovable, pago a 60 días",
+        "requested_by": "agent-b2b-telar",
+        "created_at": "2026-08-07T09:27:00Z",
+        "status": "PENDING"
+      }
+    },
+    {
+      "session_id": "ses-p2p-001",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-carlos",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "summary": "Valentina negocia la venta de su auto usado con Carlos",
+      "started_at": "2026-08-07T10:05:00Z",
+      "max_turns": 10,
+      "current_turn": 8,
+      "messages": [
+        {
+          "id": "msg-p2p-001",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Hola Carlos, vendo mi auto Hyundai 2021, 45.000 km, mantenimiento al día. Busco un precio sobre USD 8.000. ¿Te interesaría ver el historial?",
+          "sent_at": "2026-08-07T10:05:00Z"
+        },
+        {
+          "id": "msg-p2p-002",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "Me interesa. Mi presupuesto máximo es USD 8.500 y necesito que sea del año 2019 o más nuevo. ¿Podrías confirmar kilometraje real y últimos mantenimientos?",
+          "sent_at": "2026-08-07T10:08:00Z"
+        },
+        {
+          "id": "msg-p2p-003",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Kilometraje real 45.000 km. Mantenimiento en agencia cada 10.000 km. Tengo facturas de los últimos 3 años.",
+          "sent_at": "2026-08-07T10:10:00Z"
+        },
+        {
+          "id": "msg-p2p-004",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "Perfecto, cumple mi presupuesto. ¿Puedo agendar una prueba de manejo esta semana?",
+          "sent_at": "2026-08-07T10:12:00Z"
+        },
+        {
+          "id": "msg-p2p-005",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Sí. Estoy disponible el viernes por la tarde en la zona norte de la ciudad.",
+          "sent_at": "2026-08-07T10:14:00Z"
+        },
+        {
+          "id": "msg-p2p-006",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "¿Me compartes la dirección exacta o un punto de encuentro para coordinar?",
+          "sent_at": "2026-08-07T10:15:00Z"
+        },
+        {
+          "id": "msg-p2p-007",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Solo comparto mi dirección o teléfono después de confirmar el precio base de USD 8.000 y tu intención de compra.",
+          "sent_at": "2026-08-07T10:17:00Z"
+        },
+        {
+          "id": "msg-p2p-008",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "Confirmo intención de compra. Te ofrezco USD 7.900 en efectivo cerrando esta semana. Con eso, ¿me compartes tu dirección para la prueba de manejo del viernes?",
+          "sent_at": "2026-08-07T10:19:00Z",
+          "flagged": {
+            "category": "dirección exacta",
+            "detail": "Compartir la dirección implica un encuentro físico con un desconocido y requiere aprobación explícita del usuario.",
+            "requires_human": true
+          }
+        }
+      ],
+      "pending_decision": {
+        "id": "dec-p2p-001",
+        "session_id": "ses-p2p-001",
+        "category": "dirección exacta",
+        "summary": "Carlos acepta USD 7.900 en efectivo y pide la dirección de Valentina para una prueba de manejo el viernes.",
+        "proposal": "Compartir dirección y teléfono con Carlos para coordinar prueba de manejo",
+        "requested_by": "agent-p2p-valentina",
+        "created_at": "2026-08-07T10:19:00Z",
+        "status": "PENDING"
+      }
+    },
+    {
+      "session_id": "ses-b2b-002",
+      "segment": "B2B",
+      "agent_1_id": "agent-b2b-telar",
+      "agent_2_id": "agent-b2b-organiccotton",
+      "status": "SEARCHING",
+      "summary": "Telar Textil explora un segundo proveedor de algodón orgánico",
+      "started_at": "2026-08-07T08:40:00Z",
+      "max_turns": 12,
+      "current_turn": 0,
+      "messages": []
+    }
+  ],
+  "sensitive_categories": {
+    "default_required": [
+      { "id": "cat-contacto", "label": "Cualquier dato de contacto (teléfono, email)", "required": true, "enabled": true },
+      { "id": "cat-direccion", "label": "Dirección exacta", "required": true, "enabled": true },
+      { "id": "cat-ubicacion", "label": "Ubicación en tiempo real", "required": true, "enabled": true },
+      { "id": "cat-fecha", "label": "Cualquier compromiso de fecha", "required": false, "enabled": true }
+    ],
+    "editable": [
+      { "id": "cat-precio", "label": "Cualquier precio final", "required": false, "enabled": true },
+      { "id": "cat-monto-sobre", "label": "Montos sobre un valor definido por mí", "required": false, "enabled": false },
+      { "id": "cat-contrato", "label": "Cualquier compromiso contractual", "required": false, "enabled": true },
+      { "id": "cat-encuentro", "label": "Punto de encuentro físico", "required": false, "enabled": true }
+    ]
+  }
+}
