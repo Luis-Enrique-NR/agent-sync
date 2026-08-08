@@ -100,7 +100,15 @@ export default function HomePage() {
 
       {pending.length > 0 ? (
         <section className="rounded-2xl border border-[var(--warning)]/40 bg-[var(--surface)] p-6">
-          <h2 className="text-base font-semibold">Qué requiere tu atención</h2>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-semibold">Qué requiere tu atención</h2>
+            <Link
+              href="/bandeja"
+              className="text-sm text-[var(--accent)] hover:underline"
+            >
+              Abrir bandeja →
+            </Link>
+          </div>
           <ul className="mt-4 flex flex-col gap-3">
             {pending.map((session) => (
               <li key={session.session_id}>

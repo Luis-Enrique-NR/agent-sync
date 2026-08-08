@@ -40,6 +40,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/ecosistema" className="transition-colors hover:text-[var(--foreground)]">
               Ecosistema
             </Link>
+            <Link href="/bandeja" className="transition-colors hover:text-[var(--foreground)]">
+              Bandeja
+            </Link>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-[1080px] flex-1 px-6 pb-12 pt-7">
