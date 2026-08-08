@@ -34,6 +34,15 @@ docs/planificacion/1. Plan de acción generado.md
 
 El número es consecutivo **dentro de cada categoría**. Antes de crear un archivo, usa el siguiente número libre y evita renombrar documentos ya referenciados por otras ramas.
 
+## Consolidación de ramas
+
+Cuando se integran documentos históricos desde otra rama, se conserva su ruta y
+número original para no romper referencias. Por eso una categoría puede mostrar
+huecos temporales: el hueco identifica documentación que pertenece a otra línea
+de trabajo todavía no consolidada, no un documento que deba inventarse o
+renumerarse. Los documentos con el mismo nombre que ya tengan una versión más
+reciente en `main` no se duplican ni se reemplazan automáticamente.
+
 ## Contenido mínimo
 
 Cada documento debe indicar:
