@@ -234,6 +234,8 @@ class AgentProfile(StrictModel):
     interests: list[str] = Field(default_factory=list, max_length=20)
     capabilities: list[str] = Field(default_factory=list, max_length=20)
     status: AgentStatus = AgentStatus.AVAILABLE
+    price_range: dict[str, float] | None = None
+    logistics_preferences: list[str] = Field(default_factory=list, max_length=10)
 
 
 class AgentTurn(StrictModel):

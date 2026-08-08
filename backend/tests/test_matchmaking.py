@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 import pytest
 from sqlmodel import Session, select
 
+from ai.domain.models import AgentProfile, EntityType
 from matchmaking.service import find_matches
 from persistence.database import init_db, get_session
 from persistence.models import AgentProfileRow, NegotiationStateRow
@@ -29,6 +30,17 @@ def _create_agent(
     interests: list[str] | None = None,
     capabilities: list[str] | None = None,
 ) -> AgentProfileRow:
+    profile = AgentProfile(
+        agent_id=agent_id,
+        display_name=name,
+        entity_type=EntityType(entity),
+        public_description=f"test {name}",
+        personality="test",
+        objectives=["test"],
+        interests=interests or [],
+        capabilities=capabilities or [],
+        status=status,  # type: ignore[arg-type]
+    )
     row = AgentProfileRow(
         agent_id=agent_id,
         user_id=uuid4(),
@@ -38,7 +50,7 @@ def _create_agent(
         public_description=f"test {name}",
         interests=interests or [],
         capabilities=capabilities or [],
-        raw_profile={"agent_id": str(agent_id), "display_name": name},
+        raw_profile=profile.model_dump(mode="json"),
     )
     session.add(row)
     session.commit()
