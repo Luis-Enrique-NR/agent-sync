@@ -13,6 +13,7 @@ from transport.bus import DurableEventBus
 from transport.config import TransportSettings
 from transport.portal import WebhookSecretProvider
 from transport.webhooks import normalize_event, verify_portal_signature
+from eda.trace import trace
 
 
 def build_portal_webhook_router(
@@ -50,6 +51,7 @@ def build_portal_webhook_router(
                 {"detail": "malformed body"},
                 status_code=status.HTTP_400_BAD_REQUEST,
             )
+        trace("ADMISSION", f"signature verified — normalizing event type={payload.get('type', 'unknown')}")
         try:
             envelope = normalize_event(payload)
         except ValueError as exc:
@@ -61,6 +63,7 @@ def build_portal_webhook_router(
             return Response(status_code=status.HTTP_200_OK)
         try:
             await bus.accept(envelope)
+            trace("ADMISSION", f"envelope accepted — event_id={envelope.event_id} channel={envelope.channel}")
         except Exception:
             return JSONResponse(
                 {"detail": "durable bus unavailable"},

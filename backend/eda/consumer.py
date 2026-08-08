@@ -12,6 +12,7 @@ import logging
 from typing import Protocol
 
 from transport.bus import DurableEventBus, EventDelivery
+from eda.trace import trace
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ async def consume_forever(
                 await asyncio.sleep(poll_interval_seconds)
                 continue
 
+            trace("WORKER_POLL", f"received delivery {delivery.message_id} event={delivery.envelope.event_id} type={delivery.envelope.event_type}")
             try:
                 await handler.handle(delivery)
             except asyncio.CancelledError:
@@ -65,6 +67,7 @@ async def consume_forever(
             else:
                 try:
                     await bus.ack(delivery)
+                    trace("BUS_ACK", f"acked delivery {delivery.message_id}")
                 except Exception:
                     logger.exception("bus.ack failed for %s", delivery.message_id)
     except asyncio.CancelledError:

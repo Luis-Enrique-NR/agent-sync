@@ -19,6 +19,7 @@ from persistence.database import get_session
 from persistence.models import NegotiationStateRow
 from persistence.repository import write_audit
 from transport.bus import EventDelivery
+from eda.trace import trace
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ async def handle_message_published(delivery: EventDelivery) -> None:
     author = envelope.message.author_id if envelope.message else None
 
     logger.info("message.published  event=%s channel=%s seq=%s", envelope.event_id, channel, seq)
+    trace("HANDLER_LOOKUP", f"querying negotiation_states by portal_channel_id={channel}")
 
     session = get_session()
     try:
@@ -67,6 +69,7 @@ async def handle_message_published(delivery: EventDelivery) -> None:
             payload=envelope.model_dump(mode="json"),
             session=session,
         )
+        trace("AUDIT_WRITE", f"TURN_PUBLISHED session={state_row.session_id if state_row else 'none'} channel={channel}")
         session.commit()
     except Exception:
         session.rollback()
