@@ -1,0 +1,4 @@
+.atl/
+.env
+.env.*
+!.env.example
