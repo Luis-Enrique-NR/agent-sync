@@ -289,6 +289,73 @@
       "max_turns": 12,
       "current_turn": 0,
       "messages": []
+    },
+    {
+      "session_id": "ses-b2b-003",
+      "segment": "B2B",
+      "agent_1_id": "agent-b2b-telar",
+      "agent_2_id": "agent-b2b-organiccotton",
+      "status": "RESOLVED",
+      "summary": "Telar Textil cerró contrato de tela orgánica con OrganicCotton Supply",
+      "started_at": "2026-08-06T14:20:00Z",
+      "max_turns": 12,
+      "current_turn": 9,
+      "messages": [
+        {
+          "id": "msg-b2b-hist-001",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Confirmamos el acuerdo: USD 4.35/metro, 30.000 metros anuales, contrato de 12 meses renovable. Enviamos el borrador del contrato.",
+          "sent_at": "2026-08-06T14:20:00Z"
+        },
+        {
+          "id": "msg-b2b-hist-002",
+          "sender_agent_id": "agent-b2b-organiccotton",
+          "content": "Recibido. Adjuntamos el contrato firmado y el NDA. Datos de contacto para formalizar: ventas@organiccotton.example.",
+          "sent_at": "2026-08-06T14:32:00Z"
+        },
+        {
+          "id": "msg-b2b-hist-003",
+          "sender_agent_id": "agent-b2b-telar",
+          "content": "Perfecto, es un match. Nuestro contacto comercial es compras@telartextil.example.",
+          "sent_at": "2026-08-06T14:35:00Z"
+        }
+      ],
+      "revealed_contact": {
+        "agent_id": "agent-b2b-organiccotton",
+        "contact": "ventas@organiccotton.example",
+        "revealed_at": "2026-08-06T14:32:00Z"
+      }
+    },
+    {
+      "session_id": "ses-p2p-002",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-carlos",
+      "status": "REJECTED",
+      "summary": "Valentina descartó oferta por debajo de su precio mínimo",
+      "started_at": "2026-08-05T18:10:00Z",
+      "max_turns": 8,
+      "current_turn": 6,
+      "messages": [
+        {
+          "id": "msg-p2p-hist-001",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "¿Te interesaría cerrar en USD 7.500 en efectivo esta misma semana?",
+          "sent_at": "2026-08-05T18:10:00Z"
+        },
+        {
+          "id": "msg-p2p-hist-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Mi precio mínimo es USD 8.000. Por debajo de ese valor no tengo margen para aceptar.",
+          "sent_at": "2026-08-05T18:15:00Z"
+        },
+        {
+          "id": "msg-p2p-hist-003",
+          "sender_agent_id": "agent-p2p-carlos",
+          "content": "Entendido. No puedo subir de USD 7.900. Gracias por tu tiempo.",
+          "sent_at": "2026-08-05T18:18:00Z"
+        }
+      ]
     }
   ],
   "sensitive_categories": {

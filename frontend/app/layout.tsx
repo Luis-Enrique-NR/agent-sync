@@ -43,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <Link href="/bandeja" className="transition-colors hover:text-[var(--foreground)]">
               Bandeja
             </Link>
+            <Link href="/historial" className="transition-colors hover:text-[var(--foreground)]">
+              Historial
+            </Link>
           </nav>
         </header>
         <main className="mx-auto w-full max-w-[1080px] flex-1 px-6 pb-12 pt-7">
