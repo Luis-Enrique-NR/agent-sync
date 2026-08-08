@@ -1,0 +1,46 @@
+schema: spec-driven
+
+context: |
+  Project: agent-sync, an event-oriented agent negotiation MVP.
+  Stack target from PRD/SRD: Next.js/React frontend; Python backend; LangChain/LangGraph AI layer; Portal SDK middleware.
+  Current repository contains PRD.md, SRD.md, README.md, and no implementation or automated test runner.
+  Architecture must remain entity-agnostic for B2B and P2P, with deterministic guardrails outside the LLM.
+  Existing Spanish project decision documents are source context; new SDD artifacts are English.
+  Delivery: interactive, ask-on-risk; review budget: 400 lines; do not implement transport/integration in initialization.
+
+strict_tdd: false
+
+testing:
+  strict_tdd: false
+  runner: none
+  command: ""
+  unit: unavailable
+  integration: unavailable
+  e2e: unavailable
+  coverage: unavailable
+  linter: unavailable
+  type_checker: unavailable
+  formatter: unavailable
+
+rules:
+  proposal:
+    - Include rollback plans for risky changes.
+    - Respect the 400-line review budget and ask before high-risk scope expansion.
+  specs:
+    - Use Given/When/Then scenarios and RFC 2119 keywords.
+    - Preserve the entity-agnostic B2B/P2P model and deterministic guardrail requirement.
+  design:
+    - Document architecture decisions with rationale and sequence diagrams for complex flows.
+  tasks:
+    - Group tasks by phase with hierarchical numbering; keep each task completable in one session.
+  apply:
+    guidelines:
+      - Follow the existing PRD/SRD conventions and do not implement transport/integration unless explicitly scoped.
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas.
