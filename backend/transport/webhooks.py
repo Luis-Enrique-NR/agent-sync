@@ -6,9 +6,8 @@ import hmac
 from datetime import datetime, timezone
 from hashlib import sha256
 
+from ai.integration.events import SUPPORTED_INTEGRATION_EVENTS
 from transport.models import PortalEvent, TransportEnvelopeV1
-
-_SUPPORTED_EVENTS = frozenset({"message.published", "message.retracted"})
 
 
 def _parse_signature_header(header: str | None) -> tuple[int, str] | None:
@@ -49,13 +48,15 @@ def verify_portal_signature(
 def normalize_event(data: dict) -> TransportEnvelopeV1 | None:
     """Turn a verified Portal payload into a transport envelope, or None if unsupported."""
     event = PortalEvent.model_validate(data)
-    if event.type not in _SUPPORTED_EVENTS:
+    if event.type not in SUPPORTED_INTEGRATION_EVENTS:
         return None
     published = event.type == "message.published"
     if published and event.message is None:
         raise ValueError("published event requires a message")
-    if not published and event.message is not None:
+    if event.type == "message.retracted" and event.message is not None:
         raise ValueError("retracted event must have a null message")
+    if not published and event.type != "message.retracted" and event.message is not None:
+        raise ValueError("lifecycle event must not contain a message")
     return TransportEnvelopeV1(
         event_id=event.id,
         event_type=event.type,
@@ -63,5 +64,5 @@ def normalize_event(data: dict) -> TransportEnvelopeV1 | None:
         environment=event.environment,
         channel=event.channel,
         message=event.message if published else None,
-        retracted=not published,
+        retracted=event.type == "message.retracted",
     )

@@ -214,7 +214,7 @@ type logs\eda_e2e_trace.log        # Windows (PowerShell)
 
 ## 8. Trabajo pendiente
 
-- Activar `agent.registered` / `intent.published` como eventos reales del bus (hoy están limitados por `TransportEnvelopeV1.event_type` Literal)
+- `agent.registered`, `intent.published`, `negotiation.failed` y `negotiation.rejected` ya son admitidos por el catálogo de integración y llegan al dispatcher EDA; queda validar en Portal el campo de identidad del agente que acompaña cada payload.
 - Integrar `seed_private_resolutions()` en el handler para resolver PII post-aprobación
 - Implementar `resume_session()` desde la bandeja de decisiones humanas
 - Motor de matchmaking: cruzar `interests` ∩ `capabilities` entre agentes `SEARCHING`
