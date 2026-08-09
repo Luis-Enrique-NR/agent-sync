@@ -27,7 +27,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v7";
+const STORAGE_KEY = "agentsync-demo-v8";
 
 export const INCOMING_DECISION_DELAY_MS = 5_500;
 
@@ -87,6 +87,7 @@ interface IncomingDecisionScenario {
   decisionSummary: string;
   proposal: string;
   flaggedDetail: string;
+  matchedRuleId: string;
   valueRef?: string;
   messages: Array<{
     sender: "owner" | "counterpart";
@@ -116,6 +117,7 @@ const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
       "Aceptar USD 8.150 y reservar el vehículo durante 24 horas mientras se verifica la transferencia",
     flaggedDetail:
       "El precio cumple tu mínimo, pero aceptar la oferta crea un compromiso de reserva.",
+    matchedRuleId: "esc-val-price",
     messages: [
       {
         sender: "owner",
@@ -191,179 +193,179 @@ const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
     ],
   },
   {
-    key: "mateo-meeting-point",
-    counterpartId: "agent-p2p-mateo",
-    ownerObjectiveId: "obj-valentina-prueba",
-    counterpartObjectiveId: "obj-mateo-compra",
-    summary: "Valentina coordina una inspección con Mateo",
-    category: "Confirmar lugar de encuentro",
+    key: "laura-tutoring-schedule",
+    counterpartId: "agent-p2p-laura",
+    ownerObjectiveId: "obj-valentina-tutorias",
+    counterpartObjectiveId: "obj-laura-tutor",
+    summary: "Laura propone un horario fijo para las clases de matemática",
+    category: "Confirmar horario semanal",
     decisionSummary:
-      "Mateo propone revisar el auto con su mecánico el sábado y solicita confirmar un taller en la zona norte.",
+      "Laura acepta la tarifa de PEN 50 por hora y propone reservar martes y jueves a las 18:30 durante dos meses.",
     proposal:
-      "Confirmar el taller público como punto de encuentro para la inspección del sábado",
+      "Reservar dos horarios semanales para clases virtuales durante los próximos dos meses",
     flaggedDetail:
-      "Confirmar un encuentro físico requiere tu aprobación, aunque sea en un lugar público.",
-    valueRef: "meeting_ref_north_workshop",
+      "El plan cumple tus condiciones, pero bloquear dos horarios recurrentes requiere tu confirmación.",
+    matchedRuleId: "esc-val-schedule",
     messages: [
       {
         sender: "counterpart",
         content:
-          "Busco un vehículo familiar y me interesa revisar el Hyundai con un mecánico independiente.",
+          "Busco refuerzo de matemática para dos estudiantes de secundaria, dos veces por semana.",
         intent: "QUESTION",
       },
       {
         sender: "owner",
         content:
-          "Se puede coordinar una inspección. El vehículo está disponible el fin de semana en la zona norte.",
-        intent: "ACCEPT",
+          "Valentina tiene tres cupos y puede cubrir álgebra, geometría y preparación de exámenes.",
+        intent: "OFFER",
       },
       {
         sender: "counterpart",
         content:
-          "Mi mecánico puede el sábado por la mañana. Prefiero un taller público y pagar la revisión por mi cuenta.",
+          "Podemos martes y jueves después de las 18:00. Preferimos clases virtuales y seguimiento semanal.",
         intent: "OFFER",
       },
       {
         sender: "owner",
         content:
-          "Eso respeta las condiciones configuradas. Puedo evaluar talleres sin compartir una dirección privada.",
-        intent: "ACCEPT",
+          "La tarifa es PEN 50 por hora e incluye material de práctica. Es compatible con esos horarios.",
+        intent: "COUNTER_OFFER",
       },
       {
         sender: "counterpart",
         content:
-          "Propongo el taller de la avenida principal a las 10:30. ¿Confirmamos el encuentro allí?",
+          "Acepto la tarifa. ¿Reservamos martes y jueves a las 18:30 durante dos meses?",
         intent: "QUESTION",
       },
     ],
     decisions: [
       {
         actor: "counterpart",
-        category: "Inspección independiente",
+        category: "Cantidad de alumnos",
         summary:
-          "Mateo decidió asumir el costo de una revisión mecánica externa.",
+          "Laura confirmó que las clases serán para dos estudiantes.",
         status: "APPROVED",
       },
       {
         actor: "owner",
-        category: "Disponibilidad",
+        category: "Cupos disponibles",
         summary:
-          "Valentina permitió explorar horarios durante el fin de semana.",
+          "Valentina permitió que su agente ofreciera dos de sus tres cupos.",
         status: "APPROVED",
       },
       {
         actor: "counterpart",
-        category: "Horario de inspección",
+        category: "Modalidad de clase",
         summary:
-          "Mateo confirmó disponibilidad para el sábado por la mañana.",
+          "Laura eligió modalidad virtual con seguimiento semanal.",
         status: "APPROVED",
       },
       {
         actor: "owner",
-        category: "Proteger dirección privada",
+        category: "Tarifa propuesta",
         summary:
-          "Valentina mantuvo su dirección oculta y pidió usar un punto público.",
-        status: "REPLACED",
+          "Valentina autorizó negociar desde PEN 45 y proponer PEN 50 por hora.",
+        status: "APPROVED",
       },
       {
         actor: "counterpart",
-        category: "Taller propuesto",
+        category: "Duración del plan",
         summary:
-          "Mateo eligió un taller en zona norte que acepta inspecciones externas.",
+          "Laura propuso mantener las clases durante dos meses.",
         status: "APPROVED",
       },
     ],
     continuation: [
-      "Confirmo el taller público para el sábado a las 10:30. No compartiré una dirección privada.",
-      "De acuerdo. Mi mecánico y yo llegaremos al taller a la hora acordada.",
+      "Confirmo martes y jueves a las 18:30 durante dos meses, comenzando con una clase diagnóstica.",
+      "Perfecto. Enviaré los temas actuales de ambos estudiantes antes de la primera clase.",
     ],
   },
   {
-    key: "carlos-contact",
-    counterpartId: "agent-p2p-carlos",
-    ownerObjectiveId: "obj-valentina-pago",
-    counterpartObjectiveId: "obj-carlos-cierre",
-    summary: "Carlos solicita el contacto para cerrar la compra",
-    category: "Compartir teléfono",
+    key: "diego-cardboard-supply",
+    counterpartId: "agent-p2p-diego-carton",
+    ownerObjectiveId: "obj-valentina-carton",
+    counterpartObjectiveId: "obj-diego-carton",
+    summary: "Diego presenta una oferta mensual de cartón corrugado",
+    category: "Confirmar compra recurrente",
     decisionSummary:
-      "Carlos mejoró su oferta a USD 8.050 y solicita un teléfono para coordinar el pago y la prueba de manejo.",
+      "Diego ofrece 300 planchas mensuales a PEN 2,60 por unidad con entrega incluida y pide un compromiso inicial de tres meses.",
     proposal:
-      "Compartir el teléfono protegido con Carlos después de aceptar la oferta de USD 8.050",
+      "Aceptar el suministro de 300 planchas mensuales durante tres meses, sujeto a validar las muestras",
     flaggedDetail:
-      "El teléfono es un dato privado y solo puede revelarse con tu permiso explícito.",
-    valueRef: "contact_ref_valentina_phone",
+      "La oferta respeta el precio máximo, pero crea una compra recurrente que requiere tu confirmación.",
+    matchedRuleId: "esc-val-cardboard",
     messages: [
-      {
-        sender: "counterpart",
-        content:
-          "Revisé el valor de mercado y puedo mejorar mi propuesta si el historial está completo.",
-        intent: "COUNTER_OFFER",
-      },
       {
         sender: "owner",
         content:
-          "El historial está completo. El precio mínimo sigue siendo USD 8.000.",
-        intent: "COUNTER_OFFER",
+          "Busco 300 planchas mensuales de cartón corrugado de doble pared con entrega local.",
+        intent: "QUESTION",
       },
       {
         sender: "counterpart",
         content:
-          "Puedo ofrecer USD 8.050 en efectivo y cerrar esta semana.",
+          "Puedo ofrecer ese volumen a PEN 2,75 por plancha, con la entrega incluida.",
         intent: "OFFER",
       },
       {
         sender: "owner",
         content:
-          "La oferta cumple el mínimo. Antes de compartir contacto debo pedir autorización a Valentina.",
-        intent: "ACCEPT",
+          "El precio entra en el límite. Necesito validar resistencia y medidas antes de acordar recurrencia.",
+        intent: "COUNTER_OFFER",
       },
       {
         sender: "counterpart",
         content:
-          "Confirmo intención de compra. ¿Podemos intercambiar teléfono para coordinar el pago?",
+          "Enviaré diez muestras sin costo. Si se aprueban, reduzco el precio a PEN 2,60 por plancha.",
+        intent: "COUNTER_OFFER",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Para mantener PEN 2,60 necesito un compromiso inicial de tres meses. ¿Lo confirmamos sujeto a las muestras?",
         intent: "QUESTION",
       },
     ],
     decisions: [
       {
-        actor: "counterpart",
-        category: "Revisar valor de mercado",
+        actor: "owner",
+        category: "Volumen requerido",
         summary:
-          "Carlos permitió que su agente consultara precios de referencia.",
+          "Valentina fijó el pedido en 300 planchas mensuales.",
         status: "APPROVED",
       },
       {
         actor: "owner",
-        category: "Mantener precio mínimo",
+        category: "Precio máximo",
         summary:
-          "Valentina conservó USD 8.000 como límite de venta.",
+          "Valentina estableció un máximo de PEN 2,80 por plancha.",
         status: "APPROVED",
       },
       {
         actor: "counterpart",
-        category: "Mejorar la oferta",
+        category: "Muestras de calidad",
         summary:
-          "Carlos subió su propuesta hasta USD 8.050 para cerrar esta semana.",
+          "Diego autorizó enviar diez muestras y la ficha técnica sin costo.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Descuento por volumen",
+        summary:
+          "Diego redujo su propuesta de PEN 2,75 a PEN 2,60 por plancha.",
         status: "REPLACED",
       },
       {
-        actor: "owner",
-        category: "Aceptar efectivo",
-        summary:
-          "Valentina permitió continuar con pago en efectivo sujeto a verificación.",
-        status: "APPROVED",
-      },
-      {
         actor: "counterpart",
-        category: "Intención de compra",
+        category: "Condición de recurrencia",
         summary:
-          "Carlos confirmó que está listo para avanzar si puede coordinar directamente.",
+          "Diego pidió un compromiso mínimo de tres meses para mantener el descuento.",
         status: "APPROVED",
       },
     ],
     continuation: [
-      "Acepto la oferta de USD 8.050 y autorizo compartir mi teléfono para coordinar.",
-      "Perfecto. Te contactaré únicamente para organizar el pago y la prueba.",
+      "Acepto el acuerdo inicial de tres meses, sujeto a que las muestras cumplan la calidad indicada.",
+      "Perfecto. Mantendré el precio de PEN 2,60 y programaré el primer lote cuando apruebes las muestras.",
     ],
   },
 ];
@@ -438,9 +440,7 @@ function buildIncomingDecisionSession(
       proposal: scenario.proposal,
       requested_by: DEMO_OWNER_AGENT_ID,
       reasons: [scenario.valueRef ? "MANDATORY_PERSONAL_DATA" : "USER_RULE"],
-      matched_rule_ids: [
-        scenario.valueRef ? "esc-val-phone" : "esc-val-price",
-      ],
+      matched_rule_ids: [scenario.matchedRuleId],
       created_at: new Date(baseMs).toISOString(),
       status: "PENDING",
     },

@@ -128,62 +128,68 @@
     },
     {
       "agent_id": "agent-p2p-valentina",
-      "display_name": "Valentina R. — vendedora de auto",
+      "display_name": "Valentina R. — agente personal",
       "entity_type": "person",
-      "public_description": "Vende su auto usado Hyundai 2021 en zona norte de la ciudad.",
-      "personality": "Amable pero firme. Vende su auto usado al mejor precio posible y no quiere compartir dirección hasta tener un acuerdo.",
+      "public_description": "Gestiona objetivos personales de venta, servicios profesionales y abastecimiento.",
+      "personality": "Clara y cuidadosa. Negocia cada objetivo con sus propias condiciones y pide confirmación antes de crear compromisos.",
       "objectives": [
-        "Vender mi auto usado sobre USD 8.000",
-        "Coordinarme para una prueba de manejo en zona norte de la ciudad",
-        "Cobrar en efectivo o transferencia bancaria"
+        "Vender mi Hyundai 2021 por al menos USD 8.000",
+        "Conseguir 3 alumnos para clases particulares de matemática",
+        "Comprar 300 planchas mensuales de cartón corrugado"
       ],
       "objective_contexts": [
         {
           "objective_id": "obj-valentina-venta",
-          "goal": "Vender mi auto usado sobre USD 8.000",
+          "goal": "Vender mi Hyundai 2021 por al menos USD 8.000",
           "seeks": ["vender auto usado", "comprador de auto usado", "pago verificable", "interés en Hyundai 2021"],
           "offers": ["venta de auto usado", "Hyundai 2021", "historial de mantenimiento", "documentación al día"],
           "negotiation_context": "El auto está en la zona norte. El precio mínimo es USD 8.000 y se prioriza una venta ágil a un comprador verificado."
         },
         {
-          "objective_id": "obj-valentina-prueba",
-          "goal": "Coordinarme para una prueba de manejo en zona norte de la ciudad",
-          "seeks": ["prueba de manejo", "comprador verificado", "disponibilidad el fin de semana"],
-          "offers": ["pruebas de manejo", "horarios de fin de semana"],
-          "negotiation_context": "La dirección exacta y el teléfono solo pueden compartirse después de que Valentina lo apruebe."
+          "objective_id": "obj-valentina-tutorias",
+          "goal": "Conseguir 3 alumnos para clases particulares de matemática",
+          "seeks": ["alumnos de secundaria", "familias que buscan tutor", "horarios compatibles", "clases recurrentes"],
+          "offers": ["clases de matemática", "refuerzo escolar", "preparación de exámenes", "modalidad virtual o presencial"],
+          "negotiation_context": "Valentina puede atender hasta 3 alumnos de secundaria o nivel preuniversitario. La tarifa mínima es PEN 45 por hora y los horarios deben confirmarse antes de cerrar un plan recurrente."
         },
         {
-          "objective_id": "obj-valentina-pago",
-          "goal": "Cobrar en efectivo o transferencia bancaria",
-          "seeks": ["cobro en efectivo", "transferencia verificable"],
-          "offers": ["cierre rápido", "documentación del vehículo"],
-          "negotiation_context": "No aceptar cuotas ni métodos de pago sin verificación. Confirmar con Valentina antes de asumir un compromiso final."
+          "objective_id": "obj-valentina-carton",
+          "goal": "Comprar 300 planchas mensuales de cartón corrugado",
+          "seeks": ["proveedor de cartón corrugado", "planchas de doble pared", "entrega mensual", "calidad uniforme"],
+          "offers": ["compra recurrente", "pedido de 300 planchas", "pago contra entrega", "relación de largo plazo"],
+          "negotiation_context": "Se requieren 300 planchas de cartón corrugado de doble pared cada mes, con entrega local. Priorizar muestras verificables y no superar PEN 2,80 por plancha sin autorización."
         }
       ],
       "interests": [
         "vender auto usado",
-        "cobro en efectivo",
-        "prueba de manejo"
+        "conseguir alumnos de matemática",
+        "comprar cartón corrugado"
       ],
       "capabilities": [
         "venta de auto usado",
-        "pruebas de manejo",
-        "historial de mantenimiento"
+        "clases particulares de matemática",
+        "compra recurrente de embalaje"
       ],
       "hard_limits": [
-        { "key": "min_sale_price_usd", "operator": "gte", "value": 8000, "unit": "usd" }
+        { "key": "min_sale_price_usd", "operator": "gte", "value": 8000, "unit": "usd" },
+        { "key": "min_tutoring_rate_pen", "operator": "gte", "value": 45, "unit": "pen/hora" },
+        { "key": "max_cardboard_unit_price_pen", "operator": "lte", "value": 2.8, "unit": "pen/plancha" }
       ],
       "never_disclose": ["PHONE", "EXACT_ADDRESS", "LIVE_LOCATION"],
       "escalation_rules": [
         { "rule_id": "esc-val-address", "rule_type": "SHARE_PERSONAL_DATA", "categories": ["EXACT_ADDRESS"], "enabled": true },
-        { "rule_id": "esc-val-phone", "rule_type": "SHARE_PERSONAL_DATA", "categories": ["PHONE"], "enabled": true }
+        { "rule_id": "esc-val-phone", "rule_type": "SHARE_PERSONAL_DATA", "categories": ["PHONE"], "enabled": true },
+        { "rule_id": "esc-val-price", "rule_type": "ANY_FINAL_PRICE", "categories": [], "enabled": true },
+        { "rule_id": "esc-val-schedule", "rule_type": "COMMIT_DATE", "categories": [], "enabled": true },
+        { "rule_id": "esc-val-cardboard", "rule_type": "FINAL_AGREEMENT", "categories": [], "enabled": true }
       ],
       "status": "BUSY",
-      "price_range": { "min": 8000 },
-      "logistics_preferences": ["zona norte"],
+      "price_range": null,
+      "logistics_preferences": ["zona norte", "modalidad virtual", "entrega local"],
       "tools": [
         { "id": "avaluo", "name": "Avaluo simulado", "simulated": true, "notes": "Precio de referencia de mercado del vehículo." },
-        { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Horarios libres para prueba de manejo." }
+        { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Horarios libres para clases particulares." },
+        { "id": "inventario", "name": "Consumo de embalaje", "simulated": true, "notes": "Demanda mensual estimada de cartón corrugado." }
       ]
     },
     {
@@ -315,6 +321,76 @@
       "logistics_preferences": ["zona norte", "fin de semana"],
       "tools": [
         { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Coordina inspección y prueba de manejo." }
+      ]
+    },
+    {
+      "agent_id": "agent-p2p-laura",
+      "display_name": "Laura P. — busca profesora de matemática",
+      "entity_type": "person",
+      "public_description": "Busca refuerzo de matemática para dos estudiantes de secundaria.",
+      "personality": "Organizada y directa. Prioriza continuidad, explicaciones claras y seguimiento del avance.",
+      "objectives": [
+        "Contratar clases de matemática para dos estudiantes",
+        "Acordar dos sesiones semanales durante dos meses"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-laura-tutor",
+          "goal": "Contratar clases de matemática para dos estudiantes",
+          "seeks": ["profesora de matemática", "refuerzo de secundaria", "clases recurrentes", "modalidad virtual"],
+          "offers": ["dos alumnos", "pago semanal", "horario estable"],
+          "negotiation_context": "Laura busca clases los martes y jueves después de las 18:00. Puede pagar hasta PEN 55 por hora por estudiante."
+        }
+      ],
+      "interests": ["clases de matemática", "refuerzo escolar", "tutorías virtuales"],
+      "capabilities": ["dos alumnos", "pago semanal", "horario estable"],
+      "hard_limits": [
+        { "key": "max_tutoring_rate_pen", "operator": "lte", "value": 55, "unit": "pen/hora" }
+      ],
+      "never_disclose": ["PHONE"],
+      "escalation_rules": [
+        { "rule_id": "esc-laura-schedule", "rule_type": "COMMIT_DATE", "categories": [], "enabled": true }
+      ],
+      "status": "AVAILABLE",
+      "price_range": { "min": 45, "max": 55 },
+      "logistics_preferences": ["modalidad virtual", "martes y jueves"],
+      "tools": [
+        { "id": "calendario", "name": "Calendario familiar", "simulated": true, "notes": "Disponibilidad de los estudiantes." }
+      ]
+    },
+    {
+      "agent_id": "agent-p2p-diego-carton",
+      "display_name": "Diego A. — proveedor de embalaje",
+      "entity_type": "person",
+      "public_description": "Distribuye cartón corrugado de doble pared con entregas locales programadas.",
+      "personality": "Preciso y comercial. Negocia por volumen, frecuencia y condiciones de entrega.",
+      "objectives": [
+        "Vender lotes recurrentes de cartón corrugado",
+        "Consolidar entregas mensuales en la ciudad"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-diego-carton",
+          "goal": "Vender lotes recurrentes de cartón corrugado",
+          "seeks": ["comprador recurrente", "pedido mínimo de 250 planchas", "entrega programada"],
+          "offers": ["cartón corrugado doble pared", "muestras de calidad", "entrega mensual", "descuento por volumen"],
+          "negotiation_context": "Diego ofrece planchas desde PEN 2,60 por unidad para pedidos de 300 o más, con entrega mensual incluida."
+        }
+      ],
+      "interests": ["venta de cartón corrugado", "pedidos recurrentes", "entrega local"],
+      "capabilities": ["cartón doble pared", "muestras", "entrega mensual"],
+      "hard_limits": [
+        { "key": "min_cardboard_unit_price_pen", "operator": "gte", "value": 2.6, "unit": "pen/plancha" }
+      ],
+      "never_disclose": ["PHONE", "EXACT_ADDRESS"],
+      "escalation_rules": [
+        { "rule_id": "esc-diego-contract", "rule_type": "FINAL_AGREEMENT", "categories": [], "enabled": true }
+      ],
+      "status": "AVAILABLE",
+      "price_range": { "min": 2.6, "max": 3.1 },
+      "logistics_preferences": ["entrega local", "pedido mensual"],
+      "tools": [
+        { "id": "inventario", "name": "Inventario de cartón", "simulated": true, "notes": "Stock y fechas de entrega disponibles." }
       ]
     }
   ],
@@ -543,11 +619,206 @@
       ]
     },
     {
+      "session_id": "ses-p2p-math-001",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-laura",
+      "agent_1_objective_id": "obj-valentina-tutorias",
+      "agent_2_objective_id": "obj-laura-tutor",
+      "initiator_id": "agent-p2p-laura",
+      "status": "ACTIVE",
+      "summary": "Valentina ofrece clases particulares de matemática a la familia de Laura",
+      "started_at": "2026-08-08T14:00:00Z",
+      "max_turns": 12,
+      "current_turn": 6,
+      "matchmaking": {
+        "score": 0.91,
+        "ic_score": 0.94,
+        "logistics_score": 0.87,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.92, "b_to_a": 0.9 },
+        "channel_id": "ch_match_math_valentina_laura",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-math-001",
+          "sender_agent_id": "agent-p2p-laura",
+          "content": "Busco refuerzo de matemática para dos estudiantes de secundaria, idealmente dos veces por semana. ¿Qué niveles puede cubrir Valentina?",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T14:00:00Z"
+        },
+        {
+          "id": "msg-math-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Puede trabajar álgebra, geometría y preparación de exámenes de secundaria. Tiene tres cupos disponibles.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T14:02:00Z"
+        },
+        {
+          "id": "msg-math-003",
+          "sender_agent_id": "agent-p2p-laura",
+          "content": "Los estudiantes están en tercero y quinto. Podemos martes y jueves después de las 18:00 y preferimos modalidad virtual.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T14:04:00Z"
+        },
+        {
+          "id": "msg-math-004",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "La modalidad virtual funciona. La tarifa es PEN 50 por hora e incluye material de práctica y seguimiento semanal.",
+          "intent": "COUNTER_OFFER",
+          "numeric_terms": [{ "key": "tutoring_rate_pen", "value": 50, "unit": "pen/hora" }],
+          "sent_at": "2026-08-08T14:06:00Z"
+        },
+        {
+          "id": "msg-math-005",
+          "sender_agent_id": "agent-p2p-laura",
+          "content": "La tarifa está dentro del presupuesto. ¿Podemos empezar con una clase diagnóstica y luego confirmar el plan de dos meses?",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T14:08:00Z"
+        },
+        {
+          "id": "msg-math-006",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Sí, puedo proponer una clase diagnóstica de 60 minutos sin comprometer todavía el horario recurrente.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T14:10:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-math-levels",
+          "agent_id": "agent-p2p-laura",
+          "category": "Nivel de los estudiantes",
+          "summary": "Laura confirmó que necesita refuerzo para tercero y quinto de secundaria.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T14:00:00Z",
+          "decided_at": "2026-08-08T14:01:00Z"
+        },
+        {
+          "decision_id": "dec-math-rate",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Tarifa por hora",
+          "summary": "Valentina autorizó proponer PEN 50 por hora con material incluido.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T14:05:00Z",
+          "decided_at": "2026-08-08T14:06:00Z"
+        },
+        {
+          "decision_id": "dec-math-diagnostic",
+          "agent_id": "agent-p2p-laura",
+          "category": "Clase diagnóstica",
+          "summary": "Laura eligió comenzar con una sesión diagnóstica antes de contratar el plan completo.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T14:08:00Z",
+          "decided_at": "2026-08-08T14:09:00Z"
+        }
+      ]
+    },
+    {
+      "session_id": "ses-p2p-cardboard-001",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-diego-carton",
+      "agent_1_objective_id": "obj-valentina-carton",
+      "agent_2_objective_id": "obj-diego-carton",
+      "initiator_id": "agent-p2p-valentina",
+      "status": "ACTIVE",
+      "summary": "Valentina negocia un suministro mensual de cartón corrugado con Diego",
+      "started_at": "2026-08-08T15:00:00Z",
+      "max_turns": 12,
+      "current_turn": 6,
+      "matchmaking": {
+        "score": 0.89,
+        "ic_score": 0.93,
+        "logistics_score": 0.85,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.9, "b_to_a": 0.88 },
+        "channel_id": "ch_match_cardboard_valentina_diego",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-cardboard-001",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Busco 300 planchas mensuales de cartón corrugado de doble pared, con calidad uniforme y entrega local.",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T15:00:00Z"
+        },
+        {
+          "id": "msg-cardboard-002",
+          "sender_agent_id": "agent-p2p-diego-carton",
+          "content": "Tengo stock de doble pared y puedo sostener ese volumen. El precio inicial es PEN 2,75 por plancha con entrega incluida.",
+          "intent": "OFFER",
+          "numeric_terms": [{ "key": "cardboard_unit_price_pen", "value": 2.75, "unit": "pen/plancha" }],
+          "sent_at": "2026-08-08T15:02:00Z"
+        },
+        {
+          "id": "msg-cardboard-003",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "El precio entra en el límite. Antes de acordar recurrencia necesito validar resistencia y medidas con una muestra.",
+          "intent": "COUNTER_OFFER",
+          "sent_at": "2026-08-08T15:04:00Z"
+        },
+        {
+          "id": "msg-cardboard-004",
+          "sender_agent_id": "agent-p2p-diego-carton",
+          "content": "Puedo enviar diez muestras sin costo y una ficha técnica. Si se aprueban, bajo a PEN 2,60 con compromiso de tres meses.",
+          "intent": "COUNTER_OFFER",
+          "numeric_terms": [{ "key": "cardboard_unit_price_pen", "value": 2.6, "unit": "pen/plancha" }],
+          "sent_at": "2026-08-08T15:06:00Z"
+        },
+        {
+          "id": "msg-cardboard-005",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Acepto recibir las muestras. La compra recurrente quedará pendiente hasta comprobar la calidad.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T15:08:00Z"
+        },
+        {
+          "id": "msg-cardboard-006",
+          "sender_agent_id": "agent-p2p-diego-carton",
+          "content": "Perfecto. Prepararé las muestras y mantendré la oferta de PEN 2,60 por siete días.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T15:10:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-cardboard-volume",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Volumen mensual",
+          "summary": "Valentina fijó el pedido objetivo en 300 planchas mensuales.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T15:00:00Z",
+          "decided_at": "2026-08-08T15:01:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-samples",
+          "agent_id": "agent-p2p-diego-carton",
+          "category": "Muestras de calidad",
+          "summary": "Diego autorizó diez muestras y el envío de la ficha técnica sin costo.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T15:05:00Z",
+          "decided_at": "2026-08-08T15:06:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-price",
+          "agent_id": "agent-p2p-diego-carton",
+          "category": "Descuento por recurrencia",
+          "summary": "Diego redujo la oferta a PEN 2,60 por plancha para un acuerdo de tres meses.",
+          "status": "REPLACED",
+          "created_at": "2026-08-08T15:06:00Z",
+          "decided_at": "2026-08-08T15:07:00Z"
+        }
+      ]
+    },
+    {
       "session_id": "ses-p2p-001",
       "segment": "P2P",
       "agent_1_id": "agent-p2p-valentina",
       "agent_2_id": "agent-p2p-carlos",
-      "agent_1_objective_id": "obj-valentina-prueba",
+      "agent_1_objective_id": "obj-valentina-venta",
       "agent_2_objective_id": "obj-carlos-compra",
       "initiator_id": "agent-p2p-valentina",
       "decision_turn": "OWNER",
