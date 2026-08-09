@@ -748,16 +748,20 @@ h4,
 
 .auth-tabs button {
   min-height: 36px;
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 8px;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
   color: var(--muted);
   background: transparent;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
+  transition: color 160ms ease, background 160ms ease, outline-color 160ms ease;
 }
 
 .auth-tabs button.is-active {
+  outline-color: var(--accent);
   color: var(--foreground);
   background: white;
   box-shadow: 0 2px 8px rgba(22, 50, 79, 0.08);
@@ -768,6 +772,31 @@ h4,
   margin-top: 20px;
   flex-direction: column;
   gap: 14px;
+}
+
+.auth-optional-field {
+  display: grid;
+  margin-bottom: -14px;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    grid-template-rows 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin-bottom 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 160ms ease,
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.auth-optional-field > div {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.auth-optional-field.is-open {
+  margin-bottom: 0;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .field-with-icon {

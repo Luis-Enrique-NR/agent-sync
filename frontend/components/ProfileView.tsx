@@ -90,20 +90,26 @@ export function ProfileView() {
               setPassword("");
             }}
           >
-            {authMode === "register" ? (
-              <label>
-                <span>Nombre</span>
-                <span className="field-with-icon">
-                  <UserIcon size={17} />
-                  <input
-                    value={profile.name}
-                    onChange={(event) => updateField("name", event.target.value)}
-                    placeholder="Tu nombre"
-                    required
-                  />
-                </span>
-              </label>
-            ) : null}
+            <div
+              className={`auth-optional-field ${authMode === "register" ? "is-open" : ""}`}
+              aria-hidden={authMode !== "register"}
+            >
+              <div>
+                <label>
+                  <span>Nombre</span>
+                  <span className="field-with-icon">
+                    <UserIcon size={17} />
+                    <input
+                      value={profile.name}
+                      onChange={(event) => updateField("name", event.target.value)}
+                      placeholder="Tu nombre"
+                      disabled={authMode !== "register"}
+                      required={authMode === "register"}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
 
             <label>
               <span>Correo electrónico</span>

@@ -51,14 +51,11 @@ export function DashboardView() {
     sessions[0];
   const agentA = agentsById[featured?.agent_1_id];
   const agentB = agentsById[featured?.agent_2_id];
-  const p2pSessions = sessions.filter((session) => session.segment === "P2P");
-
   if (!signedIn) {
     return (
       <CommercialHome
         objective={agentA?.objectives[0]}
         counterpartName={agentB?.display_name?.split(" — ")[0]}
-        opportunityCount={p2pSessions.length}
       />
     );
   }

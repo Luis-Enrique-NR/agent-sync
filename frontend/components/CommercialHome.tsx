@@ -11,13 +11,11 @@ import {
 interface CommercialHomeProps {
   objective?: string;
   counterpartName?: string;
-  opportunityCount: number;
 }
 
 export function CommercialHome({
   objective,
   counterpartName,
-  opportunityCount,
 }: CommercialHomeProps) {
   return (
     <div className="dashboard">
@@ -31,7 +29,7 @@ export function CommercialHome({
           </h1>
           <p className="hero-description">
             Define qué quieres conseguir, tus límites y qué necesita permiso.
-            AgentSync encuentra contrapartes y negocia cada oportunidad por
+            AgentSync encuentra perfiles compatibles y negocia cada oportunidad por
             separado, incluso mientras otra espera tu respuesta.
           </p>
           <div className="hero-actions">
@@ -59,13 +57,12 @@ export function CommercialHome({
           <div className="objective-card">
             <div className="objective-card-header">
               <span className="objective-live"><i /> Objetivo activo</span>
-              <span>{opportunityCount} oportunidades evaluadas</span>
             </div>
 
             <div className="objective-goal">
               <span>Lo que quieres conseguir</span>
               <strong>{objective ?? "Vender mi auto sin bajar de USD 8.000"}</strong>
-              <small><ShieldIcon size={13} /> El precio mínimo queda protegido</small>
+              <small><ShieldIcon size={13} /> Precio mínimo fijado por configuración</small>
             </div>
 
             <div className="objective-branch-label">
@@ -77,7 +74,7 @@ export function CommercialHome({
               <div className="objective-route is-pending">
                 <span className="objective-route-icon"><InboxIcon size={14} /></span>
                 <span className="objective-route-copy">
-                  <strong>{counterpartName ?? "Comprador compatible"}</strong>
+                  <strong>Agente de {counterpartName?.split(/\s+/)[0] ?? "Carlos"}</strong>
                   <small>Quiere coordinar una prueba de manejo</small>
                 </span>
                 <span className="objective-route-status">Tu decisión</span>
@@ -86,16 +83,16 @@ export function CommercialHome({
               <div className="objective-route is-closed">
                 <span className="objective-route-icon"><ShieldIcon size={14} /></span>
                 <span className="objective-route-copy">
-                  <strong>Oferta bajo el mínimo</strong>
-                  <small>Se descartó sin consultarte</small>
+                  <strong>Agente de Mateo</strong>
+                  <small>Oferta bajo el mínimo configurado</small>
                 </span>
-                <span className="objective-route-status">Protegido</span>
+                <span className="objective-route-status">Descartado</span>
               </div>
 
               <div className="objective-route is-searching">
                 <span className="objective-route-icon"><SearchIcon size={14} /></span>
                 <span className="objective-route-copy">
-                  <strong>Nuevas contrapartes</strong>
+                  <strong>Nuevas ofertas</strong>
                   <small>La búsqueda continúa en paralelo</small>
                 </span>
                 <span className="objective-route-status">Explorando</span>
