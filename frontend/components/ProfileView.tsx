@@ -48,9 +48,6 @@ export function ProfileView() {
     return (
       <div className="auth-page">
         <section className="auth-card" aria-labelledby="auth-title">
-          <div className="auth-brand-mark">
-            <ShieldIcon size={22} />
-          </div>
           <span className="section-eyebrow">Tu espacio en AgentSync</span>
           <h1 id="auth-title">
             {authMode === "login" ? "Vuelve a tus negociaciones" : "Crea tu cuenta"}
