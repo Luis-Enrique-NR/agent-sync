@@ -103,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </main>
 
       <footer className="app-footer">
-        <span>AgentSync · entorno de demostración</span>
+        <span>AgentSync · Piloto v0.1</span>
         <span>Los límites duros nunca se negocian.</span>
       </footer>
 

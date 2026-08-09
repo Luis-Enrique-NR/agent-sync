@@ -95,15 +95,20 @@ either a public `TURN` or one private `TOOL_CALL`. `ToolGateway` then checks:
 - the same `call_id` is not executed twice;
 - timeouts, failures and oversized outputs become sanitized internal results.
 
-The MVP composition root registers deterministic simulations for `web.search`,
-`calendar.check_availability` and `email.send_notification`. The email simulation is
-still treated as an external write and pauses before execution. Tool results remain
-private to the requesting agent and are never emitted as `TURN_READY`.
+The default composition root still registers deterministic simulations for local
+tests. Production can select `AGENTSYNC_TOOLS_PROVIDER=mcp` and point
+`AGENTSYNC_MCP_SERVERS_JSON` at the first-party Streamable HTTP server in
+[`mcp_servers/README.md`](mcp_servers/README.md), which exposes web search,
+prices and email capabilities. Email is always treated as an
+external write and pauses for human approval. Tool results remain private to
+the requesting agent and are never emitted as `TURN_READY`.
 
-`MCPToolAdapter` is the provider-agnostic boundary for a future remote MCP client.
-Only locally registered tool names and schemas reach it. Authentication tokens,
-server URLs and transport retries belong in the injected server-side `MCPClient`, not
-in agent profiles, model prompts, transcripts or tool arguments.
+`MCPToolAdapter` is the provider-agnostic boundary for the remote MCP client.
+`HTTPMCPClient` speaks Streamable HTTP, validates JSON-RPC responses, sends the
+current protocol envelope and supports bounded `tools/list` discovery. Only
+locally registered tool names and schemas reach it. Authentication tokens,
+server URLs and transport retries belong in the injected server-side `MCPClient`,
+not in agent profiles, model prompts, transcripts or tool arguments.
 
 Each session also has `max_tool_calls`, independent from `max_turns`, so a model cannot
 replace a conversation loop with an unbounded tool loop.

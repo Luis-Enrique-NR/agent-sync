@@ -91,28 +91,36 @@ def build_mcp_tool_gateway(
     )
     gateway.register(
         ToolDescriptor(
-            name="calendar.check_availability",
-            description="Read configured calendar availability.",
-            risk_level=ToolRiskLevel.SENSITIVE_READ,
+            name="market.reference_prices",
+            description="Compare reference prices from configured market sources.",
+            risk_level=ToolRiskLevel.READ_ONLY,
             parameters=[
                 ToolParameterDefinition(
-                    name="start_date",
+                    name="item",
                     value_type=ToolValueType.STRING,
-                    description="Inclusive ISO date.",
-                    max_length=10,
+                    description="Product or service to compare.",
+                    max_length=160,
                 ),
                 ToolParameterDefinition(
-                    name="end_date",
+                    name="region",
                     value_type=ToolValueType.STRING,
-                    description="Inclusive ISO date.",
-                    max_length=10,
+                    description="Optional market region.",
+                    required=False,
+                    max_length=120,
+                ),
+                ToolParameterDefinition(
+                    name="currency",
+                    value_type=ToolValueType.STRING,
+                    description="ISO currency code.",
+                    required=False,
+                    max_length=3,
                 ),
             ],
         ),
         MCPToolAdapter(
             client=client,
             server_label=server_label,
-            remote_tool_name="calendar.check_availability",
+            remote_tool_name="market.reference_prices",
         ),
     )
     gateway.register(
@@ -122,6 +130,12 @@ def build_mcp_tool_gateway(
             risk_level=ToolRiskLevel.EXTERNAL_WRITE,
             requires_human_approval=True,
             parameters=[
+                ToolParameterDefinition(
+                    name="to",
+                    value_type=ToolValueType.STRING,
+                    description="Recipient email address or approved agent contact.",
+                    max_length=320,
+                ),
                 ToolParameterDefinition(
                     name="subject",
                     value_type=ToolValueType.STRING,

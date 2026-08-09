@@ -71,8 +71,8 @@ def seed(session):
         escalation_rules=[
             {"rule_id": "r2", "rule_type": "AMOUNT_ABOVE", "key": "price", "threshold": 800, "enabled": True, "categories": []},
         ],
-        interests=["sell_laptop", "quick_sale"],
-        capabilities=["sell_electronics", "weekend_delivery"],
+        interests=["venta entre personas", "ofertas cercanas"],
+        capabilities=["venta de artículos", "ofertas cercanas", "entrega local"],
         status=AgentStatus.AVAILABLE,
     )
     create_agent_profile(p2p, user_id=uuid4(), session=session)
@@ -102,8 +102,8 @@ def seed(session):
         public_description="Busca laptop para trabajo remoto.",
         personality="Practico, busca buen precio.",
         objectives=["Comprar laptop bajo $750 USD"],
-        interests=["buy_laptop", "used_electronics"],
-        capabilities=["cash_payment", "local_pickup"],
+        interests=["ofertas cercanas"],
+        capabilities=["venta de artículos", "ofertas cercanas", "entrega local"],
         status=AgentStatus.AVAILABLE,
     )
     create_agent_profile(p2p_buyer, user_id=uuid4(), session=session)

@@ -79,8 +79,7 @@ async def process_agent_matching(
                 )
                 logger.info("portal channel created %s", channel_id)
             except Exception:
-                logger.exception("portal channel creation failed %s", channel_id)
-                continue
+                logger.exception("portal channel creation failed %s — continuing match without Portal", channel_id)
 
         # 2. Create negotiation state
         result = engine.start_session(
