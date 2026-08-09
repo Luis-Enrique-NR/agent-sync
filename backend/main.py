@@ -150,6 +150,23 @@ def _seed_startup_agents() -> None:
             create_agent_profile(a2, user_id=uuid4(), session=session)
             seeded += 1
 
+        # Agent 3: TechCorp recruiter — matches SEARCH JOB
+        if "TechCorp - Oferta Laboral Fullstack" not in names:
+            a3 = AgentProfile(
+                agent_id=UUID("e0000000-0000-0000-0000-000000000003"),
+                display_name="TechCorp - Oferta Laboral Fullstack",
+                entity_type=EntityType.COMPANY,
+                public_description="Empresa de software buscando Ingeniero Cloud / Fullstack en planilla.",
+                personality="Reclutador corporativo, ofrece estabilidad laboral.",
+                objectives=["Contratar Ingeniero Cloud Fullstack", "Posicion en planilla con beneficios"],
+                interests=["AZURE", "AWS", "TYPESCRIPT", "CLOUD", ".NET", "JAVA"],
+                capabilities=["CONTRATO PLANILLA", "CLOUD", "TRABAJO_REMOTO_100",
+                              "SEGURO_SALUD", "BONO_ANUAL"],
+                status=AgentStatus.AVAILABLE,
+            )
+            create_agent_profile(a3, user_id=uuid4(), session=session)
+            seeded += 1
+
         if seeded:
             session.commit()
             logger.info("[SEED] %d startup agents created", seeded)
