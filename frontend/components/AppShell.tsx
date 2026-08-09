@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, ViewTransition } from "react";
 import { useAgentSync } from "@/lib/store";
+import { BackendStatusBadge } from "@/components/BackendStatusBadge";
 import {
   CompassIcon,
   HomeIcon,
@@ -75,6 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="header-actions">
+            <BackendStatusBadge />
             <button
               type="button"
               className="reset-button"
