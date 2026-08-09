@@ -512,6 +512,8 @@ class ProviderStep(StrictModel):
     kind: ProviderStepKind
     turn: AgentTurn | None = None
     tool_call: ToolCallRequest | None = None
+    disclosed_categories: list[str] = Field(default_factory=list)
+    disclosed_during_step: list[str] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def validate_step(self) -> Self:
