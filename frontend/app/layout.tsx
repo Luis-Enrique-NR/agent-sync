@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Quantico, Ubuntu } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
+import { AuthProvider } from "@/lib/auth";
 import { AgentSyncProvider } from "@/lib/store";
 import "./globals.css";
 
@@ -27,7 +28,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${ubuntu.variable} ${quantico.variable}`}>
       <body>
         <AgentSyncProvider>
-          <AppShell>{children}</AppShell>
+          <AuthProvider>
+            <AppShell>{children}</AppShell>
+          </AuthProvider>
         </AgentSyncProvider>
       </body>
     </html>

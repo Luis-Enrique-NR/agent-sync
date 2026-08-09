@@ -689,6 +689,14 @@ h4,
   gap: 36px;
 }
 
+.auth-page-loading {
+  min-height: 360px;
+  grid-template-columns: 1fr;
+  place-items: center;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .auth-card {
   border: 1px solid var(--border);
   border-radius: 22px;
