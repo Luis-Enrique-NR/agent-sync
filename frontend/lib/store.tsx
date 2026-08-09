@@ -27,7 +27,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v6";
+const STORAGE_KEY = "agentsync-demo-v7";
 
 export const INCOMING_DECISION_DELAY_MS = 5_500;
 
@@ -81,6 +81,8 @@ function audit(
 interface IncomingDecisionScenario {
   key: string;
   counterpartId: string;
+  ownerObjectiveId: string;
+  counterpartObjectiveId: string;
   summary: string;
   category: string;
   decisionSummary: string;
@@ -105,6 +107,8 @@ const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
   {
     key: "sofia-final-price",
     counterpartId: "agent-p2p-sofia",
+    ownerObjectiveId: "obj-valentina-venta",
+    counterpartObjectiveId: "obj-sofia-compra",
     summary: "Valentina evalúa una oferta verificada de Sofía",
     category: "Aceptar precio final",
     decisionSummary:
@@ -190,6 +194,8 @@ const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
   {
     key: "mateo-meeting-point",
     counterpartId: "agent-p2p-mateo",
+    ownerObjectiveId: "obj-valentina-prueba",
+    counterpartObjectiveId: "obj-mateo-compra",
     summary: "Valentina coordina una inspección con Mateo",
     category: "Confirmar lugar de encuentro",
     decisionSummary:
@@ -276,6 +282,8 @@ const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
   {
     key: "carlos-contact",
     counterpartId: "agent-p2p-carlos",
+    ownerObjectiveId: "obj-valentina-pago",
+    counterpartObjectiveId: "obj-carlos-cierre",
     summary: "Carlos solicita el contacto para cerrar la compra",
     category: "Compartir teléfono",
     decisionSummary:
@@ -380,7 +388,10 @@ function buildIncomingDecisionSession(
     segment: "P2P",
     agent_1_id: DEMO_OWNER_AGENT_ID,
     agent_2_id: scenario.counterpartId,
+    agent_1_objective_id: scenario.ownerObjectiveId,
+    agent_2_objective_id: scenario.counterpartObjectiveId,
     initiator_id: scenario.counterpartId,
+    decision_turn: "OWNER",
     status: "PENDING_HUMAN_APPROVAL",
     summary: scenario.summary,
     started_at: isoAt(baseMs, -14),

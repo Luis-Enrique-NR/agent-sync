@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { CommercialHome } from "@/components/CommercialHome";
 import {
@@ -18,87 +19,81 @@ import type { MatchSession } from "@/lib/types";
 
 const statusCopy: Record<
   MatchSession["status"],
-  {
-    label: string;
-    detail: string;
-    className: string;
-    step: number;
-    finalStep: string;
-  }
+  { label: string; detail: string; className: string }
 > = {
   SEARCHING: {
-    label: "Evaluando",
+    label: "Buscando opciones",
     detail: "Comprobando objetivos, límites y alcance",
     className: "is-searching",
-    step: 0,
-    finalStep: "Siguiente paso",
   },
   ACTIVE: {
     label: "Conversando",
-    detail: "Los agentes están negociando condiciones",
+    detail: "Los agentes están afinando los términos",
     className: "is-active",
-    step: 2,
-    finalStep: "Siguiente paso",
   },
   PENDING_HUMAN_APPROVAL: {
-    label: "Espera tu decisión",
-    detail: "La conversación está pausada sin frenar las demás",
+    label: "Tu decisión",
+    detail: "La negociación espera tu respuesta",
     className: "is-pending",
-    step: 3,
-    finalStep: "Tu decisión",
   },
   RESOLVED: {
-    label: "Acuerdo confirmado",
-    detail: "Ambas partes confirmaron los términos",
+    label: "Trato cerrado",
+    detail: "El acuerdo está listo para revisar el objetivo",
     className: "is-resolved",
-    step: 3,
-    finalStep: "Acuerdo",
   },
   REJECTED: {
-    label: "Descartada",
-    detail: "Se cerró sin cambiar tus límites",
+    label: "Conversación cerrada",
+    detail: "La propuesta no cumplió tus condiciones",
     className: "is-closed",
-    step: 3,
-    finalStep: "Descartada",
   },
   FAILED: {
-    label: "Detenida con seguridad",
+    label: "Conversación detenida",
     detail: "Un problema técnico impidió continuar",
     className: "is-closed",
-    step: 3,
-    finalStep: "Detenida",
   },
   WITHDRAWN: {
     label: "Oferta retirada",
     detail: "La otra parte retiró su propuesta",
     className: "is-closed",
-    step: 3,
-    finalStep: "Retirada",
   },
   EXPIRED: {
-    label: "Propuesta vencida",
-    detail: "Dejó de estar vigente antes de confirmarse",
+    label: "Oferta vencida",
+    detail: "Los términos dejaron de estar vigentes",
     className: "is-closed",
-    step: 3,
-    finalStep: "Vencida",
   },
 };
 
 const sessionPriority: Record<MatchSession["status"], number> = {
-  PENDING_HUMAN_APPROVAL: 0,
-  ACTIVE: 1,
-  SEARCHING: 2,
-  RESOLVED: 3,
-  REJECTED: 4,
-  WITHDRAWN: 5,
-  EXPIRED: 6,
-  FAILED: 7,
+  PENDING_HUMAN_APPROVAL: 1,
+  ACTIVE: 2,
+  SEARCHING: 3,
+  RESOLVED: 4,
+  REJECTED: 5,
+  WITHDRAWN: 6,
+  EXPIRED: 7,
+  FAILED: 8,
 };
+
+function priorityOf(session: MatchSession) {
+  if (
+    session.status === "RESOLVED" &&
+    session.goal_progress_review?.status === "PENDING"
+  ) {
+    return 0;
+  }
+  return sessionPriority[session.status];
+}
 
 function counterpartId(session: MatchSession, ownerAgentId: string) {
   return session.agent_1_id === ownerAgentId
     ? session.agent_2_id
     : session.agent_1_id;
+}
+
+function objectiveIdFor(session: MatchSession, ownerAgentId: string) {
+  return session.agent_1_id === ownerAgentId
+    ? session.agent_1_objective_id
+    : session.agent_2_objective_id;
 }
 
 function initials(name: string) {
@@ -111,9 +106,25 @@ function initials(name: string) {
     .toUpperCase();
 }
 
+function conversationTerms(session: MatchSession) {
+  return (
+    session.pending_decision?.summary ??
+    session.outcome?.summary ??
+    session.summary
+  );
+}
+
 export function DashboardView() {
   const { signedIn, agentId } = useAuth();
   const { sessions, agentsById, toggleAgentStatus } = useAgentSync();
+  const [selectedByObjective, setSelectedByObjective] = useState<
+    Record<string, string>
+  >({});
+  const [openSwitcher, setOpenSwitcher] = useState<string | null>(null);
+  const [goalReviewChoice, setGoalReviewChoice] = useState<
+    Record<string, "continue" | "complete">
+  >({});
+  const [goalContext, setGoalContext] = useState<Record<string, string>>({});
   const ownerAgentId = agentId ?? DEMO_OWNER_AGENT_ID;
   const ownerSessions = sessions.filter((session) =>
     belongsToAgent(session, ownerAgentId),
@@ -162,31 +173,37 @@ export function DashboardView() {
   const activeSessions = ownerSessions.filter((session) =>
     ["SEARCHING", "ACTIVE", "PENDING_HUMAN_APPROVAL"].includes(session.status),
   );
-  const discardedSessions = ownerSessions.filter((session) =>
-    ["REJECTED", "FAILED", "WITHDRAWN", "EXPIRED"].includes(session.status),
-  );
   const paused = ownerAgent.status === "PAUSED";
   const displayName = ownerAgent.display_name.split(" — ")[0];
+  const objectiveContexts = ownerAgent.objective_contexts ?? [];
   const objectives = (
-    ownerAgent.objective_contexts?.map((objective) => ({
-      id: objective.objective_id,
-      goal: objective.goal,
-    })) ??
-    ownerAgent.objectives.map((goal, index) => ({
-      id: `objective-${index + 1}`,
-      goal,
-    }))
+    objectiveContexts.length > 0
+      ? objectiveContexts.map((objective) => ({
+          id: objective.objective_id,
+          goal: objective.goal,
+        }))
+      : ownerAgent.objectives.map((goal, index) => ({
+          id: `objective-${index + 1}`,
+          goal,
+        }))
   ).slice(0, 3);
   const sortedSessions = [...ownerSessions].sort((left, right) => {
-    const priority = sessionPriority[left.status] - sessionPriority[right.status];
+    const priority = priorityOf(left) - priorityOf(right);
     if (priority !== 0) return priority;
     return Date.parse(right.started_at) - Date.parse(left.started_at);
   });
   const lanes = objectives.map((objective, index) => {
-    const assigned = sortedSessions.filter(
-      (_, sessionIndex) => sessionIndex % objectives.length === index,
-    );
-    return { objective, session: assigned[0], additionalCount: Math.max(0, assigned.length - 1) };
+    const matchingSessions = sortedSessions.filter((session) => {
+      const linkedObjectiveId = objectiveIdFor(session, ownerAgentId);
+      return linkedObjectiveId
+        ? linkedObjectiveId === objective.id
+        : index === 0;
+    });
+    const selectedSession =
+      matchingSessions.find(
+        (session) => session.session_id === selectedByObjective[objective.id],
+      ) ?? matchingSessions[0];
+    return { objective, sessions: matchingSessions, selectedSession };
   });
 
   return (
@@ -196,8 +213,8 @@ export function DashboardView() {
           <span className="live-eyebrow"><i /> Actividad en vivo</span>
           <h1>Tu agente está trabajando ahora</h1>
           <p>
-            Observa cómo cada objetivo encuentra rutas, descarta lo inviable y
-            conversa sin pedirte que vigiles el proceso.
+            Cada objetivo puede sostener varias negociaciones con términos y
+            ritmos independientes.
           </p>
         </div>
         <aside className="live-agent-control" aria-label="Estado de tu agente">
@@ -220,31 +237,36 @@ export function DashboardView() {
         <header>
           <div>
             <span className="section-eyebrow">Rutas independientes</span>
-            <h2 id="live-routes-title">Un objetivo no detiene a los demás</h2>
-            <p>Portal mantiene cada ruta atenta a cambios, ofertas y retiros.</p>
+            <h2 id="live-routes-title">Un objetivo, varias negociaciones</h2>
+            <p>Cambiar de conversación no detiene las demás.</p>
           </div>
           <div className="live-summary" aria-label="Resumen de trabajo">
             <span><strong>{ownerAgent.objectives.length}</strong><small>objetivos</small></span>
-            <span><strong>{activeSessions.length}</strong><small>conversaciones</small></span>
-            <span><strong>{discardedSessions.length}</strong><small>descartes resueltos</small></span>
+            <span><strong>{activeSessions.length}</strong><small>activas</small></span>
+            <span><strong>{ownerSessions.length}</strong><small>conversaciones</small></span>
           </div>
         </header>
 
         <div className="live-lanes">
-          {lanes.map(({ objective, session, additionalCount }, index) => {
-            const status = session ? statusCopy[session.status] : statusCopy.SEARCHING;
-            const counterpart = session
-              ? agentsById[counterpartId(session, ownerAgentId)]
+          {lanes.map(({ objective, sessions: laneSessions, selectedSession }, index) => {
+            const status = selectedSession
+              ? statusCopy[selectedSession.status]
+              : statusCopy.SEARCHING;
+            const counterpart = selectedSession
+              ? agentsById[counterpartId(selectedSession, ownerAgentId)]
               : undefined;
-            const checkpointLabels = [
-              "Detectada",
-              "Validada",
-              "Conversación",
-              status.finalStep,
-            ];
-            const decisionHref = session?.pending_decision
-              ? `/bandeja#decision-card-${session.pending_decision.decision_id}`
+            const counterpartName = counterpart?.display_name.split(" — ")[0] ?? "Otra parte";
+            const decisionHref = selectedSession?.pending_decision
+              ? `/bandeja#decision-card-${selectedSession.pending_decision.decision_id}`
               : "/bandeja";
+            const switcherOpen = openSwitcher === objective.id;
+            const reviewChoice = selectedSession
+              ? goalReviewChoice[selectedSession.session_id]
+              : undefined;
+            const decisionTurn = selectedSession?.decision_turn ??
+              (selectedSession?.status === "PENDING_HUMAN_APPROVAL"
+                ? "OWNER"
+                : undefined);
 
             return (
               <article
@@ -262,14 +284,84 @@ export function DashboardView() {
                   <h3>{objective.goal}</h3>
                 </div>
 
-                {session ? (
-                  <div className="live-counterpart">
-                    <span>{initials(counterpart?.display_name ?? "Agente")}</span>
-                    <div>
-                      <small>Ruta con</small>
-                      <strong>{counterpart?.display_name.split(" — ")[0] ?? "Otra parte"}</strong>
-                      <p>{status.detail}</p>
-                    </div>
+                {selectedSession ? (
+                  <div
+                    className={`live-route-picker ${switcherOpen ? "is-open" : ""} ${laneSessions.length === 1 ? "is-single" : ""}`}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") setOpenSwitcher(null);
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="live-route-trigger"
+                      aria-haspopup={laneSessions.length > 1 ? "listbox" : undefined}
+                      aria-expanded={laneSessions.length > 1 && switcherOpen}
+                      aria-controls={laneSessions.length > 1 ? `route-options-${objective.id}` : undefined}
+                      onClick={() => {
+                        if (laneSessions.length <= 1) return;
+                        setOpenSwitcher((current) =>
+                          current === objective.id ? null : objective.id,
+                        );
+                      }}
+                    >
+                      <span className="live-route-avatar">{initials(counterpartName)}</span>
+                      <span className="live-route-copy">
+                        <small>Negociación con</small>
+                        <strong>{counterpartName}</strong>
+                        <p>{conversationTerms(selectedSession)}</p>
+                      </span>
+                      <span className="live-route-count">
+                        <b>{laneSessions.length}</b>
+                        <small>{laneSessions.length === 1 ? "opción" : "opciones"}</small>
+                        <i aria-hidden="true" />
+                      </span>
+                    </button>
+
+                    {switcherOpen ? (
+                      <div
+                        id={`route-options-${objective.id}`}
+                        className="live-route-options"
+                        role="listbox"
+                        aria-label={`Negociaciones de ${objective.goal}`}
+                      >
+                        <span className="live-route-options-title">
+                          Elige una negociación
+                          <small>Cada una avanza por separado</small>
+                        </span>
+                        {laneSessions.map((session) => {
+                          const optionCounterpart =
+                            agentsById[counterpartId(session, ownerAgentId)];
+                          const optionName =
+                            optionCounterpart?.display_name.split(" — ")[0] ?? "Otra parte";
+                          const optionStatus = statusCopy[session.status];
+                          const selected = session.session_id === selectedSession.session_id;
+                          return (
+                            <button
+                              key={session.session_id}
+                              type="button"
+                              role="option"
+                              aria-selected={selected}
+                              className={selected ? "is-selected" : ""}
+                              onClick={() => {
+                                setSelectedByObjective((current) => ({
+                                  ...current,
+                                  [objective.id]: session.session_id,
+                                }));
+                                setOpenSwitcher(null);
+                              }}
+                            >
+                              <span>{initials(optionName)}</span>
+                              <span>
+                                <strong>{optionName}</strong>
+                                <small>{conversationTerms(session)}</small>
+                              </span>
+                              <i className={optionStatus.className}>{optionStatus.label}</i>
+                              {selected ? <CheckIcon size={12} /> : null}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="live-counterpart is-scanning">
@@ -282,34 +374,114 @@ export function DashboardView() {
                   </div>
                 )}
 
-                <ol className="live-checkpoints" aria-label={`Progreso de ${objective.goal}`}>
-                  {checkpointLabels.map((label, checkpointIndex) => {
-                    const state = checkpointIndex < status.step
-                      ? "is-complete"
-                      : checkpointIndex === status.step
-                        ? "is-current"
-                        : "";
-                    return (
-                      <li key={`${label}-${checkpointIndex}`} className={state}>
-                        <span>{checkpointIndex < status.step ? <CheckIcon size={10} /> : null}</span>
-                        <small>{label}</small>
-                      </li>
-                    );
-                  })}
-                </ol>
+                {decisionTurn ? (
+                  <section className="live-decision-handoff" aria-label="Turno de respuesta">
+                    <header>
+                      <small>Turno de respuesta</small>
+                      <strong>
+                        {decisionTurn === "OWNER"
+                          ? "Te toca responder"
+                          : "Esperamos a la otra parte"}
+                      </strong>
+                    </header>
+                    <div>
+                      <span className={decisionTurn === "OWNER" ? "is-current" : ""}>
+                        <i />
+                        <small>Tu decisión</small>
+                      </span>
+                      <b aria-hidden="true" />
+                      <span className={decisionTurn === "COUNTERPART" ? "is-current" : ""}>
+                        <i />
+                        <small>Respuesta de la otra parte</small>
+                      </span>
+                    </div>
+                  </section>
+                ) : null}
+
+                {selectedSession?.status === "RESOLVED" ? (
+                  <section className={`goal-progress-review ${reviewChoice ? "is-confirmed" : ""}`}>
+                    {reviewChoice ? (
+                      <div className="goal-review-confirmation" role="status">
+                        <span><CheckIcon size={13} /></span>
+                        <div>
+                          <strong>
+                            {reviewChoice === "continue"
+                              ? "El objetivo sigue activo"
+                              : "Objetivo marcado como cumplido"}
+                          </strong>
+                          <p>
+                            {reviewChoice === "continue"
+                              ? goalContext[selectedSession.session_id] || "Tu agente seguirá buscando nuevas opciones."
+                              : "Las demás negociaciones pueden cerrarse o revisarse por separado."}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <header>
+                          <span><CheckIcon size={13} /></span>
+                          <div>
+                            <small>Trato confirmado</small>
+                            <strong>¿Este acuerdo completa el objetivo?</strong>
+                          </div>
+                        </header>
+                        <p>
+                          {selectedSession.goal_progress_review?.proposed_delta ??
+                            selectedSession.outcome?.summary ??
+                            "La negociación terminó con un acuerdo."}
+                        </p>
+                        <label>
+                          <span>Contexto nuevo para el objetivo <small>Opcional</small></span>
+                          <textarea
+                            rows={2}
+                            value={goalContext[selectedSession.session_id] ?? ""}
+                            onChange={(event) =>
+                              setGoalContext((current) => ({
+                                ...current,
+                                [selectedSession.session_id]: event.target.value,
+                              }))
+                            }
+                            placeholder="Ej.: Quedan 10 litros por vender; prioriza entregas locales."
+                          />
+                        </label>
+                        <div className="goal-review-actions">
+                          <button
+                            type="button"
+                            className="is-primary"
+                            onClick={() =>
+                              setGoalReviewChoice((current) => ({
+                                ...current,
+                                [selectedSession.session_id]: "continue",
+                              }))
+                            }
+                          >
+                            Continuar con el objetivo
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setGoalReviewChoice((current) => ({
+                                ...current,
+                                [selectedSession.session_id]: "complete",
+                              }))
+                            }
+                          >
+                            Marcar cumplido
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </section>
+                ) : null}
 
                 <footer>
-                  {additionalCount > 0 ? (
-                    <span>+{additionalCount} conversación{additionalCount === 1 ? "" : "es"} en esta ruta</span>
-                  ) : (
-                    <span><SparkIcon size={13} /> Se actualiza sin recargar</span>
-                  )}
-                  {session?.status === "PENDING_HUMAN_APPROVAL" ? (
+                  <span><SparkIcon size={13} /> Se actualiza sin recargar</span>
+                  {selectedSession?.status === "PENDING_HUMAN_APPROVAL" ? (
                     <Link href={decisionHref} className="live-decision-link">
                       Abrir en Decisiones <ArrowRightIcon size={13} />
                     </Link>
-                  ) : session ? (
-                    <Link href={`/chat/${session.session_id}`}>
+                  ) : selectedSession ? (
+                    <Link href={`/chat/${selectedSession.session_id}`}>
                       Ver conversación <ArrowRightIcon size={13} />
                     </Link>
                   ) : null}
@@ -324,7 +496,7 @@ export function DashboardView() {
         <ShieldIcon size={19} />
         <span>
           <strong>Autonomía dentro de tus reglas</strong>
-          <small>Inicio muestra el proceso. El contenido sensible y tus acciones existen únicamente en Decisiones.</small>
+          <small>Una negociación puede cerrar sin cerrar automáticamente su objetivo.</small>
         </span>
         <Link href="/setup">Revisar límites <ArrowRightIcon size={13} /></Link>
       </section>

@@ -324,7 +324,10 @@
       "segment": "B2B",
       "agent_1_id": "agent-b2b-telar",
       "agent_2_id": "agent-b2b-organiccotton",
+      "agent_1_objective_id": "obj-telar-proveedores",
+      "agent_2_objective_id": "obj-organic-venta",
       "initiator_id": "agent-b2b-telar",
+      "decision_turn": "OWNER",
       "status": "PENDING_HUMAN_APPROVAL",
       "summary": "Telar Textil negocia precio de tela orgánica con OrganicCotton Supply",
       "started_at": "2026-08-07T09:12:00Z",
@@ -544,7 +547,10 @@
       "segment": "P2P",
       "agent_1_id": "agent-p2p-valentina",
       "agent_2_id": "agent-p2p-carlos",
+      "agent_1_objective_id": "obj-valentina-prueba",
+      "agent_2_objective_id": "obj-carlos-compra",
       "initiator_id": "agent-p2p-valentina",
+      "decision_turn": "OWNER",
       "status": "PENDING_HUMAN_APPROVAL",
       "summary": "Valentina negocia la venta de su auto usado con Carlos",
       "started_at": "2026-08-07T10:05:00Z",
@@ -771,6 +777,8 @@
       "segment": "B2B",
       "agent_1_id": "agent-b2b-telar",
       "agent_2_id": "agent-b2b-organiccotton",
+      "agent_1_objective_id": "obj-telar-proveedores",
+      "agent_2_objective_id": "obj-organic-venta",
       "initiator_id": "agent-b2b-telar",
       "status": "SEARCHING",
       "summary": "Telar Textil explora un segundo proveedor de algodón orgánico",
@@ -806,6 +814,8 @@
       "segment": "B2B",
       "agent_1_id": "agent-b2b-telar",
       "agent_2_id": "agent-b2b-organiccotton",
+      "agent_1_objective_id": "obj-telar-proveedores",
+      "agent_2_objective_id": "obj-organic-venta",
       "initiator_id": "agent-b2b-telar",
       "status": "RESOLVED",
       "summary": "Telar Textil cerró contrato de tela orgánica con OrganicCotton Supply",
@@ -963,10 +973,174 @@
       ]
     },
     {
+      "session_id": "ses-p2p-003",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-sofia",
+      "agent_1_objective_id": "obj-valentina-venta",
+      "agent_2_objective_id": "obj-sofia-compra",
+      "initiator_id": "agent-p2p-sofia",
+      "decision_turn": "COUNTERPART",
+      "status": "ACTIVE",
+      "summary": "Sofía compara documentación y una oferta de USD 8.150",
+      "started_at": "2026-08-08T14:20:00Z",
+      "max_turns": 12,
+      "current_turn": 4,
+      "raw_state": {
+        "session_id": "ses-p2p-003",
+        "status": "ACTIVE",
+        "turn_count": 4,
+        "max_turns": 12,
+        "current_speaker_id": "agent-p2p-sofia"
+      },
+      "messages": [
+        {
+          "id": "msg-p2p-sofia-001",
+          "sender_agent_id": "agent-p2p-sofia",
+          "content": "Busco un vehículo 2020 o posterior y puedo llegar a USD 8.400 si la documentación está completa.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T14:20:00Z"
+        },
+        {
+          "id": "msg-p2p-sofia-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "El Hyundai es 2021, tiene mantenimiento en agencia y el precio mínimo está fijado en USD 8.000.",
+          "intent": "COUNTER_OFFER",
+          "sent_at": "2026-08-08T14:22:00Z"
+        },
+        {
+          "id": "msg-p2p-sofia-003",
+          "sender_agent_id": "agent-p2p-sofia",
+          "content": "Estoy revisando las condiciones. Mi propuesta inicial sería USD 8.150 por transferencia verificada.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T14:24:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-p2p-sofia-payment",
+          "agent_id": "agent-p2p-sofia",
+          "category": "Forma de pago",
+          "summary": "Sofía autorizó negociar mediante transferencia bancaria verificada.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T14:18:00Z",
+          "decided_at": "2026-08-08T14:19:00Z"
+        }
+      ],
+      "matchmaking": {
+        "score": 0.92,
+        "ic_score": 0.95,
+        "logistics_score": 0.86,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.9, "b_to_a": 1.0 },
+        "channel_id": "ch_match_valentina_sofia",
+        "channel_status": "CREATED"
+      }
+    },
+    {
+      "session_id": "ses-p2p-004",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-mateo",
+      "agent_1_objective_id": "obj-valentina-venta",
+      "agent_2_objective_id": "obj-mateo-compra",
+      "initiator_id": "agent-p2p-mateo",
+      "status": "RESOLVED",
+      "summary": "Mateo acordó comprar el Hyundai por USD 8.200",
+      "started_at": "2026-08-07T16:10:00Z",
+      "max_turns": 12,
+      "current_turn": 9,
+      "raw_state": {
+        "session_id": "ses-p2p-004",
+        "status": "RESOLVED",
+        "turn_count": 9,
+        "max_turns": 12,
+        "current_speaker_id": "agent-p2p-valentina"
+      },
+      "messages": [
+        {
+          "id": "msg-p2p-mateo-001",
+          "sender_agent_id": "agent-p2p-mateo",
+          "content": "Después de la inspección puedo ofrecer USD 8.200 y cerrar por transferencia.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-07T16:20:00Z"
+        },
+        {
+          "id": "msg-p2p-mateo-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "La oferta cumple el mínimo y la documentación está lista para verificar.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-07T16:23:00Z"
+        },
+        {
+          "id": "msg-p2p-mateo-003",
+          "sender_agent_id": "agent-p2p-mateo",
+          "content": "Confirmo USD 8.200 por transferencia verificada con entrega después del pago.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-07T16:26:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-p2p-mateo-price",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Precio final",
+          "summary": "Valentina aprobó la venta por USD 8.200 mediante transferencia verificada.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T16:22:00Z",
+          "decided_at": "2026-08-07T16:23:00Z"
+        },
+        {
+          "decision_id": "dec-p2p-mateo-delivery",
+          "agent_id": "agent-p2p-mateo",
+          "category": "Entrega del vehículo",
+          "summary": "Mateo confirmó que recibiría el vehículo después de verificarse el pago.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T16:24:00Z",
+          "decided_at": "2026-08-07T16:25:00Z"
+        }
+      ],
+      "outcome": {
+        "outcome_id": "out-p2p-004",
+        "session_id": "ses-p2p-004",
+        "resolution": "RESOLVED",
+        "agreed_price": 8200,
+        "agreed_terms": {
+          "payment": "transferencia verificada",
+          "delivery": "después de confirmar el pago"
+        },
+        "summary": "Trato por USD 8.200 mediante transferencia verificada.",
+        "created_at": "2026-08-07T16:26:00Z"
+      },
+      "goal_progress_review": {
+        "objective_id": "obj-valentina-venta",
+        "session_id": "ses-p2p-004",
+        "proposed_delta": "1 acuerdo cerrado por USD 8.200",
+        "proposed_remaining": "Confirmar si este trato completa el objetivo o si deben seguir abiertas otras conversaciones",
+        "suggested_status": "COMPLETE",
+        "status": "PENDING",
+        "evidence": [
+          "Ambas partes confirmaron el precio de USD 8.200",
+          "La forma de pago quedó fijada como transferencia verificada"
+        ]
+      },
+      "matchmaking": {
+        "score": 0.87,
+        "ic_score": 0.88,
+        "logistics_score": 0.84,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.9, "b_to_a": 0.86 },
+        "channel_id": "ch_match_valentina_mateo",
+        "channel_status": "CREATED"
+      }
+    },
+    {
       "session_id": "ses-p2p-002",
       "segment": "P2P",
       "agent_1_id": "agent-p2p-valentina",
       "agent_2_id": "agent-p2p-carlos",
+      "agent_1_objective_id": "obj-valentina-venta",
+      "agent_2_objective_id": "obj-carlos-compra",
       "initiator_id": "agent-p2p-valentina",
       "status": "REJECTED",
       "summary": "Valentina descartó oferta por debajo de su precio mínimo",

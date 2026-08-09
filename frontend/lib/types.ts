@@ -256,7 +256,12 @@ export interface MatchSession {
   segment: Segment;
   agent_1_id: string;
   agent_2_id: string;
+  /** Asociación temporal hasta adoptar el contrato de objetivos versionados. */
+  agent_1_objective_id?: string;
+  agent_2_objective_id?: string;
   initiator_id?: string;
+  /** Quién debe autorizar el siguiente avance visible para el propietario. */
+  decision_turn?: "OWNER" | "COUNTERPART";
   status: SessionStatus;
   summary: string;
   started_at: string;
@@ -270,6 +275,15 @@ export interface MatchSession {
   audit?: AuditRecord[];
   raw_state?: Record<string, unknown>;
   outcome?: NegotiationOutcome;
+  goal_progress_review?: {
+    objective_id: string;
+    session_id: string;
+    proposed_delta: string;
+    proposed_remaining: string;
+    suggested_status: "COMPLETE" | "CONTINUE";
+    status: "PENDING" | "CONFIRMED";
+    evidence?: string[];
+  };
   revealed_contact?: {
     agent_id: string;
     contact: string;
