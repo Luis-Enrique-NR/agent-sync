@@ -40,7 +40,14 @@ class RedisStreamsEventBus:
         claimed = await self.redis.xautoclaim(self.stream, self.group, consumer, lease_ms, "0-0", count=1)
         entries = claimed[1]
         if entries:
-            return self._delivery(entries[0])
+            delivery = self._delivery(entries[0])
+            if delivery is None:
+                # Corrupted entry — ACK it so it doesn't block the stream
+                msg_id = entries[0][0]
+                if isinstance(msg_id, bytes):
+                    msg_id = msg_id.decode("utf-8")
+                await self.redis.xack(self.stream, self.group, msg_id)
+            return delivery
         fresh = await self.redis.xreadgroup(self.group, consumer, {self.stream: ">"}, count=1)
         return self._delivery(fresh[0][1][0]) if fresh else None
 
@@ -61,6 +68,23 @@ class RedisStreamsEventBus:
                 raise
 
     @staticmethod
-    def _delivery(entry: tuple[str, dict[str, str]]) -> EventDelivery:
+    def _delivery(entry: tuple[str | bytes, dict]) -> EventDelivery | None:
         message_id, fields = entry
-        return EventDelivery(message_id=message_id, envelope=TransportEnvelopeV1.model_validate_json(fields["payload"]))
+        if isinstance(message_id, bytes):
+            message_id = message_id.decode("utf-8")
+        normalized: dict[str, str] = {}
+        for k, v in fields.items():
+            key = k.decode("utf-8") if isinstance(k, bytes) else k
+            val = v.decode("utf-8") if isinstance(v, bytes) else v
+            normalized[key] = val
+        payload_str = normalized.get("payload")
+        if not payload_str:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Mensaje descartado %s: falta clave payload", message_id
+            )
+            return None
+        return EventDelivery(
+            message_id=message_id,
+            envelope=TransportEnvelopeV1.model_validate_json(payload_str),
+        )
