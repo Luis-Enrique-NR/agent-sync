@@ -1,18 +1,18 @@
-[EDA_TRACE][2026-08-08T17:03:05.622Z][E2E_START] initializing E2E trace test
-[EDA_TRACE][2026-08-08T17:03:05.655Z][E2E_SETUP] session=e2e00000-0000-0000-0000-000000000100 channel=chan_test_123 status=ACTIVE
-[EDA_TRACE][2026-08-08T17:03:05.655Z][ADMISSION] simulated POST /webhooks/portal event_id=evt_e2e_test_001
-[EDA_TRACE][2026-08-08T17:03:05.656Z][BUS_ACCEPT] deduplicating event_id=evt_e2e_test_001 channel=chan_test_123
-[EDA_TRACE][2026-08-08T17:03:05.656Z][BUS_ACCEPT] accepted — delivery_id=msg_0
-[EDA_TRACE][2026-08-08T17:03:05.656Z][WORKER_POLL] starting consume_forever for one cycle
-[EDA_TRACE][2026-08-08T17:03:05.657Z][WORKER_POLL] received delivery msg_0 event=evt_e2e_test_001 type=message.published
-[EDA_TRACE][2026-08-08T17:03:05.657Z][HANDLER_LOOKUP] querying negotiation_states by portal_channel_id=chan_test_123
-[EDA_TRACE][2026-08-08T17:03:05.661Z][AUDIT_WRITE] TURN_PUBLISHED session=e2e00000-0000-0000-0000-000000000100 channel=chan_test_123
-[EDA_TRACE][2026-08-08T17:03:05.670Z][BUS_ACK] acked delivery msg_0
-[EDA_TRACE][2026-08-08T17:03:05.725Z][E2E_END] VERIFIED: 1 audit record, session=e2e00000-0000-0000-0000-000000000100, action=TURN_PUBLISHED
-[EDA_TRACE][2026-08-08T17:03:06.083Z][ADMISSION] signature verified — normalizing event type=message.published
-[EDA_TRACE][2026-08-08T17:03:06.084Z][ADMISSION] envelope accepted — event_id=evt_1 channel=ch_1
-[EDA_TRACE][2026-08-08T17:03:06.091Z][ADMISSION] signature verified — normalizing event type=message.retracted
-[EDA_TRACE][2026-08-08T17:03:06.092Z][ADMISSION] envelope accepted — event_id=evt_1 channel=ch_1
-[EDA_TRACE][2026-08-08T17:03:06.097Z][ADMISSION] signature verified — normalizing event type=message.edited
-[EDA_TRACE][2026-08-08T17:03:06.105Z][ADMISSION] signature verified — normalizing event type=unknown
-[EDA_TRACE][2026-08-08T17:03:06.116Z][ADMISSION] signature verified — normalizing event type=message.published
+[EDA_TRACE][2026-08-09T07:08:56.079Z][E2E_START] initializing E2E trace test
+[EDA_TRACE][2026-08-09T07:08:56.108Z][E2E_SETUP] session=e2e00000-0000-0000-0000-000000000100 channel=chan_test_123 status=ACTIVE
+[EDA_TRACE][2026-08-09T07:08:56.109Z][ADMISSION] simulated POST /webhooks/portal event_id=evt_e2e_test_001
+[EDA_TRACE][2026-08-09T07:08:56.110Z][BUS_ACCEPT] deduplicating event_id=evt_e2e_test_001 channel=chan_test_123
+[EDA_TRACE][2026-08-09T07:08:56.110Z][BUS_ACCEPT] accepted — delivery_id=msg_0
+[EDA_TRACE][2026-08-09T07:08:56.111Z][WORKER_POLL] starting consume_forever for one cycle
+[EDA_TRACE][2026-08-09T07:08:56.111Z][WORKER_POLL] received delivery msg_0 event=evt_e2e_test_001 type=message.published
+[EDA_TRACE][2026-08-09T07:08:56.112Z][HANDLER_LOOKUP] querying negotiation_states by portal_channel_id=chan_test_123
+[EDA_TRACE][2026-08-09T07:08:56.115Z][AUDIT_WRITE] TURN_PUBLISHED session=e2e00000-0000-0000-0000-000000000100 channel=chan_test_123
+[EDA_TRACE][2026-08-09T07:08:56.127Z][BUS_ACK] acked delivery msg_0
+[EDA_TRACE][2026-08-09T07:08:56.174Z][E2E_END] VERIFIED: 1 audit record, session=e2e00000-0000-0000-0000-000000000100, action=TURN_PUBLISHED
+[EDA_TRACE][2026-08-09T07:08:58.993Z][ADMISSION] signature verified — normalizing event type=message.published
+[EDA_TRACE][2026-08-09T07:08:58.994Z][ADMISSION] envelope accepted — event_id=evt_1 channel=ch_1
+[EDA_TRACE][2026-08-09T07:08:59.003Z][ADMISSION] signature verified — normalizing event type=message.retracted
+[EDA_TRACE][2026-08-09T07:08:59.005Z][ADMISSION] envelope accepted — event_id=evt_1 channel=ch_1
+[EDA_TRACE][2026-08-09T07:08:59.014Z][ADMISSION] signature verified — normalizing event type=message.edited
+[EDA_TRACE][2026-08-09T07:08:59.032Z][ADMISSION] signature verified — normalizing event type=unknown
+[EDA_TRACE][2026-08-09T07:08:59.055Z][ADMISSION] signature verified — normalizing event type=message.published

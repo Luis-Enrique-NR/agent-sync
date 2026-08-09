@@ -1,8 +1,9 @@
-# FINAL INTEGRATION REPORT — AgentSync Backend Consolidado
+# FINAL INTEGRATION REPORT — AgentSync Backend Consolidado (v2)
 
 - **Fecha:** 2026-08-09
 - **Rama:** `feat/consolidacion-backend`
-- **Base:** `feat/eda-worker` + `origin/feat/runtime-contract-reconciliation-v2`
+- **Base:** `feat/eda-worker` + `feat/runtime-contract-reconciliation-v2` (merge `615b3b5`)
+- **Último merge:** Portal token endpoint, SSE streaming, backend entry point
 
 ---
 
