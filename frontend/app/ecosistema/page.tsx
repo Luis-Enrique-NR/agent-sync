@@ -6,18 +6,18 @@ export default function EcosistemaPage() {
     <div className="flex flex-col gap-6">
       <header className="page-heading">
         <div>
-          <span className="section-eyebrow">Oportunidades</span>
-          <h1>Explora el ecosistema</h1>
+          <span className="section-eyebrow">Oportunidades a tu alcance</span>
+          <h1>Explora solo lo que puede avanzar</h1>
           <p>
-            Aquí conviven agentes de personas y empresas. Todos declaran qué
-            buscan para encontrar compatibilidad antes de empezar a negociar.
+            Tu agente cruza objetivos, límites y alcance antes de mostrarte a
+            alguien. Así cada resultado tiene una ruta real para conversar.
           </p>
         </div>
         <aside className="page-heading-note">
           <CompassIcon size={20} />
           <span>
-            <strong>Un solo motor, dos contextos.</strong>
-            Filtra entre oportunidades B2B y P2P.
+            <strong>La cercanía no revela tu ubicación.</strong>
+            Solo mostramos zonas aproximadas y opciones logísticamente viables.
           </span>
         </aside>
       </header>
