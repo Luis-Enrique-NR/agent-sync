@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import mockData from "@/data/mockData.json";
 import {
   ArrowRightIcon,
@@ -83,7 +82,7 @@ const COMPANY_CAPABILITY_SUGGESTIONS = [
 ];
 
 type EntityType = "company" | "person";
-type EditSection = "objectives" | "safety" | "voice" | "tools";
+type EditSection = "objectives" | "safety" | "tools";
 
 interface HardLimitsState {
   maxUnitPrice: string;
@@ -317,7 +316,7 @@ function ObjectivesEditor({
       <div className="field-heading">
         <div>
           <strong>Objetivos con contexto propio</strong>
-          <span>Cada ruta reúne lo que buscas, lo que aportas y lo que el agente debe saber.</span>
+          <span>Cada ruta separa lo que necesitas recibir de lo que autorizas a proponer.</span>
         </div>
         <span className="field-count">{objectiveContexts.length} activos</span>
       </div>
@@ -345,8 +344,8 @@ function ObjectivesEditor({
                     <strong>{objective.goal.trim() || "Objetivo sin título"}</strong>
                     <small>
                       {signalCount > 0
-                        ? `${objective.seeks.length} señales · ${objective.offers.length} recursos`
-                        : "Añade señales y recursos para darle más criterio"}
+                        ? `${objective.seeks.length} requisitos · ${objective.offers.length} aportes`
+                        : "Define ambos lados del posible acuerdo"}
                     </small>
                   </span>
                   <i>{isOpen ? "Cerrar" : "Editar"}</i>
@@ -385,10 +384,18 @@ function ObjectivesEditor({
                     />
                   </label>
 
-                  <div className="objective-signal-grid">
+                  <div className="objective-exchange-intro">
+                    <strong>Las dos partes del acuerdo</strong>
+                    <span>Tu agente busca una coincidencia entre lo que necesitas y lo que estás dispuesto a aportar.</span>
+                  </div>
+
+                  <div className="objective-exchange-grid">
                     <TagEditor
-                      label="Qué debe encontrar"
-                      helper="Señales de una oportunidad compatible"
+                      eyebrow="La otra parte"
+                      label="Lo que necesitas recibir"
+                      helper="Requisitos que la oportunidad debe cumplir para servirte."
+                      placeholder="Ej. proveedor certificado"
+                      variant="seeking"
                       values={objective.seeks}
                       suggestions={
                         entityType === "company"
@@ -399,9 +406,16 @@ function ObjectivesEditor({
                         updateObjective(objective.objective_id, { seeks })
                       }
                     />
+                    <div className="objective-exchange-connector" aria-hidden="true">
+                      <span>Debe encajar con</span>
+                      <i>↔</i>
+                    </div>
                     <TagEditor
-                      label="Qué puede ofrecer"
-                      helper="Recursos o condiciones útiles para esta meta"
+                      eyebrow="Tu lado"
+                      label="Lo que puedes aportar"
+                      helper="Condiciones, recursos o capacidades que autorizas a proponer."
+                      placeholder="Ej. contrato por 12 meses"
+                      variant="offering"
                       values={objective.offers}
                       suggestions={
                         entityType === "company"
@@ -453,14 +467,20 @@ function ObjectivesEditor({
 }
 
 function TagEditor({
+  eyebrow,
   label,
   helper,
+  placeholder,
+  variant,
   values,
   suggestions,
   onChange,
 }: {
+  eyebrow?: string;
   label: string;
   helper: string;
+  placeholder?: string;
+  variant?: "seeking" | "offering";
   values: string[];
   suggestions: string[];
   onChange: (values: string[]) => void;
@@ -475,8 +495,9 @@ function TagEditor({
   };
 
   return (
-    <div className="tag-editor">
+    <div className={`tag-editor ${variant ? `is-${variant}` : ""}`}>
       <label>
+        {eyebrow ? <span className="tag-editor-eyebrow">{eyebrow}</span> : null}
         <strong>{label}</strong>
         <span>{helper}</span>
       </label>
@@ -490,7 +511,7 @@ function TagEditor({
               addValue(input);
             }
           }}
-          placeholder="Escribe y presiona Enter"
+          placeholder={placeholder ?? "Escribe y presiona Enter"}
         />
         <button type="button" onClick={() => addValue(input)} aria-label={`Añadir ${label}`}>
           +
@@ -742,7 +763,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
     { title: "Representación", copy: "Quién es y cómo se presenta" },
     { title: "Objetivos", copy: "Qué explora en paralelo" },
     { title: "Control", copy: "Límites y decisiones" },
-    { title: "Recursos", copy: "Cómo trabaja y con qué" },
+    { title: "Recursos", copy: "Qué puede consultar" },
   ];
 
   const validObjectives = draft.objectiveContexts.filter((objective) =>
@@ -895,16 +916,6 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
 
             {step === 3 ? (
               <div className="resources-step">
-                <label className="personality-field">
-                  <span>
-                    <strong>Forma de comunicarse</strong>
-                    <small>Una guía breve; los límites de seguridad se aplican aparte.</small>
-                  </span>
-                  <textarea
-                    value={draft.personality}
-                    onChange={(event) => setDraft({ ...draft, personality: event.target.value })}
-                  />
-                </label>
                 <div>
                   <div className="field-heading">
                     <div>
@@ -967,11 +978,37 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
   const { sessions, toggleAgentStatus, updateAgent } = useAgentSync();
   const [draft, setDraft] = useState(() => draftFromAgent(agent));
   const [editSection, setEditSection] = useState<EditSection | null>(null);
+  const [editorWidth, setEditorWidth] = useState(700);
+  const resizeState = useRef<{ startX: number; startWidth: number } | null>(null);
   const agentObjectiveContexts = objectiveContextsFromAgent(agent);
 
   useEffect(() => {
     if (!editSection) setDraft(draftFromAgent(agent));
   }, [agent, editSection]);
+
+  useEffect(() => {
+    const clampWidth = (width: number) =>
+      Math.max(500, Math.min(940, window.innerWidth - 48, width));
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!resizeState.current) return;
+      const { startX, startWidth } = resizeState.current;
+      setEditorWidth(clampWidth(startWidth + startX - event.clientX));
+    };
+    const stopResizing = () => {
+      resizeState.current = null;
+      document.body.classList.remove("is-resizing-agent-editor");
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResizing);
+    window.addEventListener("pointercancel", stopResizing);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResizing);
+      window.removeEventListener("pointercancel", stopResizing);
+      document.body.classList.remove("is-resizing-agent-editor");
+    };
+  }, []);
   const ownerSessions = sessions.filter((session) =>
     belongsToAgent(session, agent.agent_id),
   );
@@ -998,7 +1035,6 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
   const editorTitle: Record<EditSection, string> = {
     objectives: "Objetivos y oportunidades",
     safety: "Límites y decisiones",
-    voice: "Forma de representarte",
     tools: "Recursos permitidos",
   };
 
@@ -1061,7 +1097,7 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
                 <span className="objective-board-copy">
                   <p>{objective.goal}</p>
                   <small>
-                    {objective.seeks.length} señales · {objective.offers.length} recursos
+                    {objective.seeks.length} requisitos · {objective.offers.length} aportes
                   </small>
                 </span>
                 <span className={`objective-state ${status.className}`}>{status.label}</span>
@@ -1095,40 +1131,18 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
         </div>
       </section>
 
-      <section className="agent-progress-panel" aria-labelledby="agent-progress-title">
-        <div>
-          <span className="section-eyebrow">En qué va</span>
-          <h2 id="agent-progress-title">Avanza por rutas independientes</h2>
-          <p>Una decisión pendiente no detiene los demás objetivos.</p>
-        </div>
-        <div className="agent-progress-facts">
-          <span><strong>{agent.objectives.length}</strong><small>objetivos</small></span>
-          <span><strong>{activeSessions.length}</strong><small>negociaciones</small></span>
-          <span><strong>{pendingCount}</strong><small>por decidir</small></span>
-        </div>
-        <div className="agent-progress-links">
-          {pendingCount > 0 ? <Link href="/bandeja">Revisar decisiones <ArrowRightIcon size={14} /></Link> : null}
-          <Link href="/ecosistema">Ver oportunidades <ArrowRightIcon size={14} /></Link>
-        </div>
-      </section>
-
       <section className="agent-settings" aria-labelledby="agent-settings-title">
         <div className="agent-settings-heading">
           <div>
             <span className="section-eyebrow">Configuración</span>
             <h2 id="agent-settings-title">Ajusta solo lo que necesitas</h2>
           </div>
-          <p>Aquí defines sus límites, su voz y las herramientas que puede usar.</p>
+          <p>Aquí defines sus límites y las herramientas que puede consultar.</p>
         </div>
         <div className="agent-setting-grid">
           <button type="button" onClick={() => setEditSection("safety")}>
             <ShieldIcon size={19} />
             <span><strong>Límites y decisiones</strong><small>Define precios, datos privados y cuándo debe consultarte.</small></span>
-            <ArrowRightIcon size={15} />
-          </button>
-          <button type="button" onClick={() => setEditSection("voice")}>
-            <SparkIcon size={19} />
-            <span><strong>Forma de comunicarse</strong><small>Edita su descripción pública y el tono con el que te representa.</small></span>
             <ArrowRightIcon size={15} />
           </button>
           <button type="button" onClick={() => setEditSection("tools")}>
@@ -1142,7 +1156,52 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
       {editSection ? (
         <div className="agent-editor-layer">
           <button type="button" className="agent-editor-backdrop" onClick={closeEditor} aria-label="Cerrar editor" />
-          <aside className="agent-editor" role="dialog" aria-modal="true" aria-labelledby="agent-editor-title">
+          <aside
+            className={`agent-editor ${editSection === "objectives" ? "is-objectives" : ""}`}
+            style={
+              editSection === "objectives"
+                ? ({ "--agent-editor-width": `${editorWidth}px` } as CSSProperties)
+                : undefined
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="agent-editor-title"
+          >
+            {editSection === "objectives" ? (
+              <div
+                className="agent-editor-resizer"
+                role="separator"
+                aria-label="Cambiar el ancho del editor"
+                aria-orientation="vertical"
+                aria-valuemin={500}
+                aria-valuemax={940}
+                aria-valuenow={Math.round(editorWidth)}
+                tabIndex={0}
+                title="Arrastra para cambiar el ancho"
+                onPointerDown={(event) => {
+                  resizeState.current = {
+                    startX: event.clientX,
+                    startWidth: editorWidth,
+                  };
+                  document.body.classList.add("is-resizing-agent-editor");
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  event.preventDefault();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                  event.preventDefault();
+                  const direction = event.key === "ArrowLeft" ? 1 : -1;
+                  const availableWidth = Math.min(940, window.innerWidth - 48);
+                  setEditorWidth((width) =>
+                    Math.max(500, Math.min(availableWidth, width + direction * 32)),
+                  );
+                }}
+              >
+                <span />
+                <span />
+                <span />
+              </div>
+            ) : null}
             <header>
               <div>
                 <span>Editar configuración</span>
@@ -1161,12 +1220,6 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
                 />
               ) : null}
               {editSection === "safety" ? <SafetyFields draft={draft} onChange={setDraft} /> : null}
-              {editSection === "voice" ? (
-                <div className="setup-fields">
-                  <label><span>Descripción pública</span><textarea value={draft.publicDescription} onChange={(event) => setDraft({ ...draft, publicDescription: event.target.value })} /></label>
-                  <label><span>Forma de comunicarse</span><textarea className="is-tall" value={draft.personality} onChange={(event) => setDraft({ ...draft, personality: event.target.value })} /></label>
-                </div>
-              ) : null}
               {editSection === "tools" ? <ToolSelector enabledTools={draft.enabledTools} onChange={(enabledTools) => setDraft({ ...draft, enabledTools })} /> : null}
             </div>
             <footer>
