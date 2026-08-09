@@ -79,18 +79,27 @@ class OpenAIProvider:
 
     def generate_step(self, request: GenerationRequest) -> ProviderStep:
         prompt = self._build_prompt(request)
-        response = self._client.responses.parse(
+        schema = ProviderStep.model_json_schema()
+        response = self._client.chat.completions.create(
             model=self._model,
-            instructions=SYSTEM_INSTRUCTIONS,
-            input=prompt,
-            text_format=ProviderStep,
-            max_output_tokens=self._max_output_tokens,
-            store=False,
+            messages=[
+                {"role": "system", "content": SYSTEM_INSTRUCTIONS},
+                {"role": "user", "content": prompt},
+            ],
+            response_format={
+                "type": "json_schema",
+                "json_schema": {
+                    "name": "ProviderStep",
+                    "schema": schema,
+                },
+            },
+            max_tokens=self._max_output_tokens,
+            temperature=0.2,
         )
-        parsed = response.output_parsed
-        if parsed is None:
-            raise RuntimeError("model returned no parsed ProviderStep")
-        return parsed
+        raw = response.choices[0].message.content
+        if not raw:
+            raise RuntimeError("model returned empty response")
+        return ProviderStep.model_validate_json(raw)
 
     @staticmethod
     def _speaker_context(profile: AgentProfile) -> dict[str, object]:
