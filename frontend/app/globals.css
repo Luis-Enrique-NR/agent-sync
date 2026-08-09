@@ -93,6 +93,7 @@ h4,
   position: sticky;
   top: 0;
   z-index: 40;
+  view-transition-name: app-header;
   border-bottom: 1px solid rgba(189, 202, 202, 0.75);
   background: rgba(243, 245, 241, 0.94);
   backdrop-filter: blur(16px);
@@ -248,6 +249,33 @@ h4,
   animation: 220ms 45ms cubic-bezier(0.22, 1, 0.36, 1) both page-fade-in;
 }
 
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(app-header),
+::view-transition-group(app-mobile-nav) {
+  animation: none;
+}
+
+::view-transition-group(app-header) {
+  z-index: 100;
+}
+
+::view-transition-group(app-mobile-nav) {
+  z-index: 110;
+}
+
+::view-transition-old(app-header),
+::view-transition-old(app-mobile-nav) {
+  display: none;
+}
+
+::view-transition-new(app-header),
+::view-transition-new(app-mobile-nav) {
+  animation: none;
+}
+
 @keyframes page-fade-out {
   from {
     opacity: 1;
@@ -286,6 +314,7 @@ h4,
 
 .mobile-nav {
   display: none;
+  view-transition-name: app-mobile-nav;
 }
 
 /* Page introductions */
