@@ -2146,7 +2146,7 @@ h4,
     z-index: 50;
     display: grid;
     min-height: 68px;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 7px;

@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useAgentSync } from "@/lib/store";
 import {
   CompassIcon,
-  HistoryIcon,
   HomeIcon,
   InboxIcon,
   LogoMark,
@@ -19,7 +18,6 @@ const navigation = [
   { href: "/setup", label: "Mi agente", icon: SlidersIcon },
   { href: "/ecosistema", label: "Explorar", icon: CompassIcon },
   { href: "/bandeja", label: "Decisiones", icon: InboxIcon },
-  { href: "/historial", label: "Historial", icon: HistoryIcon },
 ];
 
 function isCurrent(pathname: string, href: string) {
