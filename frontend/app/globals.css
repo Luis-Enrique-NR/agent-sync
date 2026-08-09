@@ -2485,7 +2485,8 @@ h4,
 .setup-fields input,
 .setup-fields textarea,
 .numeric-limits input,
-.objective-input-row input,
+.objective-brief-fields input,
+.objective-brief-fields textarea,
 .tag-input-wrap input,
 .threshold-field input,
 .personality-field textarea {
@@ -2506,6 +2507,11 @@ h4,
   resize: vertical;
 }
 
+.objective-brief-fields textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+
 .setup-fields textarea.is-tall {
   min-height: 150px;
 }
@@ -2513,7 +2519,8 @@ h4,
 .setup-fields input:focus,
 .setup-fields textarea:focus,
 .numeric-limits input:focus,
-.objective-input-row input:focus,
+.objective-brief-fields input:focus,
+.objective-brief-fields textarea:focus,
 .tag-input-wrap input:focus,
 .threshold-field input:focus,
 .personality-field textarea:focus {
@@ -2553,30 +2560,92 @@ h4,
   font-weight: 700;
 }
 
-.objective-input-list {
+.objective-brief-list {
   display: flex;
   margin-top: 13px;
   flex-direction: column;
   gap: 8px;
 }
 
-.objective-input-row {
-  display: grid;
-  grid-template-columns: 31px minmax(0, 1fr) 30px;
-  align-items: center;
-  gap: 9px;
+.objective-brief {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: #fbfcfa;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
-.objective-input-row > span {
+.objective-brief.is-open {
+  border-color: rgba(243, 111, 69, 0.48);
+  background: var(--background);
+  box-shadow: 0 10px 28px rgba(20, 51, 78, 0.07);
+}
+
+.objective-brief-summary {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 32px;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 11px;
+}
+
+.objective-brief-index {
   color: var(--accent-dark);
   font-family: var(--font-quantico), sans-serif;
   font-size: 10px;
+  text-align: center;
 }
 
-.objective-input-row > button {
+.objective-brief-toggle {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border: 0;
+  padding: 2px 4px;
+  color: var(--foreground);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.objective-brief-toggle > span,
+.objective-brief-toggle strong,
+.objective-brief-toggle small {
+  display: block;
+  min-width: 0;
+}
+
+.objective-brief-toggle > span {
+  flex: 1;
+}
+
+.objective-brief-toggle strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.objective-brief-toggle small {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.objective-brief-toggle i {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.objective-brief-remove {
   display: grid;
-  width: 29px;
-  height: 29px;
+  width: 30px;
+  height: 30px;
   place-items: center;
   border: 0;
   border-radius: 8px;
@@ -2586,13 +2655,65 @@ h4,
   cursor: pointer;
 }
 
-.objective-input-row > button:hover {
+.objective-brief-remove:hover {
   color: var(--danger);
   background: var(--danger-soft);
 }
 
-.objective-input-row > button:disabled {
+.objective-brief-remove:disabled {
   visibility: hidden;
+}
+
+.objective-brief-fields {
+  display: flex;
+  border-top: 1px solid var(--border);
+  padding: 17px;
+  flex-direction: column;
+  gap: 14px;
+  animation: objectiveBriefOpen 200ms ease both;
+}
+
+@keyframes objectiveBriefOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.objective-goal-field,
+.objective-context-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.objective-goal-field > span strong,
+.objective-goal-field > span small,
+.objective-context-field > span strong,
+.objective-context-field > span small {
+  display: block;
+}
+
+.objective-goal-field > span strong,
+.objective-context-field > span strong {
+  font-size: 11px;
+}
+
+.objective-goal-field > span small,
+.objective-context-field > span small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.objective-signal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .add-objective {
@@ -2611,13 +2732,6 @@ h4,
 
 .add-objective span {
   font-size: 16px;
-}
-
-.match-fields {
-  display: grid;
-  margin-top: 22px;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
 }
 
 .tag-editor {
@@ -3133,11 +3247,20 @@ h4,
 }
 
 .objective-board p {
-  min-height: 42px;
-  margin: 8px 0 12px;
+  margin: 8px 0 3px;
   font-size: 12px;
   font-weight: 700;
   line-height: 1.4;
+}
+
+.objective-board-copy {
+  display: block;
+  min-height: 62px;
+}
+
+.objective-board-copy small {
+  color: var(--muted);
+  font-size: 9px;
 }
 
 .objective-state {
@@ -4072,10 +4195,18 @@ h4,
 
   .entity-choice,
   .setup-fields.two-columns,
-  .match-fields,
+  .objective-signal-grid,
   .tool-selector,
   .activation-summary {
     grid-template-columns: 1fr;
+  }
+
+  .objective-brief-toggle i {
+    display: none;
+  }
+
+  .objective-brief-fields {
+    padding: 14px;
   }
 
   .activation-summary span + span {

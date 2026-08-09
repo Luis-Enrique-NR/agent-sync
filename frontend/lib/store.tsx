@@ -24,7 +24,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v3";
+const STORAGE_KEY = "agentsync-demo-v4";
 
 interface AgentSyncState {
   agents: AgentProfile[];

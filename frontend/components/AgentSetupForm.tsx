@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { belongsToAgent } from "@/lib/demo";
 import { useAgentSync } from "@/lib/store";
 import type {
+  AgentObjectiveContext,
   AgentProfile,
   AgentTool,
   EscalationRule,
@@ -100,14 +101,46 @@ interface ConfigurationDraft {
   displayName: string;
   publicDescription: string;
   personality: string;
-  objectives: string[];
-  interests: string[];
-  capabilities: string[];
+  objectiveContexts: AgentObjectiveContext[];
   hardLimits: HardLimitsState;
   neverDisclose: SensitiveDataCategory[];
   sensitiveRules: SensitiveRules;
   amountThreshold: string;
   enabledTools: string[];
+}
+
+function createObjectiveContext(
+  goal = "",
+  options?: Partial<AgentObjectiveContext>,
+): AgentObjectiveContext {
+  return {
+    objective_id:
+      options?.objective_id ?? `objective-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    goal,
+    seeks: [...(options?.seeks ?? [])],
+    offers: [...(options?.offers ?? [])],
+    negotiation_context: options?.negotiation_context ?? "",
+  };
+}
+
+function objectiveContextsFromAgent(agent?: AgentProfile): AgentObjectiveContext[] {
+  if (agent?.objective_contexts?.length) {
+    return agent.objective_contexts.map((objective) =>
+      createObjectiveContext(objective.goal, objective),
+    );
+  }
+
+  if (agent?.objectives.length) {
+    return agent.objectives.map((goal, index) =>
+      createObjectiveContext(goal, {
+        objective_id: `${agent.agent_id}-objective-${index + 1}`,
+        seeks: index === 0 ? agent.interests : [],
+        offers: index === 0 ? agent.capabilities : [],
+      }),
+    );
+  }
+
+  return [createObjectiveContext()];
 }
 
 function allCategories(): SensitiveCategory[] {
@@ -159,9 +192,7 @@ function draftFromAgent(
     personality:
       agent?.personality ??
       "Claro, respetuoso y directo. Explica sus razones y nunca presiona a la otra parte.",
-    objectives: agent?.objectives.length ? [...agent.objectives] : [""],
-    interests: [...(agent?.interests ?? [])],
-    capabilities: [...(agent?.capabilities ?? [])],
+    objectiveContexts: objectiveContextsFromAgent(agent),
     hardLimits: hardLimitsFromAgent(agent),
     neverDisclose: [...(agent?.never_disclose ?? [])],
     sensitiveRules: rulesFromAgent(agent),
@@ -198,6 +229,16 @@ function profileFromDraft(
   },
 ): AgentProfile {
   const hardLimits = [] as AgentProfile["hard_limits"];
+  const objectiveContexts = draft.objectiveContexts
+    .map((objective) => ({
+      ...objective,
+      goal: objective.goal.trim(),
+      seeks: objective.seeks.map((item) => item.trim()).filter(Boolean),
+      offers: objective.offers.map((item) => item.trim()).filter(Boolean),
+      negotiation_context: objective.negotiation_context.trim(),
+    }))
+    .filter((objective) => objective.goal);
+  const uniqueSignals = (values: string[]) => [...new Set(values)];
 
   if (draft.entityType === "company") {
     if (draft.hardLimits.maxUnitPrice) {
@@ -233,9 +274,10 @@ function profileFromDraft(
     public_description:
       draft.publicDescription.trim() || "Agente configurado en AgentSync.",
     personality: draft.personality.trim(),
-    objectives: draft.objectives.map((item) => item.trim()).filter(Boolean),
-    interests: draft.interests,
-    capabilities: draft.capabilities,
+    objectives: objectiveContexts.map((objective) => objective.goal),
+    interests: uniqueSignals(objectiveContexts.flatMap((objective) => objective.seeks)),
+    capabilities: uniqueSignals(objectiveContexts.flatMap((objective) => objective.offers)),
+    objective_contexts: objectiveContexts,
     hard_limits: hardLimits,
     never_disclose: draft.neverDisclose,
     escalation_rules: escalationRulesFromDraft(draft),
@@ -246,60 +288,164 @@ function profileFromDraft(
   };
 }
 
-function updateListItem(
-  values: string[],
-  index: number,
-  value: string,
-): string[] {
-  return values.map((item, itemIndex) => (itemIndex === index ? value : item));
-}
-
 function ObjectivesEditor({
-  objectives,
+  objectiveContexts,
+  entityType,
   onChange,
 }: {
-  objectives: string[];
-  onChange: (objectives: string[]) => void;
+  objectiveContexts: AgentObjectiveContext[];
+  entityType: EntityType;
+  onChange: (objectiveContexts: AgentObjectiveContext[]) => void;
 }) {
+  const [expandedId, setExpandedId] = useState<string | null>(
+    () => objectiveContexts[0]?.objective_id ?? null,
+  );
+  const updateObjective = (
+    objectiveId: string,
+    patch: Partial<AgentObjectiveContext>,
+  ) => {
+    onChange(
+      objectiveContexts.map((objective) =>
+        objective.objective_id === objectiveId
+          ? { ...objective, ...patch }
+          : objective,
+      ),
+    );
+  };
+
   return (
     <div className="objective-editor">
       <div className="field-heading">
         <div>
-          <strong>Objetivos en paralelo</strong>
-          <span>Uno es suficiente; tres suele ser un buen punto de partida.</span>
+          <strong>Objetivos con contexto propio</strong>
+          <span>Cada ruta reúne lo que buscas, lo que aportas y lo que el agente debe saber.</span>
         </div>
-        <span className="field-count">{objectives.length} activos</span>
+        <span className="field-count">{objectiveContexts.length} activos</span>
       </div>
 
-      <div className="objective-input-list">
-        {objectives.map((objective, index) => (
-          <div className="objective-input-row" key={`objective-${index}`}>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            <input
-              value={objective}
-              onChange={(event) =>
-                onChange(updateListItem(objectives, index, event.target.value))
-              }
-              placeholder="Ej. Encontrar un proveedor para 20.000 unidades"
-              aria-label={`Objetivo ${index + 1}`}
-            />
-            <button
-              type="button"
-              onClick={() => onChange(objectives.filter((_, itemIndex) => itemIndex !== index))}
-              disabled={objectives.length === 1}
-              aria-label={`Eliminar objetivo ${index + 1}`}
+      <div className="objective-brief-list">
+        {objectiveContexts.map((objective, index) => {
+          const isOpen = expandedId === objective.objective_id;
+          const signalCount = objective.seeks.length + objective.offers.length;
+          return (
+            <article
+              className={`objective-brief ${isOpen ? "is-open" : ""}`}
+              key={objective.objective_id}
             >
-              ×
-            </button>
-          </div>
-        ))}
+              <div className="objective-brief-summary">
+                <span className="objective-brief-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <button
+                  type="button"
+                  className="objective-brief-toggle"
+                  onClick={() => setExpandedId(isOpen ? null : objective.objective_id)}
+                  aria-expanded={isOpen}
+                >
+                  <span>
+                    <strong>{objective.goal.trim() || "Objetivo sin título"}</strong>
+                    <small>
+                      {signalCount > 0
+                        ? `${objective.seeks.length} señales · ${objective.offers.length} recursos`
+                        : "Añade señales y recursos para darle más criterio"}
+                    </small>
+                  </span>
+                  <i>{isOpen ? "Cerrar" : "Editar"}</i>
+                </button>
+                <button
+                  type="button"
+                  className="objective-brief-remove"
+                  onClick={() => {
+                    const next = objectiveContexts.filter(
+                      (item) => item.objective_id !== objective.objective_id,
+                    );
+                    onChange(next);
+                    if (isOpen) setExpandedId(next[0]?.objective_id ?? null);
+                  }}
+                  disabled={objectiveContexts.length === 1}
+                  aria-label={`Eliminar objetivo ${index + 1}`}
+                >
+                  ×
+                </button>
+              </div>
+
+              {isOpen ? (
+                <div className="objective-brief-fields">
+                  <label className="objective-goal-field">
+                    <span>
+                      <strong>Qué quieres lograr</strong>
+                      <small>Una meta concreta que pueda explorar de forma independiente.</small>
+                    </span>
+                    <input
+                      value={objective.goal}
+                      onChange={(event) =>
+                        updateObjective(objective.objective_id, { goal: event.target.value })
+                      }
+                      placeholder="Ej. Encontrar un proveedor para 20.000 unidades"
+                      aria-label={`Meta del objetivo ${index + 1}`}
+                    />
+                  </label>
+
+                  <div className="objective-signal-grid">
+                    <TagEditor
+                      label="Qué debe encontrar"
+                      helper="Señales de una oportunidad compatible"
+                      values={objective.seeks}
+                      suggestions={
+                        entityType === "company"
+                          ? COMPANY_INTEREST_SUGGESTIONS
+                          : PERSON_INTEREST_SUGGESTIONS
+                      }
+                      onChange={(seeks) =>
+                        updateObjective(objective.objective_id, { seeks })
+                      }
+                    />
+                    <TagEditor
+                      label="Qué puede ofrecer"
+                      helper="Recursos o condiciones útiles para esta meta"
+                      values={objective.offers}
+                      suggestions={
+                        entityType === "company"
+                          ? COMPANY_CAPABILITY_SUGGESTIONS
+                          : PERSON_CAPABILITY_SUGGESTIONS
+                      }
+                      onChange={(offers) =>
+                        updateObjective(objective.objective_id, { offers })
+                      }
+                    />
+                  </div>
+
+                  <label className="objective-context-field">
+                    <span>
+                      <strong>Contexto útil para negociar</strong>
+                      <small>Fechas, ubicación, preferencias o hechos que solo importan en esta ruta.</small>
+                    </span>
+                    <textarea
+                      value={objective.negotiation_context}
+                      onChange={(event) =>
+                        updateObjective(objective.objective_id, {
+                          negotiation_context: event.target.value,
+                        })
+                      }
+                      placeholder="Ej. Necesito cerrar antes del 30 de septiembre; puedo recibir muestras en Bogotá."
+                    />
+                  </label>
+                </div>
+              ) : null}
+            </article>
+          );
+        })}
       </div>
 
       <button
         type="button"
         className="add-objective"
-        onClick={() => onChange([...objectives, ""])}
-        disabled={objectives.length >= 20}
+        onClick={() => {
+          const objective = createObjectiveContext();
+          onChange([...objectiveContexts, objective]);
+          setExpandedId(objective.objective_id);
+        }}
+        disabled={objectiveContexts.length >= 20}
       >
         <span>+</span> Añadir otro objetivo
       </button>
@@ -600,7 +746,9 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
     { title: "Recursos", copy: "Cómo trabaja y con qué" },
   ];
 
-  const validObjectives = draft.objectives.filter((objective) => objective.trim());
+  const validObjectives = draft.objectiveContexts.filter((objective) =>
+    objective.goal.trim(),
+  );
   const canContinue =
     step === 0
       ? Boolean(draft.displayName.trim() && draft.publicDescription.trim())
@@ -622,7 +770,10 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
   const activateAgent = async () => {
     if (saving || validObjectives.length === 0) return;
     setSaving(true);
-    const profile = profileFromDraft({ ...draft, objectives: validObjectives });
+    const profile = profileFromDraft({
+      ...draft,
+      objectiveContexts: validObjectives,
+    });
     registerAgent(profile);
     await new Promise((resolve) => setTimeout(resolve, 650));
     attachAgent(profile.agent_id);
@@ -732,36 +883,13 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
             ) : null}
 
             {step === 1 ? (
-              <>
-                <ObjectivesEditor
-                  objectives={draft.objectives}
-                  onChange={(objectives) => setDraft({ ...draft, objectives })}
-                />
-                <div className="match-fields">
-                  <TagEditor
-                    label="Qué está buscando"
-                    helper="Señales que ayudan a encontrar oportunidades"
-                    values={draft.interests}
-                    suggestions={
-                      draft.entityType === "company"
-                        ? COMPANY_INTEREST_SUGGESTIONS
-                        : PERSON_INTEREST_SUGGESTIONS
-                    }
-                    onChange={(interests) => setDraft({ ...draft, interests })}
-                  />
-                  <TagEditor
-                    label="Qué puede ofrecer"
-                    helper="Lo que otras partes pueden encontrar en tu agente"
-                    values={draft.capabilities}
-                    suggestions={
-                      draft.entityType === "company"
-                        ? COMPANY_CAPABILITY_SUGGESTIONS
-                        : PERSON_CAPABILITY_SUGGESTIONS
-                    }
-                    onChange={(capabilities) => setDraft({ ...draft, capabilities })}
-                  />
-                </div>
-              </>
+              <ObjectivesEditor
+                objectiveContexts={draft.objectiveContexts}
+                entityType={draft.entityType}
+                onChange={(objectiveContexts) =>
+                  setDraft({ ...draft, objectiveContexts })
+                }
+              />
             ) : null}
 
             {step === 2 ? <SafetyFields draft={draft} onChange={setDraft} /> : null}
@@ -840,6 +968,7 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
   const { sessions, toggleAgentStatus, updateAgent } = useAgentSync();
   const [draft, setDraft] = useState(() => draftFromAgent(agent));
   const [editSection, setEditSection] = useState<EditSection | null>(null);
+  const agentObjectiveContexts = objectiveContextsFromAgent(agent);
 
   useEffect(() => {
     if (!editSection) setDraft(draftFromAgent(agent));
@@ -880,11 +1009,13 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
   };
 
   const saveEditor = () => {
-    const validObjectives = draft.objectives.filter((objective) => objective.trim());
+    const validObjectives = draft.objectiveContexts.filter((objective) =>
+      objective.goal.trim(),
+    );
     if (validObjectives.length === 0) return;
     updateAgent(
       profileFromDraft(
-        { ...draft, objectives: validObjectives },
+        { ...draft, objectiveContexts: validObjectives },
         { agentId: agent.agent_id, status: agent.status, previous: agent },
       ),
     );
@@ -923,24 +1054,29 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
         </div>
 
         <div className="objective-board">
-          {agent.objectives.slice(0, 3).map((objective, index) => {
+          {agentObjectiveContexts.slice(0, 3).map((objective, index) => {
             const status = objectiveStatus(index);
             return (
-              <article key={`${objective}-${index}`}>
+              <article key={objective.objective_id}>
                 <span className="objective-number">{String(index + 1).padStart(2, "0")}</span>
-                <p>{objective}</p>
+                <span className="objective-board-copy">
+                  <p>{objective.goal}</p>
+                  <small>
+                    {objective.seeks.length} señales · {objective.offers.length} recursos
+                  </small>
+                </span>
                 <span className={`objective-state ${status.className}`}>{status.label}</span>
               </article>
             );
           })}
         </div>
-        {agent.objectives.length > 3 ? (
+        {agentObjectiveContexts.length > 3 ? (
           <button
             type="button"
             className="objective-more"
             onClick={() => setEditSection("objectives")}
           >
-            Ver {agent.objectives.length - 3} objetivo{agent.objectives.length - 3 === 1 ? "" : "s"} más
+            Ver {agentObjectiveContexts.length - 3} objetivo{agentObjectiveContexts.length - 3 === 1 ? "" : "s"} más
           </button>
         ) : null}
 
@@ -1022,23 +1158,13 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
             </header>
             <div className="agent-editor-content">
               {editSection === "objectives" ? (
-                <>
-                  <ObjectivesEditor objectives={draft.objectives} onChange={(objectives) => setDraft({ ...draft, objectives })} />
-                  <TagEditor
-                    label="Qué está buscando"
-                    helper="Señales visibles para encontrar oportunidades"
-                    values={draft.interests}
-                    suggestions={draft.entityType === "company" ? COMPANY_INTEREST_SUGGESTIONS : PERSON_INTEREST_SUGGESTIONS}
-                    onChange={(interests) => setDraft({ ...draft, interests })}
-                  />
-                  <TagEditor
-                    label="Qué puede ofrecer"
-                    helper="Capacidades visibles para otras partes"
-                    values={draft.capabilities}
-                    suggestions={draft.entityType === "company" ? COMPANY_CAPABILITY_SUGGESTIONS : PERSON_CAPABILITY_SUGGESTIONS}
-                    onChange={(capabilities) => setDraft({ ...draft, capabilities })}
-                  />
-                </>
+                <ObjectivesEditor
+                  objectiveContexts={draft.objectiveContexts}
+                  entityType={draft.entityType}
+                  onChange={(objectiveContexts) =>
+                    setDraft({ ...draft, objectiveContexts })
+                  }
+                />
               ) : null}
               {editSection === "safety" ? <SafetyFields draft={draft} onChange={setDraft} /> : null}
               {editSection === "voice" ? (

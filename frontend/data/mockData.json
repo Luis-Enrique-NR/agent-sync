@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "2.0",
+  "schemaVersion": "2.1",
   "meta": {
     "source": "Equipo AgentSync — demo hackathon",
     "environment": "simulado",
-    "purpose": "Datos de ejemplo para la demo B2B y P2P alineados con los DTOs ai.v1 y los modelos agnósticos de Lucho (interests, capabilities, status, raw_state, negotiation_outcomes). Los datos sensibles viajan como value_ref y solo se revelan tras aprobación por la bitácora/vault."
+    "purpose": "Datos de ejemplo para la demo B2B y P2P alineados con los DTOs ai.v1. objective_contexts es una extensión compatible del frontend: conserva objectives, interests y capabilities mientras el backend adopta objetivos contextualizados. Los datos sensibles viajan como value_ref y solo se revelan tras aprobación por la bitácora/vault."
   },
   "agents": [
     {
@@ -16,6 +16,29 @@
         "Encontrar hasta 3 proveedores de tela orgánica bajo USD 4.50/metro",
         "Pedir muestras físicas antes de firmar cualquier contrato",
         "Cerrar contratos de suministro de 6 meses con pago a 60 días"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-telar-proveedores",
+          "goal": "Encontrar hasta 3 proveedores de tela orgánica bajo USD 4.50/metro",
+          "seeks": ["tela organica certificada GOTS", "descuentos por volumen", "proveedor estable", "precio bajo USD 4.50/metro"],
+          "offers": ["compra de tela organica", "compra de hasta 30.000 metros al año", "relación comercial recurrente", "pago a 60 dias"],
+          "negotiation_context": "Priorizar proveedores con certificación vigente y capacidad de entrega mensual en Lima. Comparar hasta tres alternativas antes de cerrar."
+        },
+        {
+          "objective_id": "obj-telar-muestras",
+          "goal": "Pedir muestras físicas antes de firmar cualquier contrato",
+          "seeks": ["muestras de tela", "ficha técnica", "certificación GOTS verificable"],
+          "offers": ["evaluación técnica rápida", "posibilidad de contrato posterior"],
+          "negotiation_context": "La muestra debe aprobar calidad, gramaje y color antes de solicitar una decisión contractual."
+        },
+        {
+          "objective_id": "obj-telar-contrato",
+          "goal": "Cerrar contratos de suministro de 6 meses con pago a 60 días",
+          "seeks": ["contratos de suministro", "contrato renovable", "entrega mensual", "condiciones de pago a 60 días"],
+          "offers": ["contratos de suministro", "volumen anual previsible", "renovación por desempeño"],
+          "negotiation_context": "Todo precio final y compromiso contractual debe volver al equipo comercial para aprobación."
+        }
       ],
       "interests": [
         "tela organica certificada GOTS",
@@ -55,6 +78,29 @@
         "Conseguir al menos 2 clientes con contratos de 12 meses",
         "Ofrecer descuento de hasta 8% para pedidos sobre 30.000 metros/año"
       ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-organic-venta",
+          "goal": "Vender tela orgánica certificada GOTS con precio de partida de USD 4.80/metro",
+          "seeks": ["ventas por volumen", "compradores de tela orgánica", "demanda recurrente", "precio compatible"],
+          "offers": ["venta de tela organica GOTS", "certificacion GOTS", "exportacion", "disponibilidad por lote"],
+          "negotiation_context": "El precio de partida es USD 4.80/metro y nunca puede bajar de USD 3.90/metro."
+        },
+        {
+          "objective_id": "obj-organic-clientes",
+          "goal": "Conseguir al menos 2 clientes con contratos de 12 meses",
+          "seeks": ["clientes con contratos largos", "consumo mensual estable"],
+          "offers": ["suministro continuo", "certificación GOTS", "exportación por puerto del Callao"],
+          "negotiation_context": "Priorizar relaciones de doce meses y calendarios de entrega mensuales."
+        },
+        {
+          "objective_id": "obj-organic-descuento",
+          "goal": "Ofrecer descuento de hasta 8% para pedidos sobre 30.000 metros/año",
+          "seeks": ["pedidos sobre 30.000 metros", "compromiso anual"],
+          "offers": ["descuentos por volumen", "precio escalonado", "reserva de capacidad"],
+          "negotiation_context": "El descuento máximo requiere superar 30.000 metros al año y el precio final siempre necesita aprobación."
+        }
+      ],
       "interests": [
         "clientes con contratos largos",
         "ventas por volumen"
@@ -90,6 +136,29 @@
         "Vender mi auto usado sobre USD 8.000",
         "Coordinarme para una prueba de manejo en zona norte de la ciudad",
         "Cobrar en efectivo o transferencia bancaria"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-valentina-venta",
+          "goal": "Vender mi auto usado sobre USD 8.000",
+          "seeks": ["vender auto usado", "comprador de auto usado", "pago verificable", "interés en Hyundai 2021"],
+          "offers": ["venta de auto usado", "Hyundai 2021", "historial de mantenimiento", "documentación al día"],
+          "negotiation_context": "El auto está en la zona norte. El precio mínimo es USD 8.000 y se prioriza una venta ágil a un comprador verificado."
+        },
+        {
+          "objective_id": "obj-valentina-prueba",
+          "goal": "Coordinarme para una prueba de manejo en zona norte de la ciudad",
+          "seeks": ["prueba de manejo", "comprador verificado", "disponibilidad el fin de semana"],
+          "offers": ["pruebas de manejo", "horarios de fin de semana"],
+          "negotiation_context": "La dirección exacta y el teléfono solo pueden compartirse después de que Valentina lo apruebe."
+        },
+        {
+          "objective_id": "obj-valentina-pago",
+          "goal": "Cobrar en efectivo o transferencia bancaria",
+          "seeks": ["cobro en efectivo", "transferencia verificable"],
+          "offers": ["cierre rápido", "documentación del vehículo"],
+          "negotiation_context": "No aceptar cuotas ni métodos de pago sin verificación. Confirmar con Valentina antes de asumir un compromiso final."
+        }
       ],
       "interests": [
         "vender auto usado",
@@ -127,6 +196,29 @@
         "Comprar un auto usado del año 2019+ por menos de USD 8.500",
         "Revisar historial de mantenimiento y kilometraje real",
         "Cerrar en una semana, pagando en efectivo"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-carlos-compra",
+          "goal": "Comprar un auto usado del año 2019+ por menos de USD 8.500",
+          "seeks": ["comprar auto usado", "auto usado 2019 o posterior", "precio bajo USD 8.500", "buen estado"],
+          "offers": ["compra en efectivo", "presupuesto disponible", "decisión rápida"],
+          "negotiation_context": "Priorizar vehículos en zona norte y descartar cualquier oferta que supere USD 8.500."
+        },
+        {
+          "objective_id": "obj-carlos-verificacion",
+          "goal": "Revisar historial de mantenimiento y kilometraje real",
+          "seeks": ["verificacion de historial", "historial de mantenimiento", "kilometraje verificable", "documentos al día"],
+          "offers": ["verificacion de historial", "revisión rápida", "visita presencial coordinada"],
+          "negotiation_context": "No avanzar a una oferta final si el historial o el kilometraje no pueden verificarse."
+        },
+        {
+          "objective_id": "obj-carlos-cierre",
+          "goal": "Cerrar en una semana, pagando en efectivo",
+          "seeks": ["pago en efectivo", "vendedor disponible", "cierre en una semana"],
+          "offers": ["cierre rapido", "pago en efectivo"],
+          "negotiation_context": "Carlos puede cerrar durante la semana si la revisión del vehículo es satisfactoria."
+        }
       ],
       "interests": [
         "comprar auto usado",

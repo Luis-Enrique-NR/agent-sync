@@ -108,6 +108,20 @@ export interface AgentTool {
   notes?: string;
 }
 
+/**
+ * Contexto de negociación asociado a un objetivo concreto.
+ *
+ * `objectives`, `interests` y `capabilities` se conservan temporalmente en
+ * AgentProfile para mantener compatibilidad con el contrato ai.v1 actual.
+ */
+export interface AgentObjectiveContext {
+  objective_id: string;
+  goal: string;
+  seeks: string[];
+  offers: string[];
+  negotiation_context: string;
+}
+
 // ── DTO ai.v1 — AgentProfileDTO ─────────────────────────────────────────────
 
 export interface AgentProfile {
@@ -119,6 +133,7 @@ export interface AgentProfile {
   objectives: string[];
   interests: string[];
   capabilities: string[];
+  objective_contexts?: AgentObjectiveContext[];
   hard_limits: NumericLimit[];
   never_disclose: SensitiveDataCategory[];
   escalation_rules: EscalationRule[];
