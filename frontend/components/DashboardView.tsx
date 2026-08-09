@@ -3,43 +3,94 @@
 import Link from "next/link";
 import { AgentStatusCard } from "@/components/AgentStatusCard";
 import { CommercialHome } from "@/components/CommercialHome";
-import { kindLabel } from "@/components/HumanEscalationModal";
 import { ArrowRightIcon, ShieldIcon } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
+import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import { useAgentSync } from "@/lib/store";
 import type { MatchSession } from "@/lib/types";
 
 const statusCopy: Record<
   MatchSession["status"],
-  { label: string; className: string }
+  { label: string; className: string; detail: string }
 > = {
-  SEARCHING: { label: "Explorando", className: "" },
-  ACTIVE: { label: "Negociando", className: "is-active" },
+  SEARCHING: {
+    label: "Explorando",
+    className: "",
+    detail: "Buscando una opción compatible",
+  },
+  ACTIVE: {
+    label: "Negociando",
+    className: "is-active",
+    detail: "Conversación en curso",
+  },
   PENDING_HUMAN_APPROVAL: {
     label: "Necesita tu decisión",
     className: "is-pending",
+    detail: "Espera tu respuesta para continuar",
   },
-  RESOLVED: { label: "Match confirmado", className: "is-resolved" },
-  REJECTED: { label: "Descartada", className: "is-rejected" },
-  FAILED: { label: "Requiere revisión", className: "is-rejected" },
-  WITHDRAWN: { label: "Retirada", className: "is-rejected" },
-  EXPIRED: { label: "Expirada", className: "" },
+  RESOLVED: {
+    label: "Match confirmado",
+    className: "is-resolved",
+    detail: "Acuerdo confirmado por ambas partes",
+  },
+  REJECTED: {
+    label: "Descartada",
+    className: "is-rejected",
+    detail: "Cerrada sin cambiar tus límites",
+  },
+  FAILED: {
+    label: "Requiere revisión",
+    className: "is-rejected",
+    detail: "Se detuvo por un problema técnico",
+  },
+  WITHDRAWN: {
+    label: "Retirada",
+    className: "is-rejected",
+    detail: "La otra parte retiró su propuesta",
+  },
+  EXPIRED: {
+    label: "Expirada",
+    className: "",
+    detail: "La propuesta dejó de estar vigente",
+  },
 };
 
-function progressPercent(session: MatchSession) {
-  if (session.max_turns === 0) return 8;
-  return Math.min(100, Math.max(8, (session.current_turn / session.max_turns) * 100));
+function counterpartId(session: MatchSession, ownerAgentId: string) {
+  return session.agent_1_id === ownerAgentId
+    ? session.agent_2_id
+    : session.agent_1_id;
+}
+
+function decisionTitle(session: MatchSession, counterpartName: string) {
+  const category = (
+    session.pending_decision?.category ??
+    session.pending_decision?.kind ??
+    ""
+  ).toLocaleLowerCase("es");
+
+  if (category?.includes("precio")) {
+    return `Confirmar precio final con ${counterpartName}`;
+  }
+
+  if (category?.includes("dirección") || category?.includes("teléfono")) {
+    return `Autorizar datos para coordinar con ${counterpartName}`;
+  }
+
+  return `Revisar propuesta de ${counterpartName}`;
 }
 
 export function DashboardView() {
-  const { signedIn } = useAuth();
-  const { sessions, agents, agentsById } = useAgentSync();
-  const pending = sessions.filter(
+  const { signedIn, agentId } = useAuth();
+  const { sessions, agentsById } = useAgentSync();
+  const ownerAgentId = agentId ?? DEMO_OWNER_AGENT_ID;
+  const ownerSessions = sessions.filter((session) =>
+    belongsToAgent(session, ownerAgentId),
+  );
+  const pending = ownerSessions.filter(
     (session) =>
       session.status === "PENDING_HUMAN_APPROVAL" && session.pending_decision,
   );
-  const activeAgents = agents.filter((agent) => agent.status !== "PAUSED").length;
-  const activeSessions = sessions.filter(
+  const activeSessions = ownerSessions.filter(
     (session) =>
       session.status === "ACTIVE" ||
       session.status === "PENDING_HUMAN_APPROVAL" ||
@@ -52,15 +103,36 @@ export function DashboardView() {
     sessions[0];
   const agentA = agentsById[featured?.agent_1_id];
   const agentB = agentsById[featured?.agent_2_id];
-  const p2pSessions = sessions.filter((session) => session.segment === "P2P");
-
+  const ownerAgent = agentsById[ownerAgentId];
   if (!signedIn) {
     return (
       <CommercialHome
         objective={agentA?.objectives[0]}
         counterpartName={agentB?.display_name?.split(" — ")[0]}
-        opportunityCount={p2pSessions.length}
       />
+    );
+  }
+
+  if (!agentId || !ownerAgent) {
+    return (
+      <div className="empty-agent-home">
+        <section>
+          <span className="section-eyebrow">Tu espacio está listo</span>
+          <h1>Activa un agente para empezar</h1>
+          <p>
+            Define varios objetivos, fija lo que nunca debe cruzar y elige cuándo
+            quieres intervenir.
+          </p>
+          <Link href="/setup" className="primary-action">
+            Configurar mi agente <ArrowRightIcon size={15} />
+          </Link>
+        </section>
+        <aside aria-label="Qué ocurrirá después">
+          <span><strong>1</strong> Añade tus objetivos</span>
+          <span><strong>2</strong> Marca límites y decisiones</span>
+          <span><strong>3</strong> El agente empieza a explorar</span>
+        </aside>
+      </div>
     );
   }
 
@@ -71,7 +143,11 @@ export function DashboardView() {
           <div className="panel-heading">
             <div>
               <h2 id="attention-title">Necesita tu decisión</h2>
-              <p>Tu agente no avanzará en estos puntos hasta que respondas.</p>
+              <p>
+                {pending.length === 1
+                  ? "Responde para que esta negociación pueda continuar."
+                  : "Responde para que estas negociaciones puedan continuar."}
+              </p>
             </div>
             <Link href="/bandeja" className="text-action">
               Ver bandeja <ArrowRightIcon size={14} />
@@ -87,13 +163,17 @@ export function DashboardView() {
                       <ShieldIcon size={19} />
                     </span>
                     <span className="attention-copy">
-                      <strong>{kindLabel(session.pending_decision?.kind ?? "")}</strong>
-                      <span>
-                        {session.segment} · {session.pending_decision?.proposal}
-                      </span>
+                      <strong>
+                        {decisionTitle(
+                          session,
+                          agentsById[counterpartId(session, ownerAgentId)]?.display_name.split(" — ")[0] ??
+                            "la otra parte",
+                        )}
+                      </strong>
+                      <span>{session.pending_decision?.proposal}</span>
                     </span>
                     <span className="attention-cta">
-                      Decidir <ArrowRightIcon size={13} />
+                      Revisar <ArrowRightIcon size={13} />
                     </span>
                   </Link>
                 </li>
@@ -105,7 +185,13 @@ export function DashboardView() {
         </section>
 
         <AgentStatusCard
-          agentName="Valentina R. — vendedora de auto"
+          agentId={ownerAgentId}
+          agentName={ownerAgent?.display_name ?? "Valentina R."}
+          objective={
+            ownerAgent.objectives.length > 1
+              ? `${ownerAgent.objectives[0]} · +${ownerAgent.objectives.length - 1} más`
+              : ownerAgent.objectives[0] ?? "Objetivo por configurar"
+          }
           pendingCount={pending.length}
           activeNegotiations={activeSessions.length}
         />
@@ -114,16 +200,16 @@ export function DashboardView() {
       <section className="activity-panel" aria-labelledby="activity-title">
         <div className="activity-heading">
           <div>
-            <h2 id="activity-title">Actividad de tus agentes</h2>
-            <p>{activeAgents} agentes activos entre oportunidades B2B y P2P.</p>
+            <h2 id="activity-title">Actividad de tu agente</h2>
+            <p>Sigue sus conversaciones y los resultados más recientes.</p>
           </div>
           <Link href="/ecosistema" className="text-action">
-            Ver ecosistema <ArrowRightIcon size={14} />
+            Explorar oportunidades <ArrowRightIcon size={14} />
           </Link>
         </div>
 
         <ul className="activity-list">
-          {sessions.map((session) => {
+          {ownerSessions.map((session) => {
             const status = statusCopy[session.status];
             return (
               <li key={session.session_id}>
@@ -134,14 +220,7 @@ export function DashboardView() {
                   <span className="session-copy">
                     <strong>{session.summary}</strong>
                     <span>
-                      {session.messages.length} mensajes · turno {session.current_turn} de{" "}
-                      {session.max_turns}
-                    </span>
-                  </span>
-                  <span className="session-progress">
-                    <span>Progreso de la conversación</span>
-                    <span className="progress-track">
-                      <i style={{ width: `${progressPercent(session)}%` }} />
+                      {session.messages.length} mensajes · {status.detail}
                     </span>
                   </span>
                   <span className={`status-label ${status.className}`}>{status.label}</span>

@@ -5,16 +5,20 @@ import Link from "next/link";
 import type { PendingDecision, Segment } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
 import { HumanEscalationModal } from "@/components/HumanEscalationModal";
+import { useAuth } from "@/lib/auth";
+import { belongsToAgent } from "@/lib/demo";
 
 type Filter = "todas" | Segment;
 
 export function DecisionInbox() {
   const { sessions, agentsById, dispatchHumanDecision } = useAgentSync();
+  const { agentId } = useAuth();
   const [filter, setFilter] = useState<Filter>("todas");
 
   const pending = useMemo(
     () =>
       sessions
+        .filter((session) => belongsToAgent(session, agentId))
         .map((session) => ({
           session,
           decision: session.pending_decision as PendingDecision | undefined,
@@ -32,7 +36,7 @@ export function DecisionInbox() {
                 entry.session.status === "PENDING_HUMAN_APPROVAL",
             ),
         ),
-    [sessions],
+    [agentId, sessions],
   );
 
   const visible =
@@ -41,7 +45,10 @@ export function DecisionInbox() {
       : pending.filter(({ session }) => session.segment === filter);
 
   const resolvedThisSession = sessions.filter(
-    (s) => s.pending_decision && s.pending_decision.status !== "PENDING",
+    (s) =>
+      belongsToAgent(s, agentId) &&
+      s.pending_decision &&
+      s.pending_decision.status !== "PENDING",
   ).length;
 
   const filters: { key: Filter; label: string }[] = [

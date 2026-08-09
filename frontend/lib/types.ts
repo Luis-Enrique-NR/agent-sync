@@ -157,6 +157,28 @@ export interface ToolGrant {
   approval_mode: ToolApprovalMode;
 }
 
+/** AgentTool — catálogo de herramientas que el agente puede usar en la demo. */
+export interface AgentTool {
+  id: string;
+  name: string;
+  simulated: boolean;
+  notes?: string;
+}
+
+/**
+ * Contexto de negociación asociado a un objetivo concreto.
+ *
+ * `objectives`, `interests` y `capabilities` se conservan temporalmente en
+ * AgentProfile para mantener compatibilidad con el contrato ai.v1 actual.
+ */
+export interface AgentObjectiveContext {
+  objective_id: string;
+  goal: string;
+  seeks: string[];
+  offers: string[];
+  negotiation_context: string;
+}
+
 // ── DTO ai.v1 — AgentProfileDTO ─────────────────────────────────────────────
 
 export interface AgentProfile {
@@ -171,12 +193,14 @@ export interface AgentProfile {
   logistics_preferences: string[];
   personality: string;
   objectives: string[];
+  objective_contexts?: AgentObjectiveContext[];
   hard_limits: NumericLimit[];
   never_disclose: SensitiveDataCategory[];
   escalation_rules: EscalationRule[];
-  tool_grants: ToolGrant[];
-  goal_completion_mode: GoalCompletionMode;
-  remaining_goal_units: number | null;
+  tool_grants?: ToolGrant[];
+  tools?: AgentTool[];
+  goal_completion_mode?: GoalCompletionMode;
+  remaining_goal_units?: number | null;
 }
 
 /** Firma de registro del agente (evento agent.registered → matchmaking). */
@@ -232,6 +256,8 @@ export interface PendingDecision {
   owner_agent_id: string;
   requester_agent_id?: string | null;
   kind: DecisionKind;
+  /** Categoría legible de la decisión (alineada con el contrato ai.v1). */
+  category?: string;
   reasons: string[];
   matched_rule_ids: string[];
   candidate_turn?: Record<string, unknown> | null;

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type ProfileData, useAuth } from "@/lib/auth";
+import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import {
   ArrowRightIcon,
   CardIcon,
@@ -48,9 +49,6 @@ export function ProfileView() {
     return (
       <div className="auth-page">
         <section className="auth-card" aria-labelledby="auth-title">
-          <div className="auth-brand-mark">
-            <ShieldIcon size={22} />
-          </div>
           <span className="section-eyebrow">Tu espacio en AgentSync</span>
           <h1 id="auth-title">
             {authMode === "login" ? "Vuelve a tus negociaciones" : "Crea tu cuenta"}
@@ -86,24 +84,33 @@ export function ProfileView() {
             className="auth-form"
             onSubmit={(event) => {
               event.preventDefault();
-              signIn(profile);
+              signIn(
+                profile,
+                authMode === "login" ? DEMO_OWNER_AGENT_ID : null,
+              );
               setPassword("");
             }}
           >
-            {authMode === "register" ? (
-              <label>
-                <span>Nombre</span>
-                <span className="field-with-icon">
-                  <UserIcon size={17} />
-                  <input
-                    value={profile.name}
-                    onChange={(event) => updateField("name", event.target.value)}
-                    placeholder="Tu nombre"
-                    required
-                  />
-                </span>
-              </label>
-            ) : null}
+            <div
+              className={`auth-optional-field ${authMode === "register" ? "is-open" : ""}`}
+              aria-hidden={authMode !== "register"}
+            >
+              <div>
+                <label>
+                  <span>Nombre</span>
+                  <span className="field-with-icon">
+                    <UserIcon size={17} />
+                    <input
+                      value={profile.name}
+                      onChange={(event) => updateField("name", event.target.value)}
+                      placeholder="Tu nombre"
+                      disabled={authMode !== "register"}
+                      required={authMode === "register"}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
 
             <label>
               <span>Correo electrónico</span>

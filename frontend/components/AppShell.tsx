@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, ViewTransition } from "react";
 import { useAuth } from "@/lib/auth";
+import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import { useAgentSync } from "@/lib/store";
 import { BackendStatusBadge } from "@/components/BackendStatusBadge";
 import {
@@ -30,10 +31,12 @@ function isCurrent(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { signedIn } = useAuth();
+  const { signedIn, agentId, attachAgent } = useAuth();
   const { sessions, resetDemo } = useAgentSync();
   const pendingCount = sessions.filter(
-    (session) => session.status === "PENDING_HUMAN_APPROVAL",
+    (session) =>
+      belongsToAgent(session, agentId) &&
+      session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
 
   useLayoutEffect(() => {
@@ -85,7 +88,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 className="reset-button"
-                onClick={resetDemo}
+                onClick={() => {
+                  resetDemo();
+                  attachAgent(DEMO_OWNER_AGENT_ID);
+                }}
                 title="Restablecer los datos de la demo"
               >
                 <RotateIcon size={16} />

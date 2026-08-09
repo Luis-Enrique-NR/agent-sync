@@ -24,7 +24,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v3";
+const STORAGE_KEY = "agentsync-demo-v4";
 
 interface AgentSyncState {
   agents: AgentProfile[];
@@ -35,6 +35,7 @@ interface AgentSyncState {
   toggleAgentStatus: (agentId: string) => void;
   /** agent.registered → persiste perfil y dispara matchmaking simulado. */
   registerAgent: (profile: AgentProfile) => number;
+  updateAgent: (profile: AgentProfile) => void;
   resetDemo: () => void;
 }
 
@@ -344,12 +345,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
     setAgents((prev) =>
       prev.map((agent) => {
         if (agent.agent_id !== agentId) return agent;
-        const next =
-          agent.status === "PAUSED"
-            ? "AVAILABLE"
-            : agent.status === "BUSY"
-              ? "BUSY"
-              : "PAUSED";
+        const next = agent.status === "PAUSED" ? "AVAILABLE" : "PAUSED";
         return { ...agent, status: next };
       }),
     );
@@ -468,6 +464,14 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
     [agents],
   );
 
+  const updateAgent = useCallback((profile: AgentProfile) => {
+    setAgents((prev) =>
+      prev.map((agent) =>
+        agent.agent_id === profile.agent_id ? profile : agent,
+      ),
+    );
+  }, []);
+
   const resetDemo = useCallback(() => {
     setAgents(data.agents);
     setSessions(data.sessions);
@@ -486,6 +490,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
+      updateAgent,
       resetDemo,
     }),
     [
@@ -495,6 +500,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
+      updateAgent,
       resetDemo,
     ],
   );
