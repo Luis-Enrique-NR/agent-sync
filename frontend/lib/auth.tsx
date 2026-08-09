@@ -10,7 +10,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 
 export interface ProfileData {
   name: string;
@@ -31,12 +30,14 @@ interface AuthState {
   attachAgent: (agentId: string) => void;
 }
 
-const STORAGE_KEY = "agentsync-profile-demo-v1";
+const STORAGE_KEY = "agentsync-profile-v2";
+const AGENT_ID_KEY = "agentsync-agent-id"; // read by api.ts
+
 const initialProfile: ProfileData = {
-  name: "Valentina R.",
-  email: "valentina@agentsync.demo",
+  name: "",
+  email: "",
   accountType: "personal",
-  role: "Propietaria del agente",
+  role: "",
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -47,6 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [agentId, setAgentId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
+  // On mount, restore profile + agentId from localStorage.
+  // The AGENT_ID_KEY is the authoritative source for api.ts headers.
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -60,35 +63,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (typeof parsed.signedIn === "boolean") setSignedIn(parsed.signedIn);
         if (Object.prototype.hasOwnProperty.call(parsed, "agentId")) {
           setAgentId(parsed.agentId ?? null);
-        } else if (parsed.signedIn) {
-          setAgentId(DEMO_OWNER_AGENT_ID);
         }
       }
+
+      // Also restore from the api.ts header key (survives profile reset)
+      const rawId = localStorage.getItem(AGENT_ID_KEY);
+      if (rawId && !agentId) {
+        setAgentId(rawId);
+      }
     } catch {
-      // Si el dato local está dañado, la demo usa una sesión nueva.
+      // Corrupt data — start fresh
     } finally {
       setAuthReady(true);
     }
   }, []);
 
-  const persist = useCallback((
-    nextProfile: ProfileData,
-    nextSignedIn: boolean,
-    nextAgentId: string | null,
-  ) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-          profile: nextProfile,
-          signedIn: nextSignedIn,
-          agentId: nextAgentId,
-        }),
-      );
-    } catch {
-      // La demo continúa en memoria cuando el almacenamiento no está disponible.
-    }
-  }, []);
+  const persist = useCallback(
+    (
+      nextProfile: ProfileData,
+      nextSignedIn: boolean,
+      nextAgentId: string | null,
+    ) => {
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            profile: nextProfile,
+            signedIn: nextSignedIn,
+            agentId: nextAgentId,
+          }),
+        );
+        // Sync the agent-id header key so api.ts can read it
+        if (nextAgentId) {
+          localStorage.setItem(AGENT_ID_KEY, nextAgentId);
+        } else {
+          localStorage.removeItem(AGENT_ID_KEY);
+        }
+      } catch {
+        // Continue in-memory only
+      }
+    },
+    [],
+  );
 
   const signIn = useCallback(
     (nextProfile: ProfileData, nextAgentId: string | null) => {
