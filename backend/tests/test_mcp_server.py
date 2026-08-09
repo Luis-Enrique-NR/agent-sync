@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import json
 
 import pytest
@@ -206,7 +207,12 @@ def test_resend_sends_per_call_recipient_without_exposing_addresses(
     ).send("Decision", "Please approve", "owner@example.com", idempotency_key="call-1")
     assert result == {"delivery_id": "email-1", "status": "accepted"}
     assert captured["request"].headers["Authorization"] == "Bearer secret"
-    assert "owner@example.com" in captured["request"].data.decode()
+    payload = json.loads(captured["request"].data.decode())
+    assert payload["to"] == ["owner@example.com"]
+    assert 'src="cid:agentsync-logo"' in payload["html"]
+    assert payload["attachments"][0]["content_id"] == "agentsync-logo"
+    assert payload["attachments"][0]["content_type"] == "image/png"
+    assert base64.b64decode(payload["attachments"][0]["content"])
     assert "secret" not in captured["request"].data.decode()
 
 

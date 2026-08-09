@@ -123,6 +123,7 @@ class AgentSyncMCP:
                         timeout_seconds=self.settings.upstream_timeout_seconds,
                         max_response_bytes=self.settings.upstream_max_response_bytes,
                         environ=self.environ,
+                        logo_path=self.settings.email_logo_path,
                     ).send,
                     subject,
                     body,

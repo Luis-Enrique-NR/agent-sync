@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 import os
 import re
+from base64 import b64encode
 from dataclasses import dataclass
+from html import escape
+from pathlib import Path
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -21,6 +24,9 @@ class UpstreamError(RuntimeError):
 
 
 _EMAIL_ADDRESS_PATTERN = re.compile(r"^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$")
+_DEFAULT_LOGO_PATH = Path(__file__).with_name("assets") / "agentsync-logo.png"
+_INLINE_LOGO_CONTENT_ID = "agentsync-logo"
+_MAX_INLINE_LOGO_BYTES = 1_000_000
 
 
 def validate_recipient_address(value: str) -> str:
@@ -30,6 +36,47 @@ def validate_recipient_address(value: str) -> str:
     if len(normalized) > 320 or not _EMAIL_ADDRESS_PATTERN.fullmatch(normalized):
         raise UpstreamError("INVALID_EMAIL_RECIPIENT")
     return normalized
+
+
+def _load_inline_logo(path: str | None) -> dict[str, str] | None:
+    """Load the packaged frontend favicon for a CID-backed email image."""
+
+    logo_path = Path(path) if path else _DEFAULT_LOGO_PATH
+    try:
+        content = logo_path.read_bytes()
+    except OSError:
+        # Branding must never make a notification unavailable.  The text and
+        # HTML body still render when a deployment omits the optional asset.
+        return None
+    if not content or len(content) > _MAX_INLINE_LOGO_BYTES:
+        return None
+    return {
+        "content": b64encode(content).decode("ascii"),
+        "filename": logo_path.name,
+        "content_id": _INLINE_LOGO_CONTENT_ID,
+        "content_type": "image/png",
+    }
+
+
+def _render_email_html(subject: str, body: str, *, has_logo: bool) -> str:
+    """Render a small escaped HTML alternative with an optional inline logo."""
+
+    logo = (
+        '<img src="cid:agentsync-logo" alt="AgentSync" width="48" height="48" '
+        'style="display:block;margin:0 0 20px;border:0;" />'
+        if has_logo
+        else ""
+    )
+    safe_subject = escape(subject)
+    safe_body = escape(body).replace("\r\n", "\n").replace("\n", "<br />\n")
+    return (
+        '<!doctype html><html><body style="font-family:Arial,sans-serif;'
+        'color:#172033;line-height:1.5;">'
+        f"{logo}<h2 style=\"margin:0 0 12px;\">{safe_subject}</h2>"
+        f"<p style=\"white-space:normal;\">{safe_body}</p>"
+        '<p style="color:#64748b;font-size:12px;margin-top:24px;">AgentSync</p>'
+        "</body></html>"
+    )
 
 
 def sanitize_output(value: Any, *, max_string_length: int = 4_000) -> Any:
@@ -284,6 +331,7 @@ class ResendAdapter:
     timeout_seconds: int
     max_response_bytes: int
     environ: Mapping[str, str]
+    logo_path: str | None = None
 
     def send(
         self,
@@ -300,6 +348,7 @@ class ResendAdapter:
         recipient = validate_recipient_address(to_address)
         if not self.from_address:
             raise UpstreamError("UPSTREAM_DESTINATION_NOT_CONFIGURED")
+        logo = _load_inline_logo(self.logo_path)
         request = Request(
             self.endpoint or "https://api.resend.com/emails",
             data=json.dumps(
@@ -308,6 +357,8 @@ class ResendAdapter:
                     "to": [recipient],
                     "subject": subject,
                     "text": body,
+                    "html": _render_email_html(subject, body, has_logo=logo is not None),
+                    **({"attachments": [logo]} if logo else {}),
                 },
                 ensure_ascii=False,
                 separators=(",", ":"),

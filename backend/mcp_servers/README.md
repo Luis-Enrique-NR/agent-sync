@@ -54,6 +54,8 @@ AGENTSYNC_MCP_PRICES_TOKEN_ENV=SERPAPI_API_KEY
 AGENTSYNC_MCP_EMAIL_PROVIDER=resend
 AGENTSYNC_MCP_EMAIL_TOKEN_ENV=RESEND_API_KEY
 AGENTSYNC_MCP_EMAIL_FROM=notificaciones@example.com
+# Optional override; defaults to the packaged frontend favicon.
+# AGENTSYNC_MCP_EMAIL_LOGO_PATH=
 ```
 
 El destinatario no se configura en el servidor: se recibe como el argumento
@@ -67,6 +69,11 @@ Ejemplo de argumentos enviados por el AI Backend:
 ```json
 {"to":"contacto@example.com","subject":"Decisión pendiente","body":"Tu agente requiere una respuesta."}
 ```
+
+Cuando se usa Resend, el servidor agrega automáticamente el favicon del
+frontend como imagen inline mediante CID y conserva el cuerpo `text` como
+fallback para clientes que no rendericen HTML. Resend recomienda referenciar
+la imagen con `cid:` y enviar el adjunto con `content_id`.
 
 Para proteger el endpoint entre procesos, definir
 `AGENTSYNC_MCP_AUTH_TOKEN_ENV=MCP_SERVER_TOKEN` y el valor de
