@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictDTO(BaseModel):
@@ -80,7 +80,13 @@ class NegotiationDetailDTO(NegotiationSummaryDTO):
 class HumanDecisionDTO(StrictDTO):
     action: str = Field(pattern=r"^(APPROVE|REJECT|REPLACE)$")
     reason: str | None = Field(default=None, max_length=200)
-    counter_offer_text: str | None = Field(default=None, max_length=1_500)
+    replacement_turn: str | None = Field(default=None, max_length=1_500)
+
+    @model_validator(mode="after")
+    def _require_replacement_for_replace(self) -> "HumanDecisionDTO":
+        if self.action == "REPLACE" and (not self.replacement_turn or not self.replacement_turn.strip()):
+            raise ValueError("REPLACE requires replacement_turn")
+        return self
 
 
 class DecisionResponseDTO(StrictDTO):

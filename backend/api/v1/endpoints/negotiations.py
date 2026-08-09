@@ -4,17 +4,20 @@ from __future__ import annotations
 
 from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from ai.domain.models import (
     AgentStatus,
+    AgentTurn,
     AuditAction,
     HumanDecision,
     HumanDecisionAction,
     NegotiationState,
     SessionStatus,
+    TurnIntent,
 )
+from ai.service import build_engine_from_env
 from api.v1.schemas import (
     AuditListResponseDTO,
     AuditRecordDTO,
@@ -89,7 +92,6 @@ def list_negotiations(
     agent_id: UUID | None = None,
     session: Session = Depends(_session),
 ) -> NegotiationListResponseDTO:
-    """List negotiations, optionally filtered by agent."""
     stmt = select(NegotiationStateRow)
     if agent_id is not None:
         stmt = stmt.where(
@@ -104,11 +106,7 @@ def list_negotiations(
 
 
 @router.get("/{session_id}", response_model=NegotiationDetailDTO)
-def get_negotiation(
-    session_id: UUID,
-    session: Session = Depends(_session),
-) -> NegotiationDetailDTO:
-    """Retrieve full negotiation state with transcript."""
+def get_negotiation(session_id: UUID, session: Session = Depends(_session)) -> NegotiationDetailDTO:
     row = session.get(NegotiationStateRow, session_id)
     if row is None:
         raise HTTPException(status_code=404, detail="negotiation not found")
@@ -119,9 +117,10 @@ def get_negotiation(
 def submit_decision(
     session_id: UUID,
     body: HumanDecisionDTO,
+    request: Request,
     session: Session = Depends(_session),
 ) -> DecisionResponseDTO:
-    """Submit a human decision on a pending negotiation."""
+    """Submit a human decision — invokes engine.resume_session()."""
     row = session.get(NegotiationStateRow, session_id)
     if row is None:
         raise HTTPException(status_code=404, detail="negotiation not found")
@@ -136,35 +135,50 @@ def submit_decision(
         raise HTTPException(status_code=400, detail="no pending decision")
 
     action = HumanDecisionAction(body.action)
+
+    # Build replacement_turn for REPLACE
+    replacement_turn = None
+    if action == HumanDecisionAction.REPLACE:
+        if not body.replacement_turn:
+            raise HTTPException(status_code=422, detail="REPLACE requires replacement_turn")
+        replacement_turn = AgentTurn(
+            public_message=body.replacement_turn,
+            intent=TurnIntent.COUNTER_OFFER,
+        )
+
     human_decision = HumanDecision(
         decision_id=state.pending_decision.decision_id,
         action=action,
+        replacement_turn=replacement_turn,
     )
 
+    # Invoke domain engine
+    engine = (
+        request.app.state.engine
+        if hasattr(request.app.state, "engine")
+        else build_engine_from_env()
+    )
+    result = engine.resume_session(state, human_decision)
+    save_negotiation_state(result, portal_channel_id=row.portal_channel_id, session=session)
+    session.commit()
+
+    audit_map = {
+        HumanDecisionAction.APPROVE: AuditAction.DECISION_APPROVED,
+        HumanDecisionAction.REJECT: AuditAction.DECISION_REJECTED,
+        HumanDecisionAction.REPLACE: AuditAction.DECISION_REPLACED,
+    }
+
     if action == HumanDecisionAction.REJECT:
-        row.status = SessionStatus.REJECTED.value
         update_agent_status(row.agent_1_id, AgentStatus.AVAILABLE, session=session)
         update_agent_status(row.agent_2_id, AgentStatus.AVAILABLE, session=session)
-        audit_action = AuditAction.DECISION_REJECTED
-        new_status = "REJECTED"
-
-    elif action == HumanDecisionAction.APPROVE:
-        row.status = SessionStatus.ACTIVE.value
-        audit_action = AuditAction.DECISION_APPROVED
-        new_status = "ACTIVE"
-
-    else:  # REPLACE
-        row.status = SessionStatus.ACTIVE.value
-        audit_action = AuditAction.DECISION_REPLACED
-        new_status = "ACTIVE"
 
     write_audit(
         correlation_id=uuid4(),
         session_id=session_id,
-        user_id=uuid4(),  # TODO: real user auth
+        user_id=uuid4(),
         actor_type="HUMAN",
         actor_id="frontend",
-        action=audit_action,
+        action=audit_map[action],
         severity="INFO",
         entity_type="DecisionRequest",
         entity_id=state.pending_decision.decision_id,
@@ -176,16 +190,12 @@ def submit_decision(
         decision_id=state.pending_decision.decision_id,
         session_id=session_id,
         action=body.action,
-        new_status=new_status,
+        new_status=result.state.status.value,
     )
 
 
 @router.get("/{session_id}/audit", response_model=AuditListResponseDTO)
-def get_audit_trail(
-    session_id: UUID,
-    session: Session = Depends(_session),
-) -> AuditListResponseDTO:
-    """Retrieve audit trail for a negotiation session."""
+def get_audit_trail(session_id: UUID, session: Session = Depends(_session)) -> AuditListResponseDTO:
     stmt = select(AuditRecordRow).where(
         AuditRecordRow.session_id == session_id,
     ).order_by(AuditRecordRow.occurred_at.asc())
