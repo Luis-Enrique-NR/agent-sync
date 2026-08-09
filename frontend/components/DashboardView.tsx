@@ -221,7 +221,14 @@ export function DashboardView() {
   return (
     <div className={`live-dashboard ${paused ? "is-paused" : ""}`}>
       <header className="live-dashboard-heading">
-        <h1>Tu agente está trabajando ahora</h1>
+        <div>
+          <span className="live-eyebrow"><i /> Actividad en vivo</span>
+          <h1>Tu agente está trabajando ahora</h1>
+          <p>
+            Cada objetivo puede sostener varias negociaciones con términos y
+            ritmos independientes.
+          </p>
+        </div>
       </header>
 
       <section className="live-control-room" aria-labelledby="live-routes-title">

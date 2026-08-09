@@ -2043,12 +2043,53 @@ h4,
   box-shadow: var(--shadow-sm);
 }
 
+.live-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent-dark);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.live-eyebrow > i {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.live-eyebrow > i::after {
+  position: absolute;
+  border: 1px solid var(--accent);
+  border-radius: inherit;
+  content: "";
+  inset: -4px;
+  animation: liveSignal 2.1s ease-out infinite;
+}
+
+@keyframes liveSignal {
+  from { opacity: 0.7; transform: scale(0.55); }
+  to { opacity: 0; transform: scale(1.55); }
+}
+
 .live-dashboard-heading h1 {
-  max-width: 900px;
-  margin: 0;
+  max-width: 720px;
+  margin: 9px 0 8px;
   font-size: clamp(29px, 3.5vw, 44px);
   line-height: 1.05;
   letter-spacing: -0.045em;
+}
+
+.live-dashboard-heading > div > p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .live-control-room {
@@ -2906,9 +2947,13 @@ h4,
   }
 
   .live-dashboard-heading h1 {
-    margin: 0;
+    margin-block: 8px 7px;
     font-size: clamp(25px, 8vw, 32px);
     line-height: 1.08;
+  }
+
+  .live-dashboard-heading > div > p {
+    font-size: 11px;
   }
 
   .live-control-room {
