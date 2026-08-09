@@ -139,6 +139,15 @@ http://localhost:8000/api/v1
 }
 ```
 
+Para `REPLACE`:
+```json
+{
+  "action": "REPLACE",
+  "reason": "Contraoferta mejorada",
+  "replacement_turn": "Nueva propuesta con envio incluido"
+}
+```
+
 **Response 200:**
 ```json
 {
