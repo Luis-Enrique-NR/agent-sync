@@ -189,6 +189,18 @@ export interface PendingDecision {
   manual_response?: string;
 }
 
+/** Resumen legible de una decisión humana dentro de una conversación. */
+export interface ConversationDecision {
+  decision_id: string;
+  agent_id: string;
+  category: string;
+  summary: string;
+  status: DecisionStatus;
+  created_at: string;
+  decided_at?: string;
+  manual_response?: string;
+}
+
 /** HumanDecisionDTO — el humano aprueba/rechaza/reemplaza; reanuda o retira. */
 export interface HumanDecision {
   decision_id: string;
@@ -253,6 +265,7 @@ export interface MatchSession {
   messages: ChatMessage[];
   pending_script?: ChatMessage[];
   pending_decision?: PendingDecision;
+  decision_history?: ConversationDecision[];
   matchmaking?: MatchScore;
   audit?: AuditRecord[];
   raw_state?: Record<string, unknown>;

@@ -11,6 +11,7 @@ import {
 import type {
   AgentProfile,
   AuditRecord,
+  ConversationDecision,
   DecisionStatus,
   HumanDecision,
   HumanDecisionAction,
@@ -24,7 +25,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v4";
+const STORAGE_KEY = "agentsync-demo-v5";
 
 interface AgentSyncState {
   agents: AgentProfile[];
@@ -186,6 +187,25 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
               : action === "REJECT"
                 ? "REJECTED"
                 : "REPLACED";
+          const recordedDecision: ConversationDecision = {
+            decision_id: pending.decision_id,
+            agent_id: pending.requested_by,
+            category: pending.category,
+            summary: pending.summary,
+            status: decisionStatus,
+            created_at: pending.created_at,
+            decided_at: now,
+            manual_response:
+              action === "REPLACE"
+                ? decision.replacement_message?.trim()
+                : undefined,
+          };
+          const nextDecisionHistory = [
+            ...(session.decision_history ?? []).filter(
+              (item) => item.decision_id !== pending.decision_id,
+            ),
+            recordedDecision,
+          ];
 
           const nextAudit: AuditRecord[] = [
             ...(session.audit ?? []),
@@ -228,6 +248,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
               status: "REJECTED",
               messages: session.messages,
               pending_script: [],
+              decision_history: nextDecisionHistory,
               audit: nextAudit,
               outcome: {
                 outcome_id: uid(),
@@ -247,7 +268,14 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
 
           // APPROVE / REPLACE → reanudar negociación
           let messages = session.messages;
-          let pendingScript = [...(session.pending_script ?? [])];
+          let pendingScript = (session.pending_script ?? []).map(
+            (message, index) => ({
+              ...message,
+              sent_at: new Date(
+                new Date(now).getTime() + index * 60_000,
+              ).toISOString(),
+            }),
+          );
           const blocked = pendingScript.shift();
           if (blocked) {
             if (action === "REPLACE") {
@@ -311,6 +339,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
             status: "RESOLVED",
             messages,
             pending_script: pendingScript,
+            decision_history: nextDecisionHistory,
             audit: nextAudit,
             outcome: {
               outcome_id: uid(),

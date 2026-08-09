@@ -41,8 +41,8 @@ export function ChatView({ sessionId }: { sessionId: string }) {
           </span>
           <h1>{session.summary}</h1>
           <p>
-            Estás viendo la conversación completa. Puedes pausarla y decidir
-            cualquier punto sensible antes de que el agente continúe.
+            Ves los mensajes más recientes y las decisiones que guiaron el
+            acuerdo. Tu agente se detiene cuando necesita tu criterio.
           </p>
         </div>
 

@@ -352,6 +352,26 @@
           "sent_at": "2026-08-07T09:34:00Z"
         }
       ],
+      "decision_history": [
+        {
+          "decision_id": "dec-b2b-discount-001",
+          "agent_id": "agent-b2b-organiccotton",
+          "category": "Descuento por volumen",
+          "summary": "OrganicCotton autorizó negociar un descuento mayor si el pedido alcanzaba 30.000 metros al año.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T09:17:00Z",
+          "decided_at": "2026-08-07T09:18:00Z"
+        },
+        {
+          "decision_id": "dec-b2b-volume-001",
+          "agent_id": "agent-b2b-telar",
+          "category": "Ampliar el volumen",
+          "summary": "Telar permitió que su agente evaluara subir el pedido anual a 30.000 metros para mejorar el precio.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T09:22:00Z",
+          "decided_at": "2026-08-07T09:23:00Z"
+        }
+      ],
       "pending_decision": {
         "decision_id": "dec-b2b-001",
         "session_id": "ses-b2b-001",
@@ -532,6 +552,26 @@
           "sent_at": "2026-08-07T10:24:00Z"
         }
       ],
+      "decision_history": [
+        {
+          "decision_id": "dec-p2p-budget-001",
+          "agent_id": "agent-p2p-carlos",
+          "category": "Presupuesto para la compra",
+          "summary": "Carlos autorizó que su agente negociara hasta USD 8.500 si el vehículo era de 2019 o posterior.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T10:08:00Z",
+          "decided_at": "2026-08-07T10:09:00Z"
+        },
+        {
+          "decision_id": "dec-p2p-test-drive-001",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Prueba de manejo",
+          "summary": "Valentina aprobó coordinar una prueba de manejo el viernes en la zona norte, sin compartir todavía su dirección.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T10:12:00Z",
+          "decided_at": "2026-08-07T10:13:00Z"
+        }
+      ],
       "pending_decision": {
         "decision_id": "dec-p2p-001",
         "session_id": "ses-p2p-001",
@@ -708,6 +748,26 @@
         "summary": "Acuerdo de USD 4.35/metro por 30.000 metros/año, contrato 12 meses renovable.",
         "created_at": "2026-08-06T14:35:00Z"
       },
+      "decision_history": [
+        {
+          "decision_id": "dec-b2b-hist-price",
+          "agent_id": "agent-b2b-telar",
+          "category": "Precio final",
+          "summary": "Telar aprobó cerrar en USD 4.35 por metro para un volumen anual de 30.000 metros.",
+          "status": "APPROVED",
+          "created_at": "2026-08-06T14:15:00Z",
+          "decided_at": "2026-08-06T14:18:00Z"
+        },
+        {
+          "decision_id": "dec-b2b-hist-contact",
+          "agent_id": "agent-b2b-organiccotton",
+          "category": "Compartir contacto comercial",
+          "summary": "OrganicCotton aprobó compartir su correo de ventas para formalizar el acuerdo.",
+          "status": "APPROVED",
+          "created_at": "2026-08-06T14:28:00Z",
+          "decided_at": "2026-08-06T14:31:00Z"
+        }
+      ],
       "audit": [
         {
           "audit_id": "aud-b2b-hist-001",
@@ -825,6 +885,26 @@
         "summary": "Oferta USD 7.500 por debajo del mínimo duro USD 8.000.",
         "created_at": "2026-08-05T18:18:00Z"
       },
+      "decision_history": [
+        {
+          "decision_id": "dec-p2p-hist-price",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Oferta bajo el mínimo",
+          "summary": "Valentina decidió no aceptar ninguna propuesta inferior a USD 8.000.",
+          "status": "REJECTED",
+          "created_at": "2026-08-05T18:15:00Z",
+          "decided_at": "2026-08-05T18:16:00Z"
+        },
+        {
+          "decision_id": "dec-p2p-hist-budget",
+          "agent_id": "agent-p2p-carlos",
+          "category": "Mantener el presupuesto",
+          "summary": "Carlos decidió mantener su oferta máxima en USD 7.900 y retirarse de la negociación.",
+          "status": "REJECTED",
+          "created_at": "2026-08-05T18:17:00Z",
+          "decided_at": "2026-08-05T18:18:00Z"
+        }
+      ],
       "audit": [
         {
           "audit_id": "aud-p2p-hist-001",
