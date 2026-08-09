@@ -1,9 +1,9 @@
 {
-  "schemaVersion": "2.1",
+  "schemaVersion": "2.2",
   "meta": {
     "source": "Equipo AgentSync — demo hackathon",
     "environment": "simulado",
-    "purpose": "Datos de ejemplo para la demo B2B y P2P alineados con los DTOs ai.v1. objective_contexts es una extensión compatible del frontend: conserva objectives, interests y capabilities mientras el backend adopta objetivos contextualizados. Los datos sensibles viajan como value_ref y solo se revelan tras aprobación por la bitácora/vault."
+    "purpose": "Datos de ejemplo para la demo B2B y P2P alineados con los DTOs ai.v1. Incluye objetivos contextualizados, historiales de decisiones de ambas partes y perfiles adicionales para simular nuevas decisiones en tiempo real. Los datos sensibles viajan como value_ref y solo se revelan tras aprobación."
   },
   "agents": [
     {
@@ -244,6 +244,78 @@
       "tools": [
         { "id": "presupuesto", "name": "Presupuesto personal", "simulated": true, "notes": "Capacidad máxima de pago y fecha de cierre." }
       ]
+    },
+    {
+      "agent_id": "agent-p2p-sofia",
+      "display_name": "Sofía G. — compradora verificada",
+      "entity_type": "person",
+      "public_description": "Busca un auto confiable para uso diario y puede pagar por transferencia inmediata.",
+      "personality": "Clara y cordial. Prioriza seguridad, documentación al día y una compra sin trámites innecesarios.",
+      "objectives": [
+        "Comprar un auto 2020+ por un máximo de USD 8.400",
+        "Verificar mantenimiento y documentación antes de reservar",
+        "Pagar por transferencia bancaria verificada"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-sofia-compra",
+          "goal": "Comprar un auto 2020+ por un máximo de USD 8.400",
+          "seeks": ["auto usado 2020 o posterior", "Hyundai", "buen estado"],
+          "offers": ["transferencia inmediata", "decisión en 48 horas", "compradora verificada"],
+          "negotiation_context": "Sofía prioriza un vehículo para uso diario y no superará USD 8.400."
+        }
+      ],
+      "interests": ["comprar auto usado", "Hyundai", "documentación al día"],
+      "capabilities": ["transferencia inmediata", "cierre rápido", "verificación bancaria"],
+      "hard_limits": [
+        { "key": "max_budget_usd", "operator": "lte", "value": 8400, "unit": "usd" }
+      ],
+      "never_disclose": ["PHONE"],
+      "escalation_rules": [
+        { "rule_id": "esc-sofia-price", "rule_type": "ANY_FINAL_PRICE", "categories": [], "enabled": true }
+      ],
+      "status": "AVAILABLE",
+      "price_range": { "min": 7800, "max": 8400 },
+      "logistics_preferences": ["zona norte", "transferencia bancaria"],
+      "tools": [
+        { "id": "avaluo", "name": "Avalúo simulado", "simulated": true, "notes": "Compara el precio con vehículos equivalentes." }
+      ]
+    },
+    {
+      "agent_id": "agent-p2p-mateo",
+      "display_name": "Mateo S. — comprador",
+      "entity_type": "person",
+      "public_description": "Busca un vehículo familiar usado y quiere revisarlo con un mecánico antes de comprar.",
+      "personality": "Paciente y metódico. Prefiere confirmar estado mecánico, forma de pago y lugar de encuentro antes de cerrar.",
+      "objectives": [
+        "Comprar un vehículo familiar por menos de USD 8.300",
+        "Coordinar una inspección mecánica independiente",
+        "Cerrar la compra durante el fin de semana"
+      ],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-mateo-compra",
+          "goal": "Comprar un vehículo familiar por menos de USD 8.300",
+          "seeks": ["vehículo familiar", "historial de mantenimiento", "inspección mecánica"],
+          "offers": ["pago verificado", "mecánico independiente", "cierre el fin de semana"],
+          "negotiation_context": "Mateo reservará el vehículo únicamente después de una inspección independiente."
+        }
+      ],
+      "interests": ["comprar auto usado", "inspección mecánica", "cierre seguro"],
+      "capabilities": ["pago verificado", "mecánico independiente", "cierre el fin de semana"],
+      "hard_limits": [
+        { "key": "max_budget_usd", "operator": "lte", "value": 8300, "unit": "usd" }
+      ],
+      "never_disclose": ["PHONE", "EXACT_ADDRESS"],
+      "escalation_rules": [
+        { "rule_id": "esc-mateo-meeting", "rule_type": "SHARE_PERSONAL_DATA", "categories": ["MEETING_POINT"], "enabled": true }
+      ],
+      "status": "AVAILABLE",
+      "price_range": { "min": 7600, "max": 8300 },
+      "logistics_preferences": ["zona norte", "fin de semana"],
+      "tools": [
+        { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Coordina inspección y prueba de manejo." }
+      ]
     }
   ],
   "sessions": [
@@ -354,6 +426,15 @@
       ],
       "decision_history": [
         {
+          "decision_id": "dec-b2b-certification-001",
+          "agent_id": "agent-b2b-telar",
+          "category": "Certificación del proveedor",
+          "summary": "Telar autorizó continuar únicamente con proveedores cuya certificación GOTS pudiera verificarse.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T09:12:00Z",
+          "decided_at": "2026-08-07T09:13:00Z"
+        },
+        {
           "decision_id": "dec-b2b-discount-001",
           "agent_id": "agent-b2b-organiccotton",
           "category": "Descuento por volumen",
@@ -363,6 +444,15 @@
           "decided_at": "2026-08-07T09:18:00Z"
         },
         {
+          "decision_id": "dec-b2b-payment-001",
+          "agent_id": "agent-b2b-telar",
+          "category": "Condiciones de pago",
+          "summary": "Telar mantuvo el pago a 60 días como condición necesaria para avanzar con el contrato.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T09:20:00Z",
+          "decided_at": "2026-08-07T09:21:00Z"
+        },
+        {
           "decision_id": "dec-b2b-volume-001",
           "agent_id": "agent-b2b-telar",
           "category": "Ampliar el volumen",
@@ -370,6 +460,15 @@
           "status": "APPROVED",
           "created_at": "2026-08-07T09:22:00Z",
           "decided_at": "2026-08-07T09:23:00Z"
+        },
+        {
+          "decision_id": "dec-b2b-contract-001",
+          "agent_id": "agent-b2b-organiccotton",
+          "category": "Duración del contrato",
+          "summary": "OrganicCotton ajustó su condición inicial y permitió evaluar seis meses renovables en lugar de doce meses fijos.",
+          "status": "REPLACED",
+          "created_at": "2026-08-07T09:23:00Z",
+          "decided_at": "2026-08-07T09:24:00Z"
         }
       ],
       "pending_decision": {
@@ -554,6 +653,15 @@
       ],
       "decision_history": [
         {
+          "decision_id": "dec-p2p-maintenance-001",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Historial de mantenimiento",
+          "summary": "Valentina aprobó compartir el historial general del vehículo, manteniendo ocultos sus datos personales.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T10:05:00Z",
+          "decided_at": "2026-08-07T10:06:00Z"
+        },
+        {
           "decision_id": "dec-p2p-budget-001",
           "agent_id": "agent-p2p-carlos",
           "category": "Presupuesto para la compra",
@@ -570,6 +678,24 @@
           "status": "APPROVED",
           "created_at": "2026-08-07T10:12:00Z",
           "decided_at": "2026-08-07T10:13:00Z"
+        },
+        {
+          "decision_id": "dec-p2p-public-place-001",
+          "agent_id": "agent-p2p-carlos",
+          "category": "Lugar de encuentro",
+          "summary": "Carlos aceptó comenzar la prueba de manejo en un punto público antes de solicitar una dirección privada.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T10:15:00Z",
+          "decided_at": "2026-08-07T10:16:00Z"
+        },
+        {
+          "decision_id": "dec-p2p-minimum-001",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Mantener el precio mínimo",
+          "summary": "Valentina indicó que su agente puede escuchar ofertas, pero no confirmar una venta por debajo de USD 8.000.",
+          "status": "APPROVED",
+          "created_at": "2026-08-07T10:17:00Z",
+          "decided_at": "2026-08-07T10:18:00Z"
         }
       ],
       "pending_decision": {

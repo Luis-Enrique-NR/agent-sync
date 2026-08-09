@@ -19,18 +19,33 @@ import type {
   MatchSession,
   MockData,
   Segment,
+  TurnIntent,
 } from "@/lib/types";
 import { segmentOf } from "@/lib/types";
+import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v5";
+const STORAGE_KEY = "agentsync-demo-v6";
+
+export const INCOMING_DECISION_DELAY_MS = 5_500;
+
+interface IncomingDecisionNotice {
+  session_id: string;
+  category: string;
+  summary: string;
+  counterpart_name: string;
+  arrived_at: string;
+}
 
 interface AgentSyncState {
   agents: AgentProfile[];
   sessions: MatchSession[];
   agentsById: Record<string, AgentProfile>;
+  incomingDecision: IncomingDecisionNotice | null;
+  simulateIncomingDecision: () => void;
+  dismissIncomingDecision: () => void;
   /** AIBackendService.resume_negotiation — aprueba/rechaza/reemplaza y reanuda. */
   dispatchHumanDecision: (sessionId: string, decision: HumanDecision) => void;
   toggleAgentStatus: (agentId: string) => void;
@@ -60,6 +75,395 @@ function audit(
     actor_id: partial.actor_id ?? "",
     occurred_at: new Date().toISOString(),
     ...partial,
+  };
+}
+
+interface IncomingDecisionScenario {
+  key: string;
+  counterpartId: string;
+  summary: string;
+  category: string;
+  decisionSummary: string;
+  proposal: string;
+  flaggedDetail: string;
+  valueRef?: string;
+  messages: Array<{
+    sender: "owner" | "counterpart";
+    content: string;
+    intent: TurnIntent;
+  }>;
+  decisions: Array<{
+    actor: "owner" | "counterpart";
+    category: string;
+    summary: string;
+    status: Exclude<DecisionStatus, "PENDING">;
+  }>;
+  continuation: [string, string];
+}
+
+const INCOMING_DECISION_SCENARIOS: IncomingDecisionScenario[] = [
+  {
+    key: "sofia-final-price",
+    counterpartId: "agent-p2p-sofia",
+    summary: "Valentina evalúa una oferta verificada de Sofía",
+    category: "Aceptar precio final",
+    decisionSummary:
+      "Sofía ofrece USD 8.150 por transferencia inmediata y pide reservar el Hyundai durante 24 horas.",
+    proposal:
+      "Aceptar USD 8.150 y reservar el vehículo durante 24 horas mientras se verifica la transferencia",
+    flaggedDetail:
+      "El precio cumple tu mínimo, pero aceptar la oferta crea un compromiso de reserva.",
+    messages: [
+      {
+        sender: "owner",
+        content:
+          "El Hyundai 2021 sigue disponible. Tiene 45.000 km y mantenimiento en agencia.",
+        intent: "OFFER",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Me interesa. Puedo pagar por transferencia verificada si la documentación está al día.",
+        intent: "QUESTION",
+      },
+      {
+        sender: "owner",
+        content:
+          "La documentación está vigente y puedo mostrar las facturas de mantenimiento antes de cerrar.",
+        intent: "ACCEPT",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Ofrezco USD 8.150 por transferencia inmediata. Necesito 24 horas para completar la verificación bancaria.",
+        intent: "OFFER",
+      },
+      {
+        sender: "owner",
+        content:
+          "La oferta está sobre el mínimo configurado. Puedo preparar una reserva si Valentina confirma el precio final.",
+        intent: "COUNTER_OFFER",
+      },
+    ],
+    decisions: [
+      {
+        actor: "owner",
+        category: "Compartir mantenimiento",
+        summary:
+          "Valentina permitió mostrar las facturas sin revelar datos personales.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Forma de pago",
+        summary:
+          "Sofía confirmó que usaría una transferencia bancaria verificable.",
+        status: "APPROVED",
+      },
+      {
+        actor: "owner",
+        category: "Verificación documental",
+        summary:
+          "Valentina aceptó presentar la documentación antes de recibir el pago.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Subir la oferta",
+        summary:
+          "Sofía amplió su presupuesto inicial hasta USD 8.150.",
+        status: "REPLACED",
+      },
+      {
+        actor: "counterpart",
+        category: "Reserva temporal",
+        summary:
+          "Sofía solicitó reservar el vehículo solo durante la verificación bancaria.",
+        status: "APPROVED",
+      },
+    ],
+    continuation: [
+      "Acepto USD 8.150 y reservo el vehículo por 24 horas mientras verificas la transferencia.",
+      "Perfecto. Inicio la verificación y te confirmo apenas el banco la complete.",
+    ],
+  },
+  {
+    key: "mateo-meeting-point",
+    counterpartId: "agent-p2p-mateo",
+    summary: "Valentina coordina una inspección con Mateo",
+    category: "Confirmar lugar de encuentro",
+    decisionSummary:
+      "Mateo propone revisar el auto con su mecánico el sábado y solicita confirmar un taller en la zona norte.",
+    proposal:
+      "Confirmar el taller público como punto de encuentro para la inspección del sábado",
+    flaggedDetail:
+      "Confirmar un encuentro físico requiere tu aprobación, aunque sea en un lugar público.",
+    valueRef: "meeting_ref_north_workshop",
+    messages: [
+      {
+        sender: "counterpart",
+        content:
+          "Busco un vehículo familiar y me interesa revisar el Hyundai con un mecánico independiente.",
+        intent: "QUESTION",
+      },
+      {
+        sender: "owner",
+        content:
+          "Se puede coordinar una inspección. El vehículo está disponible el fin de semana en la zona norte.",
+        intent: "ACCEPT",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Mi mecánico puede el sábado por la mañana. Prefiero un taller público y pagar la revisión por mi cuenta.",
+        intent: "OFFER",
+      },
+      {
+        sender: "owner",
+        content:
+          "Eso respeta las condiciones configuradas. Puedo evaluar talleres sin compartir una dirección privada.",
+        intent: "ACCEPT",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Propongo el taller de la avenida principal a las 10:30. ¿Confirmamos el encuentro allí?",
+        intent: "QUESTION",
+      },
+    ],
+    decisions: [
+      {
+        actor: "counterpart",
+        category: "Inspección independiente",
+        summary:
+          "Mateo decidió asumir el costo de una revisión mecánica externa.",
+        status: "APPROVED",
+      },
+      {
+        actor: "owner",
+        category: "Disponibilidad",
+        summary:
+          "Valentina permitió explorar horarios durante el fin de semana.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Horario de inspección",
+        summary:
+          "Mateo confirmó disponibilidad para el sábado por la mañana.",
+        status: "APPROVED",
+      },
+      {
+        actor: "owner",
+        category: "Proteger dirección privada",
+        summary:
+          "Valentina mantuvo su dirección oculta y pidió usar un punto público.",
+        status: "REPLACED",
+      },
+      {
+        actor: "counterpart",
+        category: "Taller propuesto",
+        summary:
+          "Mateo eligió un taller en zona norte que acepta inspecciones externas.",
+        status: "APPROVED",
+      },
+    ],
+    continuation: [
+      "Confirmo el taller público para el sábado a las 10:30. No compartiré una dirección privada.",
+      "De acuerdo. Mi mecánico y yo llegaremos al taller a la hora acordada.",
+    ],
+  },
+  {
+    key: "carlos-contact",
+    counterpartId: "agent-p2p-carlos",
+    summary: "Carlos solicita el contacto para cerrar la compra",
+    category: "Compartir teléfono",
+    decisionSummary:
+      "Carlos mejoró su oferta a USD 8.050 y solicita un teléfono para coordinar el pago y la prueba de manejo.",
+    proposal:
+      "Compartir el teléfono protegido con Carlos después de aceptar la oferta de USD 8.050",
+    flaggedDetail:
+      "El teléfono es un dato privado y solo puede revelarse con tu permiso explícito.",
+    valueRef: "contact_ref_valentina_phone",
+    messages: [
+      {
+        sender: "counterpart",
+        content:
+          "Revisé el valor de mercado y puedo mejorar mi propuesta si el historial está completo.",
+        intent: "COUNTER_OFFER",
+      },
+      {
+        sender: "owner",
+        content:
+          "El historial está completo. El precio mínimo sigue siendo USD 8.000.",
+        intent: "COUNTER_OFFER",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Puedo ofrecer USD 8.050 en efectivo y cerrar esta semana.",
+        intent: "OFFER",
+      },
+      {
+        sender: "owner",
+        content:
+          "La oferta cumple el mínimo. Antes de compartir contacto debo pedir autorización a Valentina.",
+        intent: "ACCEPT",
+      },
+      {
+        sender: "counterpart",
+        content:
+          "Confirmo intención de compra. ¿Podemos intercambiar teléfono para coordinar el pago?",
+        intent: "QUESTION",
+      },
+    ],
+    decisions: [
+      {
+        actor: "counterpart",
+        category: "Revisar valor de mercado",
+        summary:
+          "Carlos permitió que su agente consultara precios de referencia.",
+        status: "APPROVED",
+      },
+      {
+        actor: "owner",
+        category: "Mantener precio mínimo",
+        summary:
+          "Valentina conservó USD 8.000 como límite de venta.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Mejorar la oferta",
+        summary:
+          "Carlos subió su propuesta hasta USD 8.050 para cerrar esta semana.",
+        status: "REPLACED",
+      },
+      {
+        actor: "owner",
+        category: "Aceptar efectivo",
+        summary:
+          "Valentina permitió continuar con pago en efectivo sujeto a verificación.",
+        status: "APPROVED",
+      },
+      {
+        actor: "counterpart",
+        category: "Intención de compra",
+        summary:
+          "Carlos confirmó que está listo para avanzar si puede coordinar directamente.",
+        status: "APPROVED",
+      },
+    ],
+    continuation: [
+      "Acepto la oferta de USD 8.050 y autorizo compartir mi teléfono para coordinar.",
+      "Perfecto. Te contactaré únicamente para organizar el pago y la prueba.",
+    ],
+  },
+];
+
+function isoAt(baseMs: number, minuteOffset: number) {
+  return new Date(baseMs + minuteOffset * 60_000).toISOString();
+}
+
+function buildIncomingDecisionSession(
+  scenario: IncomingDecisionScenario,
+  baseMs: number,
+): MatchSession {
+  const sessionId = `ses-live-demo-${scenario.key}-${baseMs}`;
+  const decisionId = `dec-live-demo-${scenario.key}-${baseMs}`;
+  const counterpart = data.agents.find(
+    (agent) => agent.agent_id === scenario.counterpartId,
+  );
+
+  return {
+    session_id: sessionId,
+    segment: "P2P",
+    agent_1_id: DEMO_OWNER_AGENT_ID,
+    agent_2_id: scenario.counterpartId,
+    initiator_id: scenario.counterpartId,
+    status: "PENDING_HUMAN_APPROVAL",
+    summary: scenario.summary,
+    started_at: isoAt(baseMs, -14),
+    max_turns: 12,
+    current_turn: 6,
+    messages: scenario.messages.map((message, index) => ({
+      id: `${sessionId}-message-${index + 1}`,
+      sender_agent_id:
+        message.sender === "owner"
+          ? DEMO_OWNER_AGENT_ID
+          : scenario.counterpartId,
+      content: message.content,
+      intent: message.intent,
+      sent_at: isoAt(baseMs, -14 + index * 2),
+    })),
+    pending_script: [
+      {
+        id: `${sessionId}-pending-owner`,
+        sender_agent_id: DEMO_OWNER_AGENT_ID,
+        content: scenario.continuation[0],
+        intent: "ACCEPT",
+        sent_at: isoAt(baseMs, 1),
+        pending_human_approval: true,
+        flagged: {
+          category: scenario.category,
+          detail: scenario.flaggedDetail,
+          requires_human: true,
+          value_ref: scenario.valueRef,
+        },
+      },
+      {
+        id: `${sessionId}-pending-counterpart`,
+        sender_agent_id: scenario.counterpartId,
+        content: scenario.continuation[1],
+        intent: "ACCEPT",
+        sent_at: isoAt(baseMs, 2),
+      },
+    ],
+    pending_decision: {
+      decision_id: decisionId,
+      session_id: sessionId,
+      speaker_id: DEMO_OWNER_AGENT_ID,
+      category: scenario.category,
+      summary: scenario.decisionSummary,
+      proposal: scenario.proposal,
+      requested_by: DEMO_OWNER_AGENT_ID,
+      reasons: [scenario.valueRef ? "MANDATORY_PERSONAL_DATA" : "USER_RULE"],
+      matched_rule_ids: [
+        scenario.valueRef ? "esc-val-phone" : "esc-val-price",
+      ],
+      created_at: new Date(baseMs).toISOString(),
+      status: "PENDING",
+    },
+    decision_history: scenario.decisions.map((decision, index) => ({
+      decision_id: `${sessionId}-history-${index + 1}`,
+      agent_id:
+        decision.actor === "owner"
+          ? DEMO_OWNER_AGENT_ID
+          : scenario.counterpartId,
+      category: decision.category,
+      summary: decision.summary,
+      status: decision.status,
+      created_at: isoAt(baseMs, -13 + index * 2),
+      decided_at: isoAt(baseMs, -12 + index * 2),
+    })),
+    matchmaking: {
+      score: 0.86,
+      ic_score: 0.9,
+      logistics_score: 0.76,
+      price_pass: true,
+      direction: { a_to_b: 0.9, b_to_a: 0.8 },
+      channel_id: `ch-live-${scenario.key}-${baseMs}`,
+      channel_status: "CREATED",
+    },
+    raw_state: {
+      session_id: sessionId,
+      status: "PENDING_HUMAN_APPROVAL",
+      turn_count: 6,
+      max_turns: 12,
+      current_speaker_id: DEMO_OWNER_AGENT_ID,
+      demo_scenario: scenario.key,
+      counterpart_name: counterpart?.display_name,
+    },
   };
 }
 
@@ -132,6 +536,8 @@ function computeMatch(a: AgentProfile, b: AgentProfile): MatchScore {
 export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
   const [agents, setAgents] = useState<AgentProfile[]>(data.agents);
   const [sessions, setSessions] = useState<MatchSession[]>(data.sessions);
+  const [incomingDecision, setIncomingDecision] =
+    useState<IncomingDecisionNotice | null>(null);
 
   useEffect(() => {
     try {
@@ -155,6 +561,39 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       // almacenamiento no disponible: la demo sigue en memoria
     }
   }, [agents, sessions]);
+
+  const simulateIncomingDecision = useCallback(() => {
+    const baseMs = Date.now();
+    const scenario =
+      INCOMING_DECISION_SCENARIOS[
+        Math.floor(baseMs / 1_000) % INCOMING_DECISION_SCENARIOS.length
+      ];
+    const session = buildIncomingDecisionSession(scenario, baseMs);
+    const counterpart = data.agents.find(
+      (agent) => agent.agent_id === scenario.counterpartId,
+    );
+
+    setSessions((prev) => {
+      const generated = prev
+        .filter((item) => item.session_id.startsWith("ses-live-demo-"))
+        .slice(0, 4);
+      const permanent = prev.filter(
+        (item) => !item.session_id.startsWith("ses-live-demo-"),
+      );
+      return [session, ...generated, ...permanent];
+    });
+    setIncomingDecision({
+      session_id: session.session_id,
+      category: scenario.category,
+      summary: scenario.decisionSummary,
+      counterpart_name: counterpart?.display_name.split(" — ")[0] ?? "Otra persona",
+      arrived_at: new Date(baseMs).toISOString(),
+    });
+  }, []);
+
+  const dismissIncomingDecision = useCallback(() => {
+    setIncomingDecision(null);
+  }, []);
 
   /**
    * AIBackendService.resume_negotiation(user_id, session_id, human_decision).
@@ -494,6 +933,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
   const resetDemo = useCallback(() => {
     setAgents(data.agents);
     setSessions(data.sessions);
+    setIncomingDecision(null);
   }, []);
 
   const agentsById = useMemo(
@@ -506,6 +946,9 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       agents,
       sessions,
       agentsById,
+      incomingDecision,
+      simulateIncomingDecision,
+      dismissIncomingDecision,
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
@@ -516,6 +959,9 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       agents,
       sessions,
       agentsById,
+      incomingDecision,
+      simulateIncomingDecision,
+      dismissIncomingDecision,
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
