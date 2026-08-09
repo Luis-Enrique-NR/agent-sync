@@ -11,7 +11,6 @@ import {
 } from "@/lib/store";
 import {
   ArrowRightIcon,
-  CompassIcon,
   HomeIcon,
   InboxIcon,
   LogoMark,
@@ -23,7 +22,6 @@ import {
 const navigation = [
   { href: "/", label: "Inicio", icon: HomeIcon },
   { href: "/setup", label: "Mi agente", icon: SlidersIcon },
-  { href: "/ecosistema", label: "Explorar", icon: CompassIcon },
   { href: "/bandeja", label: "Decisiones", icon: InboxIcon },
 ];
 
@@ -47,6 +45,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       belongsToAgent(session, agentId) &&
       session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
+  const incomingDecisionHref = incomingDecision
+    ? (() => {
+        const session = sessions.find(
+          (item) => item.session_id === incomingDecision.session_id,
+        );
+        return session?.pending_decision
+          ? `/bandeja#decision-card-${session.pending_decision.decision_id}`
+          : "/bandeja";
+      })()
+    : "/bandeja";
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -161,7 +169,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <strong>{incomingDecision.category}</strong>
             <p>{incomingDecision.summary}</p>
             <Link
-              href={`/chat/${incomingDecision.session_id}`}
+              href={incomingDecisionHref}
               onClick={dismissIncomingDecision}
             >
               Revisar ahora <ArrowRightIcon size={13} />

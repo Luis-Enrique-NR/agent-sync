@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { PendingDecision, Segment } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
@@ -14,6 +14,7 @@ export function DecisionInbox() {
   const { sessions, agentsById, dispatchHumanDecision } = useAgentSync();
   const { agentId } = useAuth();
   const [filter, setFilter] = useState<Filter>("todas");
+  const [highlightedDecisionId, setHighlightedDecisionId] = useState<string | null>(null);
 
   const pending = useMemo(
     () =>
@@ -63,6 +64,31 @@ export function DecisionInbox() {
     },
   ];
 
+  useEffect(() => {
+    const prefix = "#decision-card-";
+    if (!window.location.hash.startsWith(prefix)) return;
+
+    const decisionId = decodeURIComponent(window.location.hash.slice(prefix.length));
+    setFilter("todas");
+
+    const scrollTimer = window.setTimeout(() => {
+      const target = document.getElementById(`decision-card-${decisionId}`);
+      if (!target) return;
+      setHighlightedDecisionId(decisionId);
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+      target.focus({ preventScroll: true });
+    }, 260);
+    const clearTimer = window.setTimeout(
+      () => setHighlightedDecisionId(null),
+      3_000,
+    );
+
+    return () => {
+      window.clearTimeout(scrollTimer);
+      window.clearTimeout(clearTimer);
+    };
+  }, [pending.length]);
+
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-2">
@@ -104,13 +130,21 @@ export function DecisionInbox() {
         <ul className="flex flex-col gap-4">
           {visible.map(({ session, decision }) => {
             const requester = agentsById[decision.requested_by];
+            const counterpartId = session.agent_1_id === agentId
+              ? session.agent_2_id
+              : session.agent_1_id;
+            const counterpart = agentsById[counterpartId];
             const candidate = session.pending_script?.find(
               (m) => m.flagged?.requires_human,
             );
             return (
               <li
                 key={session.session_id}
-                className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5"
+                id={`decision-card-${decision.decision_id}`}
+                tabIndex={-1}
+                className={`decision-inbox-card rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 ${
+                  highlightedDecisionId === decision.decision_id ? "is-targeted" : ""
+                }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -133,7 +167,8 @@ export function DecisionInbox() {
                   {session.summary}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Solicitada por {requester?.display_name ?? decision.requested_by}
+                  Conversación con {counterpart?.display_name.split(" — ")[0] ?? "la otra parte"}
+                  {requester ? ` · Solicitada por ${requester.display_name.split(" — ")[0]}` : ""}
                 </p>
 
                 <div className="mt-4">

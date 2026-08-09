@@ -37,7 +37,7 @@ export function CommercialHome({
               Crear mi agente
               <ArrowRightIcon size={16} />
             </Link>
-            <Link href="/ecosistema" className="secondary-action">
+            <Link href="#product-flow-title" className="secondary-action">
               Ver la demo en acción
             </Link>
           </div>
