@@ -163,6 +163,62 @@ export function ArrowRightIcon(props: IconProps) {
   );
 }
 
+export function CalendarIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4" />
+      <path d="M8 3v4" />
+      <path d="M3 10h18" />
+      <path d="M8 14h2" />
+      <path d="M14 14h2" />
+      <path d="M8 18h2" />
+    </IconBase>
+  );
+}
+
+export function TrendIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 19V5" />
+      <path d="M4 19h16" />
+      <path d="m7 15 4-4 3 2 5-6" />
+      <path d="M16 7h3v3" />
+    </IconBase>
+  );
+}
+
+export function BoxIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="m4 7 8-4 8 4-8 4-8-4Z" />
+      <path d="M4 7v10l8 4 8-4V7" />
+      <path d="M12 11v10" />
+    </IconBase>
+  );
+}
+
+export function MeetingIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <circle cx="8" cy="9" r="3" />
+      <path d="M3 20v-2a5 5 0 0 1 10 0v2" />
+      <path d="M16 4v6" />
+      <path d="M13 7h6" />
+      <path d="M16 14h5v6h-5" />
+    </IconBase>
+  );
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </IconBase>
+  );
+}
+
 export function ShieldIcon(props: IconProps) {
   return (
     <IconBase {...props}>
