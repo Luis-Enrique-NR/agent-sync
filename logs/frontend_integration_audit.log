@@ -1,0 +1,44 @@
+# FRONTEND INTEGRATION AUDIT — feat/integrate-frontend-pages
+
+**Date:** 2026-08-09
+
+---
+
+## Screens Found
+
+| Screen | Route | File | Uses API? |
+|--------|-------|------|-----------|
+| Home / Dashboard | `/` | `app/page.tsx` → `DashboardView` | ✅ via `useAgentSync()` store |
+| Agent Setup (Create) | `/setup` | `app/setup/page.tsx` → `AgentSetupForm` | ✅ `api.registerAgent()` |
+| Ecosystem (Portal) | `/ecosistema` | `app/ecosistema/page.tsx` | ⚠️ Redirects to `/` |
+| Chat / Detail | `/chat/[id]` | `app/chat/[id]/page.tsx` → `ChatView` | ✅ `api.getNegotiationDetail()` + SSE stream |
+| Bandeja (Inbox) | `/bandeja` | `app/bandeja/page.tsx` → `BandejaView` | ✅ via `useAgentSync()` store |
+| Profile | `/perfil` | `app/perfil/page.tsx` → `ProfileView` | ⚠️ Local state |
+| History | `/historial` | `app/historial/page.tsx` → `HistorialView` | ✅ via `useAgentSync()` store |
+
+## API Client (`frontend/lib/api.ts`)
+
+| Backend Endpoint | Frontend Function | Used By |
+|-----------------|-------------------|---------|
+| `POST /api/v1/agents` | `registerAgent()` | AgentSetupForm |
+| `GET /api/v1/agents/{id}` | `getAgentProfile()` | store |
+| `GET /api/v1/agents` | `listAgents()` | store |
+| `GET /api/v1/negotiations/{id}` | `getNegotiationDetail()` | ChatView |
+| `GET /api/v1/negotiations` | `listNegotiations()` | DashboardView, BandejaView |
+| `POST /api/v1/negotiations/{id}/approval` | `approveDecision()` | DecisionPanel |
+| `GET /api/v1/negotiations/{id}/audit` | `getAuditTrail()` | AuditTrail |
+
+## DTO Mapping (`frontend/lib/store.tsx`)
+
+- `toAgentProfile()` — maps API `AgentProfileResponse` to frontend `AgentProfile`
+- `toMatchSession()` — maps API `NegotiationSummary` to frontend `MatchSession`
+- SSE stream via `frontend/lib/sse.ts` for real-time transcript updates
+
+## Key Findings
+
+- **All 7 backend endpoints** are mapped in the frontend `api.ts` client
+- **Agent creation** uses `POST /agents` with full payload
+- **Chat view** fetches negotiation detail AND subscribes to SSE stream
+- **Decision panel** maps `APPROVE/REJECT/REPLACE` to the approval endpoint
+- **Ecosystem page** is a stub (redirects to /) — not yet implemented
+- **Profile page** uses local state, not API reads — needs wiring
