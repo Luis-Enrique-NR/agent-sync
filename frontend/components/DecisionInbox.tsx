@@ -2,11 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import type { PendingDecision } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
 import { HumanEscalationModal } from "@/components/HumanEscalationModal";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent } from "@/lib/store";
 
 const PAGE_SIZE = 6;
 
@@ -20,39 +18,21 @@ export function DecisionInbox() {
   const pending = useMemo(
     () =>
       sessions
-        .filter((session) => belongsToAgent(session, agentId))
-        .map((session) => ({
-          session,
-          decision: session.pending_decision as PendingDecision | undefined,
-        }))
-        .filter(
-          (
-            entry,
-          ): entry is {
-            session: (typeof sessions)[number];
-            decision: PendingDecision;
-          } =>
-            Boolean(
-              entry.decision &&
-                entry.decision.status === "PENDING" &&
-                entry.session.status === "PENDING_HUMAN_APPROVAL",
-            ),
-        )
+        .filter((session) => session.status === "PENDING_HUMAN_APPROVAL")
         .sort(
           (left, right) =>
-            Date.parse(right.decision.created_at) -
-            Date.parse(left.decision.created_at),
+            Date.parse(right.started_at) -
+            Date.parse(left.started_at),
         ),
-    [agentId, sessions],
+    [sessions],
   );
 
   const visible = pending.slice(0, visibleCount);
   const hasMore = visibleCount < pending.length;
   const resolvedThisSession = sessions.filter(
     (session) =>
-      belongsToAgent(session, agentId) &&
-      session.pending_decision &&
-      session.pending_decision.status !== "PENDING",
+      session.status !== "PENDING_HUMAN_APPROVAL" &&
+      session.pending_script?.some((m) => m.flagged?.requires_human),
   ).length;
 
   useEffect(() => {
@@ -85,7 +65,7 @@ export function DecisionInbox() {
         window.location.hash.slice(prefix.length),
       );
       const targetIndex = pending.findIndex(
-        ({ decision }) => decision.decision_id === decisionId,
+        (session) => session.session_id === decisionId,
       );
       if (targetIndex < 0) return;
 
@@ -137,8 +117,7 @@ export function DecisionInbox() {
   return (
     <div className="decision-stream">
       <ul className="flex flex-col gap-4">
-        {visible.map(({ session, decision }) => {
-          const requester = agentsById[decision.requested_by];
+        {visible.map((session) => {
           const counterpartId =
             session.agent_1_id === agentId
               ? session.agent_2_id
@@ -151,10 +130,10 @@ export function DecisionInbox() {
           return (
             <li
               key={session.session_id}
-              id={`decision-card-${decision.decision_id}`}
+              id={`decision-card-${session.session_id}`}
               tabIndex={-1}
               className={`decision-inbox-card rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5 ${
-                highlightedDecisionId === decision.decision_id
+                highlightedDecisionId === session.session_id
                   ? "is-targeted"
                   : ""
               }`}
@@ -177,18 +156,25 @@ export function DecisionInbox() {
               </div>
 
               <p className="mt-3 text-sm font-semibold leading-snug">
-                {session.summary}
+                {session.summary || `Negociación ${session.segment} — ${session.current_turn} turnos`}
               </p>
               <p className="mt-0.5 text-xs text-[var(--muted)]">
-                Conversación con {counterpart?.display_name.split(" — ")[0] ?? "la otra parte"}
-                {requester
-                  ? ` · Solicitada por ${requester.display_name.split(" — ")[0]}`
-                  : ""}
+                Conversación con {counterpart?.display_name?.split(" — ")[0] ?? "la otra parte"}
               </p>
 
               <div className="mt-4">
                 <HumanEscalationModal
-                  decision={decision}
+                  decision={{
+                    decision_id: session.session_id,
+                    session_id: session.session_id,
+                    speaker_id: session.agent_1_id,
+                    category: "price",
+                    summary: candidate?.content ?? "Propuesta pendiente de aprobación",
+                    proposal: candidate?.content ?? "",
+                    requested_by: session.agent_1_id,
+                    status: "PENDING",
+                    created_at: session.started_at,
+                  }}
                   candidate={candidate}
                   onResolve={(humanDecision) =>
                     dispatchHumanDecision(session.session_id, humanDecision)

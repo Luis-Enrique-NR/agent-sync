@@ -6,6 +6,8 @@
  * and attached to every request automatically.
  */
 
+import type { AuditRecord } from "@/lib/types";
+
 // ── Re-exports from backend DTOs for convenience ───────────────────────
 
 export type {
@@ -165,8 +167,9 @@ async function request<T>(
 
   if (!res.ok) {
     let errorBody: unknown;
+    const cloned = res.clone();
     try {
-      errorBody = await res.json();
+      errorBody = await cloned.json();
     } catch {
       errorBody = await res.text();
     }
@@ -227,4 +230,16 @@ export async function submitApproval(
     `/api/v1/negotiations/${id}/approval`,
     decision,
   );
+}
+
+export interface AuditListResponse {
+  records: AuditRecord[];
+  total: number;
+}
+
+/** GET /api/v1/negotiations/{id}/audit — fetch audit trail */
+export async function getAudit(
+  id: string,
+): Promise<AuditListResponse> {
+  return request<AuditListResponse>("GET", `/api/v1/negotiations/${id}/audit`);
 }

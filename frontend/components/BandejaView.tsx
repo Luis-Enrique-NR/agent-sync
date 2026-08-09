@@ -3,17 +3,11 @@
 import { useAgentSync } from "@/lib/store";
 import { DecisionInbox } from "@/components/DecisionInbox";
 import { ShieldIcon } from "@/components/Icons";
-import { useAuth } from "@/lib/auth";
-import { belongsToAgent } from "@/lib/store";
 
 export function BandejaView() {
   const { sessions } = useAgentSync();
-  const { agentId } = useAuth();
   const pendingCount = sessions.filter(
-    (s) =>
-      belongsToAgent(s, agentId) &&
-      s.status === "PENDING_HUMAN_APPROVAL" &&
-      s.pending_decision,
+    (s) => s.status === "PENDING_HUMAN_APPROVAL",
   ).length;
 
   return (
