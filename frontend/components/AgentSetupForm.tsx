@@ -160,6 +160,8 @@ export function AgentSetupForm() {
               ? Number(amountThreshold) || category.threshold
               : category.threshold,
           categories: category.categories ?? [],
+          action_types:
+            category.ruleType === "REQUEST_ACTION" ? ["OTHER"] : [],
           enabled: true,
         });
       }
@@ -222,7 +224,9 @@ export function AgentSetupForm() {
     escalation_rules: buildEscalationRules,
     status: "AVAILABLE",
     logistics_preferences: [],
-    tools: [],
+    tool_grants: [],
+    goal_completion_mode: "ONE_SHOT",
+    remaining_goal_units: null,
   });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {

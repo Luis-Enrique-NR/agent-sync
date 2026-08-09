@@ -96,7 +96,9 @@ export function DecisionInbox() {
       ) : (
         <ul className="flex flex-col gap-4">
           {visible.map(({ session, decision }) => {
-            const requester = agentsById[decision.requested_by];
+            const requesterId =
+              decision.requester_agent_id ?? decision.owner_agent_id;
+            const requester = agentsById[requesterId];
             const candidate = session.pending_script?.find(
               (m) => m.flagged?.requires_human,
             );
@@ -126,7 +128,7 @@ export function DecisionInbox() {
                   {session.summary}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Solicitada por {requester?.display_name ?? decision.requested_by}
+                  Solicitada por {requester?.display_name ?? requesterId}
                 </p>
 
                 <div className="mt-4">

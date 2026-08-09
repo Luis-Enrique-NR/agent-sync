@@ -186,11 +186,12 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
                 ? "REJECTED"
                 : "REPLACED";
 
+          const requester = pending.requester_agent_id ?? pending.owner_agent_id;
           const nextAudit: AuditRecord[] = [
             ...(session.audit ?? []),
             audit({
               session_id: sessionId,
-              agent_id: pending.requested_by,
+              agent_id: requester,
               actor_type: "HUMAN",
               actor_id: "human-owner",
               action:
@@ -212,7 +213,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
             nextAudit.push(
               audit({
                 session_id: sessionId,
-                agent_id: pending.requested_by,
+                agent_id: requester,
                 actor_type: "SYSTEM",
                 actor_id: "engine",
                 action: "SESSION_REJECTED",
@@ -250,13 +251,14 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
           const blocked = pendingScript.shift();
           if (blocked) {
             if (action === "REPLACE") {
+              const replacementText =
+                decision.replacement_turn?.public_message?.trim();
               messages = [
                 ...messages,
                 {
                   ...blocked,
                   id: uid(),
-                  content:
-                    decision.replacement_message?.trim() ?? blocked.content,
+                  public_message: replacementText ?? blocked.public_message,
                   pending_human_approval: false,
                   flagged: undefined,
                 },
@@ -268,7 +270,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
               nextAudit.push(
                 audit({
                   session_id: sessionId,
-                  agent_id: pending.requested_by,
+                  agent_id: requester,
                   actor_type: "SYSTEM",
                   actor_id: "vault",
                   action: "PRIVATE_DATA_RESOLVED",
@@ -291,7 +293,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
           nextAudit.push(
             audit({
               session_id: sessionId,
-              agent_id: pending.requested_by,
+              agent_id: requester,
               actor_type: "SYSTEM",
               actor_id: "engine",
               action: "SESSION_RESOLVED",
@@ -328,7 +330,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
               status: decisionStatus,
               manual_response:
                 action === "REPLACE"
-                  ? decision.replacement_message?.trim()
+                  ? decision.replacement_turn?.public_message?.trim()
                   : undefined,
             },
           };
@@ -392,10 +394,18 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
           messages: [
             {
               id: uid(),
-              sender_agent_id: candidate.agent_id,
-              content: `Hola, soy ${candidate.display_name}. Vi que ${other.display_name} encaja con lo que busco. ¿Podemos hablar de una propuesta?`,
+              speaker_id: candidate.agent_id,
+              turn_index: 1,
+              proposal_id: uid(),
+              proposal_revision: 1,
+              public_message: `Hola, soy ${candidate.display_name}. Vi que ${other.display_name} encaja con lo que busco. ¿Podemos hablar de una propuesta?`,
               intent: "QUESTION",
-              sent_at: now,
+              numeric_terms: [],
+              data_requests: [],
+              disclosed_categories: [],
+              requested_actions: [],
+              created_at: now,
+              approved_by_human: false,
             },
           ],
           matchmaking: {

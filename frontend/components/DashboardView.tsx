@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { MatchSession } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
 import { AgentStatusCard } from "@/components/AgentStatusCard";
+import { kindLabel } from "@/components/HumanEscalationModal";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -168,7 +169,7 @@ export function DashboardView() {
                       <ShieldIcon size={19} />
                     </span>
                     <span className="attention-copy">
-                      <strong>{session.pending_decision?.category}</strong>
+                      <strong>{kindLabel(session.pending_decision?.kind ?? "")}</strong>
                       <span>
                         {session.segment} · {session.pending_decision?.proposal}
                       </span>

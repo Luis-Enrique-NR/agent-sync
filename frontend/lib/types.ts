@@ -1,20 +1,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Contratos de datos — alineados con los DTOs ai.v1 (Diogo) y los modelos
-// agnósticos B2B/P2P (Lucho): ai/domain/models.py + persistence/models.py.
+// Contratos de datos — alineados con los DTOs ai.v1 reales:
+//   backend/ai/api/dto.py        → DTOs expuestos al cliente (schema "ai.v1")
+//   backend/ai/domain/models.py  → enums y modelos de dominio
+//   backend/persistence/models.py→ filas SQLModel
 // El Frontend solo renderiza lo que el Backend API/AI declara seguro: datos
 // reales únicamente cuando pasaron guardrails y fueron aprobados por la
 // bitácora/vault. Los datos sensibles viajan como referencias opacas value_ref.
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ── Tipos base agnósticos (B2B/P2P) ─────────────────────────────────────────
+export const API_SCHEMA_VERSION = "ai.v1";
+
+// ── Enums de dominio (ai/domain/models.py) ──────────────────────────────────
 
 export type EntityType = "company" | "person";
 export type Segment = "B2B" | "P2P";
 
-/** AgenteStatus del backend (ai/domain/models.py). */
+/** AgentStatus del backend (ai/domain/models.py). */
 export type AgentStatus = "AVAILABLE" | "BUSY" | "PAUSED";
 
-/** SessionStatus del backend + estados terminales del contrato ai.v1. */
+/** SessionStatus del backend (ai/domain/models.py) + estados terminales. */
 export type SessionStatus =
   | "SEARCHING"
   | "ACTIVE"
@@ -25,10 +29,27 @@ export type SessionStatus =
   | "WITHDRAWN"
   | "EXPIRED";
 
-export type DecisionStatus = "PENDING" | "APPROVED" | "REJECTED" | "REPLACED";
+/** DecisionStatus — DecisionRequestDTO.status. */
+export type DecisionStatus =
+  | "PENDING"
+  | "APPROVED"
+  | "REJECTED"
+  | "REPLACED"
+  | "CANCELLED"
+  | "EXPIRED";
+
+/** DecisionKind — DecisionRequestDTO.kind. */
+export type DecisionKind =
+  | "OUTBOUND_TURN"
+  | "INBOUND_ACTION"
+  | "TOOL_EXECUTION"
+  | "SYSTEM";
 
 /** HumanDecisionAction — acciones que despacha el humano al AIBackendService. */
 export type HumanDecisionAction = "APPROVE" | "REJECT" | "REPLACE";
+
+/** GoalCompletionMode — AgentProfileDTO.goal_completion_mode. */
+export type GoalCompletionMode = "ONE_SHOT" | "QUANTITY" | "CONTINUOUS";
 
 export type SensitiveDataCategory =
   | "PHONE"
@@ -42,12 +63,19 @@ export type EscalationRuleType =
   | "AMOUNT_ABOVE"
   | "SHARE_PERSONAL_DATA"
   | "COMMIT_DATE"
-  | "FINAL_AGREEMENT";
+  | "FINAL_AGREEMENT"
+  | "REQUEST_ACTION";
+
+export type ActionType =
+  | "MEETING"
+  | "RESERVE_RESOURCE"
+  | "SEND_DOCUMENT"
+  | "SEND_EMAIL"
+  | "OTHER";
+
+export type CommitmentKind = "DATE" | "MEETING" | "OTHER";
 
 export type NumericOperator = "gt" | "gte" | "lt" | "lte" | "eq";
-
-/** ActorType del audit_records (HUMAN / SYSTEM / LLM). */
-export type ActorType = "HUMAN" | "SYSTEM" | "LLM";
 
 export type TurnIntent =
   | "QUESTION"
@@ -56,56 +84,77 @@ export type TurnIntent =
   | "ACCEPT"
   | "DECLINE";
 
+export type ToolApprovalMode = "AUTO" | "ALWAYS";
+
 export type ChannelStatus = "CREATED" | "PENDING" | "FAILED";
+
+/** ActorType del audit_records (HUMAN / SYSTEM / LLM). */
+export type ActorType = "HUMAN" | "SYSTEM" | "LLM";
 
 /** B2B ↔ company, P2P ↔ person. */
 export function segmentOf(entityType: EntityType): Segment {
   return entityType === "company" ? "B2B" : "P2P";
 }
 
-// ── Modelos de dominio (SQLModel raw / JSON agnóstico) ─────────────────────
+// ── Sub-modelos del dominio (ai/domain/models.py) ───────────────────────────
 
 /** NumericLimit — límite duro determinístico (fuera del LLM). */
 export interface NumericLimit {
   key: string;
   operator: NumericOperator;
   value: number;
-  unit?: string;
+  unit?: string | null;
 }
 
 export interface NumericTerm {
   key: string;
   value: number;
-  unit?: string;
+  unit?: string | null;
 }
 
-/** DisclosureRequest — pedido estructurado de un dato propio. value_ref es opaco. */
-export interface DisclosureRequest {
+/** DataRequest — pedido estructurado de un dato propio. value_ref es opaco. */
+export interface DataRequest {
+  category: SensitiveDataCategory;
+  purpose: string;
+  value_ref?: string;
+}
+
+export interface ProposedDisclosure {
   category: SensitiveDataCategory;
   value_ref: string;
   purpose: string;
 }
 
 export interface Commitment {
-  kind: "DATE" | "MEETING" | "OTHER";
+  kind: CommitmentKind;
   value: string;
+}
+
+/** RequestedAction — action del motor (MEETING, SEND_EMAIL, …). */
+export interface RequestedAction {
+  action_id?: string;
+  action_type: ActionType;
+  purpose: string;
+  parameters?: Record<string, string | number | boolean | null>;
+  valid_until?: string | null;
 }
 
 /** EscalationRule — regla de escalamiento humano configurada por el propietario. */
 export interface EscalationRule {
   rule_id: string;
   rule_type: EscalationRuleType;
-  key?: string;
-  threshold?: number;
+  key?: string | null;
+  threshold?: number | null;
   categories: SensitiveDataCategory[];
+  action_types: ActionType[];
   enabled: boolean;
 }
 
-export interface AgentTool {
-  id: string;
-  name: string;
-  simulated: boolean;
-  notes?: string;
+/** ToolGrant — AgentProfileDTO.tool_grants. */
+export interface ToolGrant {
+  tool_name: string;
+  enabled: boolean;
+  approval_mode: ToolApprovalMode;
 }
 
 // ── DTO ai.v1 — AgentProfileDTO ─────────────────────────────────────────────
@@ -114,40 +163,56 @@ export interface AgentProfile {
   agent_id: string;
   display_name: string;
   entity_type: EntityType;
+  status: AgentStatus;
   public_description: string;
-  personality: string;
-  objectives: string[];
   interests: string[];
   capabilities: string[];
+  price_range?: { min?: number; max?: number } | null;
+  logistics_preferences: string[];
+  personality: string;
+  objectives: string[];
   hard_limits: NumericLimit[];
   never_disclose: SensitiveDataCategory[];
   escalation_rules: EscalationRule[];
-  status: AgentStatus;
-  price_range?: { min?: number; max?: number } | null;
-  logistics_preferences?: string[];
-  tools: AgentTool[];
+  tool_grants: ToolGrant[];
+  goal_completion_mode: GoalCompletionMode;
+  remaining_goal_units: number | null;
 }
 
 /** Firma de registro del agente (evento agent.registered → matchmaking). */
 export interface AgentRegistrationDTO {
   event_type: "agent.registered";
   profile: AgentProfile;
-  sent_at: string;
+  created_at: string;
 }
 
-// ── DTO ai.v1 — TranscriptMessageDTO / Turno público ───────────────────────
+// ── DTO ai.v1 — PublicTranscriptMessageDTO ──────────────────────────────────
 
-export interface ChatMessage {
+/** Turno público del transcript (NUNCA viaja con datos sensibles en claro). */
+export interface TranscriptMessage {
+  speaker_id: string;
+  turn_index: number;
+  proposal_id: string;
+  proposal_revision: number;
+  responds_to?: {
+    proposal_id: string;
+    revision: number;
+  } | null;
+  public_message: string;
+  intent: TurnIntent;
+  numeric_terms: NumericTerm[];
+  data_requests: DataRequest[];
+  disclosed_categories: SensitiveDataCategory[];
+  requested_actions: RequestedAction[];
+  created_at: string;
+  approved_by_human: boolean;
+}
+
+/** Extensión UI del transcript para la demo (no es parte del DTO). */
+export interface ChatMessage extends TranscriptMessage {
   id: string;
-  sender_agent_id: string;
-  content: string;
-  sent_at: string;
-  intent?: TurnIntent;
-  numeric_terms?: NumericTerm[];
-  disclosures?: DisclosureRequest[];
   commitments?: Commitment[];
   blocked_by_guardrail?: boolean;
-  /** Turno en espera de aprobación humana; los datos sensibles son value_ref. */
   pending_human_approval?: boolean;
   flagged?: {
     category: string;
@@ -159,18 +224,29 @@ export interface ChatMessage {
 
 // ── DTO ai.v1 — DecisionRequestDTO + HumanDecisionDTO ──────────────────────
 
+/** Decisión pendiente tal como la ve el propietario del agente. */
 export interface PendingDecision {
+  schema_version: string;
   decision_id: string;
   session_id: string;
-  speaker_id: string;
-  category: string;
-  summary: string;
-  proposal: string;
-  requested_by: string;
-  reasons?: string[];
-  matched_rule_ids?: string[];
-  created_at: string;
+  owner_agent_id: string;
+  requester_agent_id?: string | null;
+  kind: DecisionKind;
+  reasons: string[];
+  matched_rule_ids: string[];
+  candidate_turn?: Record<string, unknown> | null;
+  proposal_id?: string | null;
+  proposal_revision?: number | null;
+  requested_actions: RequestedAction[];
+  tool_call?: Record<string, unknown> | null;
+  requires_revalidation: boolean;
   status: DecisionStatus;
+  created_at: string;
+  resolved_at?: string | null;
+  resolution?: string | null;
+  /** Copia para la demo (derivada del candidate_turn). */
+  summary?: string;
+  proposal?: string;
   manual_response?: string;
 }
 
@@ -178,7 +254,10 @@ export interface PendingDecision {
 export interface HumanDecision {
   decision_id: string;
   action: HumanDecisionAction;
-  replacement_message?: string;
+  replacement_turn?: {
+    public_message: string;
+    intent?: TurnIntent;
+  } | null;
 }
 
 // ── DTO ai.v1 — AuditRecord (bitácora estructurada) ────────────────────────
@@ -226,6 +305,8 @@ export interface NegotiationOutcome {
 
 export interface MatchSession {
   session_id: string;
+  owner_user_id?: string | null;
+  current_speaker_id?: string;
   segment: Segment;
   agent_1_id: string;
   agent_2_id: string;
@@ -233,11 +314,13 @@ export interface MatchSession {
   status: SessionStatus;
   summary: string;
   started_at: string;
+  deadline_at?: string;
   max_turns: number;
   current_turn: number;
   messages: ChatMessage[];
   pending_script?: ChatMessage[];
   pending_decision?: PendingDecision;
+  pending_revalidation?: Record<string, unknown> | null;
   matchmaking?: MatchScore;
   audit?: AuditRecord[];
   raw_state?: Record<string, unknown>;
@@ -247,6 +330,7 @@ export interface MatchSession {
     contact: string;
     revealed_at: string;
   };
+  last_error_code?: string | null;
 }
 
 // ── UI — metadatos de categorías sensibles (configuración) ─────────────────

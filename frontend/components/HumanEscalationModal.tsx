@@ -11,8 +11,8 @@ import { CheckIcon, ShieldIcon } from "@/components/Icons";
 
 /** Reemplaza datos sensibles por una referencia opaca hasta que el humano decida. */
 export function maskSensitiveContent(message: ChatMessage): string {
-  if (!message.flagged?.value_ref) return message.content;
-  return message.content
+  if (!message.flagged?.value_ref) return message.public_message;
+  return message.public_message
     .replace(/\b(?:\+?\d[\d\s().-]{6,})\b/g, `Dato protegido`)
     .replace(/[\w.+-]+@[\w-]+\.[\w.]+/g, `Dato protegido`)
     .replace(
@@ -31,6 +31,16 @@ function friendlyReason(reason: string) {
   return labels[reason] ?? reason.replaceAll("_", " ").toLowerCase();
 }
 
+export function kindLabel(kind: string): string {
+  const labels: Record<string, string> = {
+    OUTBOUND_TURN: "Turno saliente",
+    INBOUND_ACTION: "Acción de contraparte",
+    TOOL_EXECUTION: "Ejecución de herramienta",
+    SYSTEM: "Decisión del sistema",
+  };
+  return labels[kind] ?? kind.replaceAll("_", " ").toLowerCase();
+}
+
 export function HumanEscalationModal({
   decision,
   candidate,
@@ -47,7 +57,9 @@ export function HumanEscalationModal({
     onResolve?.({
       decision_id: decision.decision_id,
       action,
-      replacement_message: replacement.trim() || undefined,
+      replacement_turn: replacement.trim()
+        ? { public_message: replacement.trim() }
+        : null,
     });
   };
 
@@ -80,7 +92,7 @@ export function HumanEscalationModal({
         <span className="decision-shield"><ShieldIcon size={19} /></span>
         <div>
           <span>Tu agente está esperando</span>
-          <h3 id={`decision-${decision.decision_id}`}>{decision.category}</h3>
+          <h3 id={`decision-${decision.decision_id}`}>{kindLabel(decision.kind)}</h3>
         </div>
       </div>
 

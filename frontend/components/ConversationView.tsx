@@ -124,7 +124,7 @@ export function ConversationView({
   const revealNext = () => {
     const next = queueRef.current.shift();
     if (!next) return;
-    setTypingAgent(next.sender_agent_id);
+    setTypingAgent(next.speaker_id);
     setStreamedExtra((prev) => [...prev, next]);
     window.setTimeout(() => setTypingAgent(null), 900);
     if (queueRef.current.length > 0) {
@@ -193,8 +193,8 @@ export function ConversationView({
 
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
         {allMessages.map((message) => {
-          const sender = agentsById[message.sender_agent_id];
-          const isAgent1 = message.sender_agent_id === session.agent_1_id;
+          const sender = agentsById[message.speaker_id];
+          const isAgent1 = message.speaker_id === session.agent_1_id;
           return (
             <div
               key={message.id}
@@ -216,11 +216,11 @@ export function ConversationView({
                     isAgent1 ? "text-[var(--accent)]" : "text-[var(--accent-2)]"
                   }`}
                 >
-                  {sender?.display_name ?? message.sender_agent_id}
+                  {sender?.display_name ?? message.speaker_id}
                 </p>
-                <p className="mt-1 text-sm leading-relaxed">{message.content}</p>
+                <p className="mt-1 text-sm leading-relaxed">{message.public_message}</p>
                 <p className="mt-1.5 font-mono text-[10px] text-[var(--muted)]">
-                  {formatMessageTime(message.sent_at)}
+                  {formatMessageTime(message.created_at)}
                 </p>
               </div>
               {message.flagged ? (
