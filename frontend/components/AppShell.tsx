@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ViewTransition } from "react";
+import { useLayoutEffect, ViewTransition } from "react";
 import { useAgentSync } from "@/lib/store";
 import {
   CompassIcon,
@@ -32,6 +32,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pendingCount = sessions.filter(
     (session) => session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   return (
     <div className="app-shell">
