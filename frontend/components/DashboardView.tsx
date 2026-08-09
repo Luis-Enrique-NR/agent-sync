@@ -187,7 +187,6 @@ export function DashboardView() {
     ["SEARCHING", "ACTIVE", "PENDING_HUMAN_APPROVAL"].includes(session.status),
   );
   const paused = ownerAgent.status === "PAUSED";
-  const displayName = ownerAgent.display_name.split(" — ")[0];
   const objectiveContexts = ownerAgent.objective_contexts ?? [];
   const objectives = (
     objectiveContexts.length > 0
@@ -222,24 +221,7 @@ export function DashboardView() {
   return (
     <div className={`live-dashboard ${paused ? "is-paused" : ""}`}>
       <header className="live-dashboard-heading">
-        <div>
-          <span className="live-eyebrow"><i /> Actividad en vivo</span>
-          <h1>Tu agente está trabajando ahora</h1>
-          <p>
-            Cada objetivo puede sostener varias negociaciones con términos y
-            ritmos independientes.
-          </p>
-        </div>
-        <aside className="live-agent-control" aria-label="Estado de tu agente">
-          <span className={`live-agent-avatar ${paused ? "is-paused" : ""}`}>
-            {initials(displayName)}
-          </span>
-          <span>
-            <small>Mi agente</small>
-            <strong>{displayName}</strong>
-            <i>{paused ? "En pausa" : activeSessions.length > 0 ? "Trabajando en paralelo" : "Atento a nuevas oportunidades"}</i>
-          </span>
-        </aside>
+        <h1>Tu agente está trabajando ahora</h1>
       </header>
 
       <section className="live-control-room" aria-labelledby="live-routes-title">
