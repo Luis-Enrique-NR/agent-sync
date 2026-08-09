@@ -24,6 +24,7 @@ class MCPServerConfig:
     token_env_var: str | None = None
     max_response_bytes: int = 1_000_000
     allowed_tools: frozenset[str] = frozenset()
+    protocol_version: str = "2026-07-28"
 
     def __post_init__(self) -> None:
         if not self.label.strip() or not self.endpoint.strip():
@@ -38,6 +39,8 @@ class MCPServerConfig:
             for tool in self.allowed_tools
         ):
             raise ValueError("MCP allowed tool names cannot be empty")
+        if not self.protocol_version.strip():
+            raise ValueError("MCP protocol_version cannot be empty")
 
 
 class MCPProtocolError(RuntimeError):
@@ -55,7 +58,7 @@ class HTTPMCPClient:
         opener: Callable[..., Any] = urlopen,
     ) -> None:
         self._servers = dict(servers)
-        self._environ = environ or os.environ
+        self._environ = os.environ if environ is None else environ
         self._opener = opener
 
     @classmethod
@@ -89,6 +92,7 @@ class HTTPMCPClient:
                 ),
                 max_response_bytes=int(value.get("max_response_bytes", 1_000_000)),
                 allowed_tools=frozenset(str(tool) for tool in raw_allowed_tools),
+                protocol_version=str(value.get("protocol_version", "2026-07-28")),
             )
         return cls(servers, environ=environ, opener=opener)
 
@@ -112,7 +116,11 @@ class HTTPMCPClient:
                 "jsonrpc": "2.0",
                 "id": request_id,
                 "method": "tools/call",
-                "params": {"name": tool_name, "arguments": arguments},
+                "params": {
+                    "name": tool_name,
+                    "arguments": arguments,
+                    "_meta": self._request_meta(config.protocol_version),
+                },
             },
             ensure_ascii=False,
             separators=(",", ":"),
@@ -121,6 +129,9 @@ class HTTPMCPClient:
             "Accept": "application/json, text/event-stream",
             "Content-Type": "application/json",
             "X-Idempotency-Key": idempotency_key,
+            "MCP-Protocol-Version": config.protocol_version,
+            "mcp-method": "tools/call",
+            "mcp-name": tool_name,
         }
         if config.token_env_var:
             token = self._environ.get(config.token_env_var)
@@ -152,6 +163,8 @@ class HTTPMCPClient:
         result = payload.get("result")
         if not isinstance(result, dict):
             raise MCPProtocolError("MCP_MISSING_RESULT")
+        if result.get("isError") is True:
+            raise MCPProtocolError("MCP_REMOTE_TOOL_ERROR")
         structured = result.get("structuredContent")
         if isinstance(structured, dict):
             return structured
@@ -159,6 +172,59 @@ class HTTPMCPClient:
         if isinstance(content, list):
             return {"content": content}
         return {key: value for key, value in result.items() if key != "_meta"}
+
+    def list_tools(self, *, server_label: str, timeout_seconds: int) -> list[dict[str, Any]]:
+        """Discover a server catalog for diagnostics; execution remains allowlisted."""
+
+        config = self._servers.get(server_label)
+        if config is None:
+            raise MCPProtocolError("MCP_SERVER_NOT_CONFIGURED")
+        request_id = str(uuid4())
+        body = json.dumps(
+            {
+                "jsonrpc": "2.0",
+                "id": request_id,
+                "method": "tools/list",
+                "params": {"_meta": self._request_meta(config.protocol_version)},
+            },
+            separators=(",", ":"),
+        ).encode("utf-8")
+        headers = {
+            "Accept": "application/json, text/event-stream",
+            "Content-Type": "application/json",
+            "MCP-Protocol-Version": config.protocol_version,
+            "mcp-method": "tools/list",
+        }
+        if config.token_env_var:
+            token = self._environ.get(config.token_env_var)
+            if not token:
+                raise MCPProtocolError("MCP_TOKEN_NOT_CONFIGURED")
+            headers["Authorization"] = f"Bearer {token}"
+        request = Request(config.endpoint, data=body, headers=headers, method="POST")
+        try:
+            with self._opener(request, timeout=timeout_seconds) as response:
+                raw_response = response.read(config.max_response_bytes + 1)
+                content_type = str(getattr(response, "headers", {}).get("Content-Type", ""))
+        except HTTPError as exc:
+            raise MCPProtocolError(f"MCP_HTTP_{exc.code}") from exc
+        except URLError as exc:
+            raise MCPProtocolError("MCP_NETWORK_ERROR") from exc
+        if len(raw_response) > config.max_response_bytes:
+            raise MCPProtocolError("MCP_RESPONSE_TOO_LARGE")
+        payload = self._decode_rpc_response(
+            raw_response,
+            content_type=content_type,
+            request_id=request_id,
+        )
+        if payload.get("error"):
+            error = payload["error"]
+            code = error.get("code", "UNKNOWN") if isinstance(error, dict) else "UNKNOWN"
+            raise MCPProtocolError(f"MCP_REMOTE_ERROR_{code}")
+        result = payload.get("result")
+        tools = result.get("tools") if isinstance(result, dict) else None
+        if not isinstance(tools, list) or not all(isinstance(tool, dict) for tool in tools):
+            raise MCPProtocolError("MCP_INVALID_TOOLS_LIST")
+        return tools
 
     @staticmethod
     def _decode_rpc_response(
@@ -198,3 +264,16 @@ class HTTPMCPClient:
         if str(payload.get("id")) != request_id:
             raise MCPProtocolError("MCP_RESPONSE_ID_MISMATCH")
         return payload
+
+    @staticmethod
+    def _request_meta(protocol_version: str) -> dict[str, Any]:
+        """Supply the 2026 per-request envelope; older servers ignore it."""
+
+        return {
+            "io.modelcontextprotocol/protocolVersion": protocol_version,
+            "io.modelcontextprotocol/clientInfo": {
+                "name": "AgentSync AI Backend",
+                "version": "0.1.0",
+            },
+            "io.modelcontextprotocol/clientCapabilities": {},
+        }
