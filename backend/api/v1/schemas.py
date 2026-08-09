@@ -39,8 +39,27 @@ class AgentProfileResponseDTO(StrictDTO):
     price_range: dict[str, float] | None = None
     logistics_preferences: list[str] = Field(default_factory=list)
     objectives: list[str]
+    personality: str | None = None
+    hard_limits: list[dict] = Field(default_factory=list)
+    never_disclose: list[str] = Field(default_factory=list)
+    escalation_rules: list[dict] = Field(default_factory=list)
+    tool_grants: list[dict] = Field(default_factory=list)
+    goal_completion_mode: str | None = None
+    remaining_goal_units: int | None = None
     created_at: datetime
     updated_at: datetime
+
+
+# ── Audit ──────────────────────────────────────────────────────────────
+
+
+class AuditRecordDTO(StrictDTO):
+    audit_id: UUID
+    action: str
+    actor_type: str
+    severity: str
+    reason: str | None
+    occurred_at: datetime
 
 
 # ── Negotiation ────────────────────────────────────────────────────────
@@ -64,6 +83,13 @@ class TranscriptMessageDTO(StrictDTO):
     intent: str
     approved_by_human: bool
     created_at: datetime
+    proposal_id: UUID | None = None
+    proposal_revision: int | None = None
+    responds_to: dict | None = None
+    numeric_terms: list[dict] = Field(default_factory=list)
+    data_requests: list[dict] = Field(default_factory=list)
+    disclosed_categories: list[str] = Field(default_factory=list)
+    requested_actions: list[dict] = Field(default_factory=list)
 
 
 class NegotiationDetailDTO(NegotiationSummaryDTO):
@@ -71,10 +97,11 @@ class NegotiationDetailDTO(NegotiationSummaryDTO):
     max_turns: int
     deadline_at: datetime | None
     last_error_code: str | None
+    current_speaker_id: UUID | None = None
     transcript: list[TranscriptMessageDTO] = Field(default_factory=list)
-
-
-# ── Human decision ─────────────────────────────────────────────────────
+    pending_decision: dict | None = None
+    audit: list[AuditRecordDTO] = Field(default_factory=list)
+    outcome: dict | None = None
 
 
 class HumanDecisionDTO(StrictDTO):
@@ -96,16 +123,19 @@ class DecisionResponseDTO(StrictDTO):
     new_status: str
 
 
-# ── Audit ──────────────────────────────────────────────────────────────
+class AgentStatusUpdateDTO(StrictDTO):
+    status: str = Field(pattern=r"^(AVAILABLE|BUSY|PAUSED)$")
 
 
-class AuditRecordDTO(StrictDTO):
-    audit_id: UUID
-    action: str
-    actor_type: str
-    severity: str
-    reason: str | None
-    occurred_at: datetime
+class AgentUpdateDTO(StrictDTO):
+    display_name: str = Field(min_length=1, max_length=120)
+    public_description: str = Field(min_length=1, max_length=500)
+    personality: str | None = Field(default=None, max_length=1_000)
+    objectives: list[str] = Field(min_length=1, max_length=20)
+    interests: list[str] = Field(default_factory=list, max_length=20)
+    capabilities: list[str] = Field(default_factory=list, max_length=20)
+    price_range: dict[str, float] | None = None
+    logistics_preferences: list[str] = Field(default_factory=list, max_length=10)
 
 
 class AgentListResponseDTO(StrictDTO):
