@@ -140,9 +140,7 @@ def _seed_pending_session():
 
     turn = AgentTurn(public_message="oferta: 900 USD", intent="OFFER")  # type: ignore[arg-type]
     decision = DecisionRequest(
-        session_id=sid,
-        owner_agent_id=a1,
-        kind=DecisionKind.OUTBOUND_TURN,
+        session_id=sid, owner_agent_id=a1, kind=DecisionKind.OUTBOUND_TURN,
         reasons=[DecisionReason.USER_RULE],  # type: ignore[arg-type]
         candidate_turn=turn,
     )

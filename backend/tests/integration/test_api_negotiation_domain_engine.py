@@ -57,9 +57,7 @@ def _seed_pending():
     create_agent_profile(p2, user_id=uuid4(), session=s)
     turn = AgentTurn(public_message="oferta: 900 USD", intent=TurnIntent.OFFER)
     dec = DecisionRequest(
-        session_id=sid,
-        owner_agent_id=a1,
-        kind=DecisionKind.OUTBOUND_TURN,
+        session_id=sid, owner_agent_id=a1, kind=DecisionKind.OUTBOUND_TURN,
         reasons=[DecisionReason.USER_RULE],
         candidate_turn=turn,
     )

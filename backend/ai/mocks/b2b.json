@@ -47,6 +47,9 @@
           "category": "EMAIL"
         }
       ],
+      "interests": ["raw_materials", "organic_textiles"],
+      "capabilities": ["supply_textiles", "bulk_shipping"],
+      "status": "AVAILABLE",
       "tool_grants": [
         {
           "tool_name": "web.search",
@@ -105,6 +108,9 @@
           "category": null
         }
       ],
+      "interests": ["manufactured_goods", "sustainable_textiles"],
+      "capabilities": ["brand_design", "quality_assurance"],
+      "status": "AVAILABLE",
       "tool_grants": [
         {
           "tool_name": "web.search",

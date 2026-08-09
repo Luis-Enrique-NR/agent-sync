@@ -285,8 +285,8 @@ class FakeEngine:
 
     def run_until_pause(self, state):
         from ai.domain.models import (
-            DecisionKind, DecisionReason, DecisionRequest, EngineEvent,
-            EngineEventType, EngineResult, SessionStatus,
+            DecisionKind, DecisionReason, DecisionRequest, EngineEvent, EngineEventType,
+            EngineResult, SessionStatus,
         )
         if self.pending:
             decision = DecisionRequest(
@@ -313,7 +313,10 @@ class FakeEngine:
 def test_public_turn_adapter_uses_generated_turn_not_inbound_text() -> None:
     """Only a generated TURN_READY payload is eligible for Portal publish."""
     from ai.domain.models import (
-        EngineEvent, EngineEventAudience, EngineEventType, EngineResult,
+        EngineEvent,
+        EngineEventAudience,
+        EngineEventType,
+        EngineResult,
         NegotiationState,
     )
     from eda.handlers import _public_turns

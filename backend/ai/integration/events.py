@@ -1,4 +1,4 @@
-"""Shared event names for the EDA/Portal admission boundary."""
+"""Canonical event names exchanged by Portal, EDA, and the AI engine."""
 
 from enum import StrEnum
 
