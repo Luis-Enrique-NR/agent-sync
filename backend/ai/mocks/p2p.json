@@ -71,7 +71,19 @@
       ],
       "interests": ["sell_used_bicycle", "find_buyer_nearby"],
       "capabilities": ["sell_bicycle", "weekend_availability"],
-      "status": "AVAILABLE"
+      "status": "AVAILABLE",
+      "tool_grants": [
+        {
+          "tool_name": "calendar.check_availability",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "email.send_notification",
+          "enabled": true,
+          "approval_mode": "ALWAYS"
+        }
+      ]
     },
     {
       "agent_id": "20000000-0000-0000-0000-000000000002",
@@ -100,6 +112,15 @@
           "threshold": null,
           "categories": [],
           "enabled": true
+        },
+        {
+          "rule_id": "approve-meeting-requests",
+          "rule_type": "REQUEST_ACTION",
+          "key": null,
+          "threshold": null,
+          "categories": [],
+          "action_types": ["MEETING"],
+          "enabled": true
         }
       ],
       "tool_facts": [
@@ -113,7 +134,19 @@
       ],
       "interests": ["buy_used_bicycle", "urban_transport"],
       "capabilities": ["cash_payment", "weekday_pickup"],
-      "status": "AVAILABLE"
+      "status": "AVAILABLE",
+      "tool_grants": [
+        {
+          "tool_name": "web.search",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "calendar.check_availability",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        }
+      ]
     }
   ]
 }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -40,8 +41,12 @@ from persistence.repository import (
 router = APIRouter(prefix="/negotiations", tags=["negotiations"])
 
 
-def _session() -> Session:
-    return get_session()
+def _session() -> Generator[Session, None, None]:
+    session = get_session()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def _row_to_summary(row: NegotiationStateRow) -> NegotiationSummaryDTO:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
@@ -22,8 +23,12 @@ from transport.models import TransportEnvelopeV1, MessageSnapshot
 router = APIRouter(prefix="/agents", tags=["agents"])
 
 
-def _session() -> Session:
-    return get_session()
+def _session() -> Generator[Session, None, None]:
+    session = get_session()
+    try:
+        yield session
+    finally:
+        session.close()
 
 
 def _row_to_dto(row: AgentProfileRow) -> AgentProfileResponseDTO:

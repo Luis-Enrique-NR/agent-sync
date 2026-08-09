@@ -49,7 +49,19 @@
       ],
       "interests": ["raw_materials", "organic_textiles"],
       "capabilities": ["supply_textiles", "bulk_shipping"],
-      "status": "AVAILABLE"
+      "status": "AVAILABLE",
+      "tool_grants": [
+        {
+          "tool_name": "web.search",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "email.send_notification",
+          "enabled": true,
+          "approval_mode": "ALWAYS"
+        }
+      ]
     },
     {
       "agent_id": "10000000-0000-0000-0000-000000000002",
@@ -98,7 +110,24 @@
       ],
       "interests": ["manufactured_goods", "sustainable_textiles"],
       "capabilities": ["brand_design", "quality_assurance"],
-      "status": "AVAILABLE"
+      "status": "AVAILABLE",
+      "tool_grants": [
+        {
+          "tool_name": "web.search",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "calendar.check_availability",
+          "enabled": true,
+          "approval_mode": "AUTO"
+        },
+        {
+          "tool_name": "email.send_notification",
+          "enabled": true,
+          "approval_mode": "ALWAYS"
+        }
+      ]
     }
   ]
 }

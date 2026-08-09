@@ -285,13 +285,14 @@ class FakeEngine:
 
     def run_until_pause(self, state):
         from ai.domain.models import (
-            DecisionReason, DecisionRequest, EngineEvent, EngineEventType,
+            DecisionKind, DecisionReason, DecisionRequest, EngineEvent, EngineEventType,
             EngineResult, SessionStatus,
         )
         if self.pending:
             decision = DecisionRequest(
                 session_id=state.session_id,
-                speaker_id=state.current_speaker_id,
+                owner_agent_id=state.current_speaker_id,
+                kind=DecisionKind.SYSTEM,
                 reasons=[DecisionReason.USER_RULE],
                 matched_rule_ids=["test-rule"],
             )
@@ -311,7 +312,13 @@ class FakeEngine:
 
 def test_public_turn_adapter_uses_generated_turn_not_inbound_text() -> None:
     """Only a generated TURN_READY payload is eligible for Portal publish."""
-    from ai.domain.models import EngineEvent, EngineEventType, EngineResult, NegotiationState
+    from ai.domain.models import (
+        EngineEvent,
+        EngineEventAudience,
+        EngineEventType,
+        EngineResult,
+        NegotiationState,
+    )
     from eda.handlers import _public_turns
 
     speaker_id = uuid4()
@@ -346,6 +353,7 @@ def test_public_turn_adapter_uses_generated_turn_not_inbound_text() -> None:
             EngineEvent(
                 session_id=state.session_id,
                 event_type=EngineEventType.TURN_READY,
+                audience=EngineEventAudience.PUBLIC,
                 payload={
                     "message": {
                         "speaker_id": str(speaker_id),
