@@ -1,0 +1,215 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useLayoutEffect, ViewTransition } from "react";
+import { useAuth } from "@/lib/auth";
+import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
+import {
+  INCOMING_DECISION_DELAY_MS,
+  useAgentSync,
+} from "@/lib/store";
+import {
+  ArrowRightIcon,
+  HomeIcon,
+  InboxIcon,
+  LogoMark,
+  RotateIcon,
+  SlidersIcon,
+  UserIcon,
+} from "@/components/Icons";
+
+const navigation = [
+  { href: "/", label: "Inicio", icon: HomeIcon },
+  { href: "/setup", label: "Mi agente", icon: SlidersIcon },
+  { href: "/bandeja", label: "Decisiones", icon: InboxIcon },
+];
+
+function isCurrent(pathname: string, href: string) {
+  if (href === "/") return pathname === href || pathname.startsWith("/chat/");
+  return pathname.startsWith(href);
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { signedIn, agentId, attachAgent } = useAuth();
+  const {
+    sessions,
+    incomingDecision,
+    simulateIncomingDecision,
+    dismissIncomingDecision,
+    resetDemo,
+  } = useAgentSync();
+  const pendingCount = sessions.filter(
+    (session) =>
+      belongsToAgent(session, agentId) &&
+      session.status === "PENDING_HUMAN_APPROVAL",
+  ).length;
+  const incomingDecisionHref = incomingDecision
+    ? (() => {
+        const session = sessions.find(
+          (item) => item.session_id === incomingDecision.session_id,
+        );
+        return session?.pending_decision
+          ? `/bandeja#decision-card-${session.pending_decision.decision_id}`
+          : "/bandeja";
+      })()
+    : "/bandeja";
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!signedIn || agentId !== DEMO_OWNER_AGENT_ID) return;
+
+    const timer = window.setTimeout(
+      simulateIncomingDecision,
+      INCOMING_DECISION_DELAY_MS,
+    );
+    return () => window.clearTimeout(timer);
+  }, [agentId, signedIn, simulateIncomingDecision]);
+
+  return (
+    <div className={`app-shell ${signedIn ? "is-authenticated" : "is-guest"}`}>
+      <header className="app-header">
+        <div className="header-inner">
+          <Link href="/" className="brand" aria-label="AgentSync, ir al inicio">
+            <LogoMark />
+            <span className="brand-name">AgentSync</span>
+          </Link>
+
+          {signedIn ? (
+            <nav className="desktop-nav" aria-label="Navegación principal">
+              {navigation.map((item) => {
+                const active = isCurrent(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-link ${active ? "is-active" : ""}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <Icon size={17} />
+                    {item.label}
+                    {item.href === "/bandeja" && pendingCount > 0 ? (
+                      <span className="nav-count">{pendingCount}</span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
+
+          <div className="header-actions">
+            {signedIn ? (
+              <button
+                type="button"
+                className="reset-button"
+                onClick={() => {
+                  resetDemo();
+                  attachAgent(DEMO_OWNER_AGENT_ID);
+                }}
+                title="Restablecer los datos de la demo"
+              >
+                <RotateIcon size={16} />
+                <span>Reiniciar demo</span>
+              </button>
+            ) : null}
+            <Link
+              href="/perfil"
+              className={`profile-button ${!signedIn ? "is-entry" : ""} ${pathname.startsWith("/perfil") ? "is-active" : ""}`}
+              aria-label={signedIn ? "Abrir mi perfil" : "Ingresar o crear una cuenta"}
+              title={signedIn ? "Mi perfil" : "Ingresar"}
+            >
+              <UserIcon size={19} />
+              {!signedIn ? <span>Ingresar</span> : null}
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="app-main">
+        <ViewTransition
+          key={pathname}
+          name="agentsync-page"
+          share="page-swap"
+          enter="page-swap"
+          default="none"
+        >
+          <div className="page-transition-content">{children}</div>
+        </ViewTransition>
+      </main>
+
+      <footer className="app-footer">
+        <span>AgentSync · entorno de demostración</span>
+        <span>Los límites duros nunca se negocian.</span>
+      </footer>
+
+      {signedIn && incomingDecision ? (
+        <aside
+          className="incoming-decision-toast"
+          role="status"
+          aria-live="polite"
+          aria-label="Nueva decisión pendiente"
+        >
+          <span className="incoming-decision-icon">
+            <InboxIcon size={18} />
+          </span>
+          <div className="incoming-decision-copy">
+            <span>Nueva decisión · {incomingDecision.counterpart_name}</span>
+            <strong>{incomingDecision.category}</strong>
+            <p>{incomingDecision.summary}</p>
+            <Link
+              href={incomingDecisionHref}
+              onClick={dismissIncomingDecision}
+            >
+              Revisar ahora <ArrowRightIcon size={13} />
+            </Link>
+          </div>
+          <button
+            type="button"
+            className="incoming-decision-close"
+            onClick={dismissIncomingDecision}
+            aria-label="Cerrar aviso"
+          >
+            ×
+          </button>
+          <span className="incoming-decision-signal" aria-hidden="true" />
+        </aside>
+      ) : null}
+
+      {signedIn ? (
+        <nav className="mobile-nav" aria-label="Navegación móvil">
+          {navigation.map((item) => {
+            const active = isCurrent(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? "is-active" : ""}
+                aria-current={active ? "page" : undefined}
+              >
+                <span className="mobile-icon-wrap">
+                  <Icon size={19} />
+                  {item.href === "/bandeja" && pendingCount > 0 ? (
+                    <span className="mobile-count">{pendingCount}</span>
+                  ) : null}
+                </span>
+                <small>{item.label}</small>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
+    </div>
+  );
+}
