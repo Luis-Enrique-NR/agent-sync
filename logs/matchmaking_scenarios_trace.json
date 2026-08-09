@@ -1,0 +1,47 @@
+{
+  "test_suite": "Matchmaking Outcomes & Convergence Matrix",
+  "timestamp": "2026-08-09T13:20:38.848658+00:00",
+  "scenarios": [
+    {
+      "scenario": "A_IDEAL_MATCH",
+      "overlap_margin_usd": 100,
+      "match_detected": true,
+      "session_id": "971c2562-7f25-443e-8d9b-cba378985642",
+      "turns_executed": 8,
+      "final_status": "PENDING_HUMAN_APPROVAL",
+      "last_offer_price": null,
+      "agents_status": "BUSY",
+      "buyer_status": "BUSY",
+      "seller_status": "BUSY",
+      "escalation_reason": "Hard limit boundary reached: Buyer max=$900, Seller min=$800. Approval required.",
+      "decision_kind": "SYSTEM"
+    },
+    {
+      "scenario": "B_EDGE_ZERO_MARGIN",
+      "overlap_margin_usd": 0,
+      "match_detected": true,
+      "session_id": "75ef63b3-8fbd-4257-9f33-869460bff5c0",
+      "turns_executed": 8,
+      "final_status": "PENDING_HUMAN_APPROVAL",
+      "last_offer_price": null,
+      "agents_status": "BUSY",
+      "buyer_status": "BUSY",
+      "seller_status": "BUSY",
+      "escalation_reason": "Hard limit boundary reached: Buyer max=$850, Seller min=$850. Approval required.",
+      "decision_kind": "SYSTEM"
+    },
+    {
+      "scenario": "C_NO_MATCH",
+      "overlap_margin_usd": -50,
+      "match_detected": false,
+      "session_id": null,
+      "turns_executed": 0,
+      "final_status": null,
+      "last_offer_price": null,
+      "agents_status": "AVAILABLE",
+      "buyer_status": "AVAILABLE",
+      "seller_status": "AVAILABLE",
+      "escalation_reason": null
+    }
+  ]
+}
