@@ -124,33 +124,33 @@ export function CommercialHome({
         <ol className="product-flow-steps">
           <li>
             <span className="product-flow-number">01</span>
-            <span className="product-flow-owner is-user">Tú</span>
             <strong>Define el objetivo</strong>
             <p>Indica qué buscas, qué nunca debe ceder y cuándo debe consultarte.</p>
+            <span className="product-flow-owner is-user">Tú</span>
           </li>
           <li>
             <span className="product-flow-number">02</span>
-            <span className="product-flow-owner is-agent">Tu agente</span>
             <strong>Encuentra compatibilidad</strong>
             <p>Publica tu intención y filtra personas o empresas compatibles.</p>
+            <span className="product-flow-owner is-agent">Tu agente</span>
           </li>
           <li>
             <span className="product-flow-number">03</span>
-            <span className="product-flow-owner is-agent">Tu agente</span>
             <strong>Negocia en paralelo</strong>
             <p>Cada oportunidad avanza por separado; una retirada no frena las demás.</p>
+            <span className="product-flow-owner is-agent">Tu agente</span>
           </li>
           <li>
             <span className="product-flow-number">04</span>
-            <span className="product-flow-owner is-user">Tú</span>
             <strong>Resuelve lo sensible</strong>
             <p>Aprueba o cambia el precio final, los datos y los compromisos.</p>
+            <span className="product-flow-owner is-user">Tú</span>
           </li>
           <li>
             <span className="product-flow-number">05</span>
-            <span className="product-flow-owner is-shared">Tu agente + tú</span>
             <strong>Revalida y continúa</strong>
             <p>Confirma la vigencia y decide si debe cerrar o seguir buscando.</p>
+            <span className="product-flow-owner is-shared">Tu agente + tú</span>
           </li>
         </ol>
       </section>
