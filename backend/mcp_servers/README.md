@@ -29,7 +29,6 @@ uv run mcp dev mcp_servers/agentsync/server.py
 | --- | --- | --- |
 | `web.search` | lectura pública | no, salvo regla del usuario |
 | `market.reference_prices` | lectura pública | no |
-| `inventory.check_stock` | lectura sensible | no por defecto |
 | `email.send_notification` | escritura externa | sí, siempre |
 
 Las anotaciones MCP (`readOnlyHint`, `destructiveHint`, etc.) ayudan a la UI,
@@ -40,8 +39,8 @@ pero no sustituyen la política determinística de `ai.tools.gateway`.
 El valor inicial es seguro: si un endpoint o secreto no está configurado, la
 tool falla con `UPSTREAM_NOT_CONFIGURED` o
 `UPSTREAM_TOKEN_NOT_CONFIGURED`; no se inventan datos. El buscador tiene
-adaptadores directos para `brave` y `tavily`, SerpApi para precios, Airtable para
-inventario y Resend para correo. Los proveedores genéricos siguen disponibles
+adaptadores directos para `brave` y `tavily`, SerpApi para precios y Resend para
+correo. Los proveedores genéricos siguen disponibles
 como fallback mediante un contrato HTTP `POST`, con
 `Authorization: Bearer <token>` opcional y `X-Idempotency-Key`.
 
@@ -52,9 +51,6 @@ AGENTSYNC_MCP_SEARCH_PROVIDER=brave
 AGENTSYNC_MCP_SEARCH_TOKEN_ENV=BRAVE_SEARCH_API_KEY
 AGENTSYNC_MCP_PRICES_PROVIDER=serpapi
 AGENTSYNC_MCP_PRICES_TOKEN_ENV=SERPAPI_API_KEY
-AGENTSYNC_MCP_INVENTORY_PROVIDER=airtable
-AGENTSYNC_MCP_AIRTABLE_BASE_ID=app...
-AGENTSYNC_MCP_AIRTABLE_TABLE_NAME=Inventory
 AGENTSYNC_MCP_EMAIL_PROVIDER=resend
 AGENTSYNC_MCP_EMAIL_TOKEN_ENV=RESEND_API_KEY
 AGENTSYNC_MCP_EMAIL_FROM=notificaciones@example.com
@@ -79,7 +75,7 @@ Para conectar el backend al proceso local:
 ```dotenv
 AGENTSYNC_TOOLS_PROVIDER=mcp
 AGENTSYNC_MCP_DEFAULT_SERVER=default
-AGENTSYNC_MCP_SERVERS_JSON={"default":{"endpoint":"http://127.0.0.1:8001/mcp","allowed_tools":["web.search","market.reference_prices","inventory.check_stock","email.send_notification"]}}
+AGENTSYNC_MCP_SERVERS_JSON={"default":{"endpoint":"http://127.0.0.1:8001/mcp","allowed_tools":["web.search","market.reference_prices","email.send_notification"]}}
 ```
 
 Las credenciales de proveedores nunca se colocan en `AGENTSYNC_MCP_SERVERS_JSON`

@@ -125,33 +125,6 @@ def build_mcp_tool_gateway(
     )
     gateway.register(
         ToolDescriptor(
-            name="inventory.check_stock",
-            description="Read stock availability before proposing a deal.",
-            risk_level=ToolRiskLevel.SENSITIVE_READ,
-            parameters=[
-                ToolParameterDefinition(
-                    name="product_id",
-                    value_type=ToolValueType.STRING,
-                    description="Product or stock identifier.",
-                    max_length=160,
-                ),
-                ToolParameterDefinition(
-                    name="location",
-                    value_type=ToolValueType.STRING,
-                    description="Optional stock location.",
-                    required=False,
-                    max_length=120,
-                ),
-            ],
-        ),
-        MCPToolAdapter(
-            client=client,
-            server_label=server_label,
-            remote_tool_name="inventory.check_stock",
-        ),
-    )
-    gateway.register(
-        ToolDescriptor(
             name="email.send_notification",
             description="Send an email notification to the agent owner.",
             risk_level=ToolRiskLevel.EXTERNAL_WRITE,

@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode, quote
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -259,73 +259,6 @@ class SerpApiAdapter:
             "currency": currency.upper(),
             "items": sanitize_output(items),
         }
-
-
-@dataclass(frozen=True, slots=True)
-class AirtableAdapter:
-    """Read-only inventory adapter backed by an Airtable base."""
-
-    token_env: str | None
-    base_id: str | None
-    table_name: str | None
-    view: str | None
-    timeout_seconds: int
-    max_response_bytes: int
-    environ: Mapping[str, str]
-
-    def check_stock(self, product_id: str, location: str) -> dict[str, Any]:
-        token_name = self.token_env or "AIRTABLE_TOKEN"
-        token = self.environ.get(token_name)
-        if not token:
-            raise UpstreamError("UPSTREAM_TOKEN_NOT_CONFIGURED")
-        if not self.base_id or not self.table_name:
-            raise UpstreamError("UPSTREAM_NOT_CONFIGURED")
-        query: dict[str, str] = {"pageSize": "100"}
-        if self.view:
-            query["view"] = self.view
-        endpoint = (
-            f"https://api.airtable.com/v0/{quote(self.base_id, safe='')}/"
-            f"{quote(self.table_name, safe='')}?{urlencode(query)}"
-        )
-        request = Request(
-            endpoint,
-            headers={
-                "Accept": "application/json",
-                "Authorization": f"Bearer {token}",
-                "User-Agent": "AgentSync-MCP/0.1.0",
-            },
-            method="GET",
-        )
-        raw = read_json_response(
-            request,
-            timeout_seconds=self.timeout_seconds,
-            max_response_bytes=self.max_response_bytes,
-        )
-        records = raw.get("records", [])
-        if not isinstance(records, list):
-            raise UpstreamError("UPSTREAM_INVALID_RESULTS")
-        items = []
-        for record in records[:100]:
-            if not isinstance(record, dict):
-                continue
-            fields = record.get("fields", {})
-            if not isinstance(fields, dict):
-                continue
-            if product_id and str(fields.get("product_id", "")) != product_id:
-                continue
-            if location and str(fields.get("location", "")) != location:
-                continue
-            items.append(
-                {
-                    "product_id": str(fields.get("product_id", product_id))[:160],
-                    "name": str(fields.get("name", ""))[:500],
-                    "available": fields.get("available_units", fields.get("available", 0)),
-                    "location": str(fields.get("location", ""))[:120],
-                    "version": str(record.get("id", ""))[:120],
-                    "observed_at": str(fields.get("updated_at", ""))[:64],
-                }
-            )
-        return {"provider": "airtable", "product_id": product_id, "location": location, "items": items}
 
 
 @dataclass(frozen=True, slots=True)
