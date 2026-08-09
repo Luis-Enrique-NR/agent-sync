@@ -8,6 +8,7 @@ import {
   ArrowRightIcon,
   CheckIcon,
   InboxIcon,
+  RotateIcon,
   SearchIcon,
   ShieldIcon,
   SparkIcon,
@@ -35,16 +36,6 @@ function progressPercent(session: MatchSession) {
   return Math.min(100, Math.max(8, (session.current_turn / session.max_turns) * 100));
 }
 
-function initials(name?: string) {
-  if (!name) return "AI";
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
-
 export function DashboardView() {
   const { sessions, agents, agentsById } = useAgentSync();
   const pending = sessions.filter(
@@ -58,92 +49,148 @@ export function DashboardView() {
       session.status === "PENDING_HUMAN_APPROVAL" ||
       session.status === "SEARCHING",
   );
-  const featured = pending.find((session) => session.segment === "P2P") ?? pending[0] ?? sessions[0];
+  const featured =
+    pending.find((session) => session.segment === "P2P") ??
+    sessions.find((session) => session.segment === "P2P") ??
+    pending[0] ??
+    sessions[0];
   const agentA = agentsById[featured?.agent_1_id];
   const agentB = agentsById[featured?.agent_2_id];
-  const primaryHref = pending[0] ? `/chat/${pending[0].session_id}` : "/ecosistema";
+  const p2pSessions = sessions.filter((session) => session.segment === "P2P");
+  const primaryHref = pending[0] ? `/chat/${pending[0].session_id}` : "/setup";
 
   return (
     <div className="dashboard">
       <section className="hero-panel" aria-labelledby="dashboard-title">
         <div className="hero-copy">
           <span className="hero-eyebrow">
-            <SparkIcon size={15} /> Resumen de hoy
+            <SparkIcon size={15} /> Un objetivo, varias oportunidades
           </span>
           <h1 id="dashboard-title">
-            Tu agente avanza. <span>Tú das la última palabra.</span>
+            Tu agente mueve las conversaciones. <span>Tú decides lo importante.</span>
           </h1>
           <p className="hero-description">
-            AgentSync explora, filtra y negocia por ti. Cuando una conversación
-            toca un límite que marcaste como sensible, se detiene y te explica
-            exactamente qué debes decidir.
+            Define qué quieres conseguir, tus límites y qué necesita permiso.
+            AgentSync encuentra contrapartes y negocia cada oportunidad por
+            separado, incluso mientras otra espera tu respuesta.
           </p>
           <div className="hero-actions">
             <Link href={primaryHref} className="primary-action">
-              {pending.length > 0 ? `Revisar ${pending.length} decisiones` : "Explorar oportunidades"}
+              {pending.length > 0 ? `Revisar ${pending.length} decisiones` : "Definir mi objetivo"}
               <ArrowRightIcon size={16} />
             </Link>
-            <Link href="/setup" className="secondary-action">
-              Ajustar lo que mi agente puede hacer
+            <Link href="/ecosistema" className="secondary-action">
+              Ver oportunidades activas
             </Link>
           </div>
           <div className="hero-trust">
-            <ShieldIcon size={17} />
+            <RotateIcon size={17} />
             <span>
-              Tus límites duros se validan antes de enviar cualquier mensaje.
+              Si respondes más tarde, el agente comprueba que la propuesta siga vigente.
             </span>
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="Vista previa de una negociación">
-          <div className="route-card">
-            <div className="route-card-header">
-              <span>Ruta de negociación</span>
-              <span className="live-chip">Agente en pausa</span>
+        <div className="hero-visual" aria-label="Un objetivo con varias negociaciones independientes">
+          <div className="objective-card">
+            <div className="objective-card-header">
+              <span className="objective-live"><i /> Objetivo activo</span>
+              <span>{p2pSessions.length} oportunidades evaluadas</span>
             </div>
 
-            <div className="route-agents">
-              <div className="route-agent">
-                <span className="route-avatar">{initials(agentA?.display_name)}</span>
-                <strong>{agentA?.display_name?.split(" — ")[0] ?? "Tu agente"}</strong>
-                <small>Te representa</small>
+            <div className="objective-goal">
+              <span>Lo que quieres conseguir</span>
+              <strong>
+                {agentA?.objectives[0] ?? "Vender mi auto sin bajar de USD 8.000"}
+              </strong>
+              <small><ShieldIcon size={13} /> El precio mínimo queda protegido</small>
+            </div>
+
+            <div className="objective-branch-label">
+              <span>Tu agente abre rutas independientes</span>
+              <i aria-hidden="true" />
+            </div>
+
+            <div className="objective-routes">
+              <div className="objective-route is-pending">
+                <span className="objective-route-icon"><InboxIcon size={14} /></span>
+                <span className="objective-route-copy">
+                  <strong>{agentB?.display_name?.split(" — ")[0] ?? "Comprador compatible"}</strong>
+                  <small>Quiere coordinar una prueba de manejo</small>
+                </span>
+                <span className="objective-route-status">Tu decisión</span>
               </div>
-              <span className="route-connection" aria-hidden="true" />
-              <div className="route-agent">
-                <span className="route-avatar">{initials(agentB?.display_name)}</span>
-                <strong>{agentB?.display_name?.split(" — ")[0] ?? "Contraparte"}</strong>
-                <small>{featured?.segment ?? "P2P"} · compatible</small>
+
+              <div className="objective-route is-closed">
+                <span className="objective-route-icon"><ShieldIcon size={14} /></span>
+                <span className="objective-route-copy">
+                  <strong>Oferta bajo el mínimo</strong>
+                  <small>Se descartó sin consultarte</small>
+                </span>
+                <span className="objective-route-status">Protegido</span>
+              </div>
+
+              <div className="objective-route is-searching">
+                <span className="objective-route-icon"><SearchIcon size={14} /></span>
+                <span className="objective-route-copy">
+                  <strong>Nuevas contrapartes</strong>
+                  <small>La búsqueda continúa en paralelo</small>
+                </span>
+                <span className="objective-route-status">Explorando</span>
               </div>
             </div>
 
-            <div className="route-steps">
-              <div className="route-step">
-                <span className="route-step-icon"><SearchIcon size={13} /></span>
-                <span>Encontró una oportunidad compatible</span>
-                <time>10:05</time>
-              </div>
-              <div className="route-step">
-                <span className="route-step-icon"><CheckIcon size={13} /></span>
-                <span>Negoció {featured?.messages.length ?? 0} mensajes por ti</span>
-                <time>10:17</time>
-              </div>
-              <div className="route-step is-current">
-                <span className="route-step-icon"><InboxIcon size={13} /></span>
-                <span>Detectó una decisión sensible</span>
-                <time>Ahora</time>
-              </div>
-            </div>
-
-            <div className="decision-snapshot">
-              <span className="decision-snapshot-label">
-                <ShieldIcon size={13} /> Requiere tu aprobación
-              </span>
-              <p>
-                {featured?.pending_decision?.summary ??
-                  "Tu agente esperará antes de compartir información sensible."}
-              </p>
+            <div className="objective-checkpoint">
+              <RotateIcon size={15} />
+              <p><strong>Antes de cerrar:</strong> comprueba vigencia y te pregunta si el objetivo terminó o debe seguir.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="product-flow" aria-labelledby="product-flow-title">
+        <div className="product-flow-heading">
+          <div>
+            <span className="section-eyebrow">Así trabaja AgentSync</span>
+            <h2 id="product-flow-title">Tú marcas el rumbo. El agente sostiene el proceso.</h2>
+          </div>
+          <p>
+            No tienes que vigilar cada mensaje. Entras cuando una decisión puede
+            cambiar el precio, compartir datos o crear un compromiso.
+          </p>
+        </div>
+
+        <ol className="product-flow-steps">
+          <li>
+            <span>01</span>
+            <strong>Define el objetivo</strong>
+            <p>Indica qué buscas, qué nunca debe ceder y cuándo debe consultarte.</p>
+          </li>
+          <li>
+            <span>02</span>
+            <strong>Encuentra compatibilidad</strong>
+            <p>Publica tu intención y filtra personas o empresas con intereses compatibles.</p>
+          </li>
+          <li>
+            <span>03</span>
+            <strong>Negocia en paralelo</strong>
+            <p>Cada oportunidad avanza por separado; una retirada no frena las demás.</p>
+          </li>
+          <li>
+            <span>04</span>
+            <strong>Te entrega la decisión</strong>
+            <p>Precio final, datos personales y compromisos esperan tu aprobación.</p>
+          </li>
+          <li>
+            <span>05</span>
+            <strong>Revalida y continúa</strong>
+            <p>Confirma que todo siga vigente y te pregunta si debe cerrar o seguir buscando.</p>
+          </li>
+        </ol>
+
+        <div className="product-flow-note">
+          <CheckIcon size={16} />
+          <span>Una conversación puede esperar tu respuesta sin detener las otras.</span>
         </div>
       </section>
 

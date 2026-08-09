@@ -971,9 +971,9 @@ h4,
   place-items: center;
 }
 
-.route-card {
+.objective-card {
   width: 100%;
-  max-width: 460px;
+  max-width: 470px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 22px;
   color: var(--foreground);
@@ -981,204 +981,313 @@ h4,
   box-shadow: 0 24px 60px rgba(4, 17, 29, 0.28);
 }
 
-.route-card-header {
+.objective-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   border-bottom: 1px solid var(--border);
-  padding: 17px 19px;
-}
-
-.route-card-header > span:first-child {
+  padding: 15px 18px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.live-chip {
+.objective-live {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   color: var(--accent-2);
-  font-size: 10px;
-  font-weight: 700;
 }
 
-.live-chip::before {
+.objective-live i {
   width: 7px;
   height: 7px;
   border-radius: 999px;
   background: currentColor;
   box-shadow: 0 0 0 4px rgba(23, 131, 107, 0.1);
-  content: "";
-  animation: breathe 1.8s ease-in-out infinite;
 }
 
-.route-agents {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr);
-  align-items: center;
-  padding: 21px 19px 17px;
+.objective-goal {
+  margin: 12px;
+  border: 1px solid #ccd9de;
+  border-radius: 15px;
+  padding: 15px 16px;
+  background: #edf2f3;
 }
 
-.route-agent {
-  min-width: 0;
+.objective-goal > span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.route-agent:last-child {
-  text-align: right;
-}
-
-.route-avatar {
-  display: grid;
-  width: 36px;
-  height: 36px;
-  margin-bottom: 8px;
-  place-items: center;
-  border: 1px solid #cfdbdf;
-  border-radius: 11px;
-  color: var(--foreground);
-  background: #e5edf0;
+.objective-goal strong {
+  display: block;
+  margin-top: 6px;
   font-family: var(--font-quantico), sans-serif;
-  font-size: 11px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.objective-goal small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  color: var(--accent-2);
+  font-size: 10px;
   font-weight: 700;
 }
 
-.route-agent:last-child .route-avatar {
-  margin-left: auto;
-  color: #7a3b29;
-  background: #fde2d8;
+.objective-branch-label {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 3px 18px 9px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-.route-agent strong,
-.route-agent small {
+.objective-branch-label i {
+  height: 1px;
+  flex: 1;
+  background: var(--border);
+}
+
+.objective-routes {
+  position: relative;
+  display: grid;
+  gap: 7px;
+  padding: 0 12px 12px;
+}
+
+.objective-routes::before {
+  position: absolute;
+  top: -9px;
+  bottom: 30px;
+  left: 31px;
+  width: 1px;
+  background: var(--border-strong);
+  content: "";
+}
+
+.objective-route {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  padding: 10px 11px;
+  background: white;
+}
+
+.objective-route-icon {
+  display: grid;
+  z-index: 1;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--accent-2);
+  background: white;
+}
+
+.objective-route.is-pending {
+  border-color: #efb9a6;
+  background: #fff8f5;
+}
+
+.objective-route.is-pending .objective-route-icon {
+  border-color: #f3c8b8;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+}
+
+.objective-route.is-closed .objective-route-icon {
+  color: var(--accent-2);
+  background: #edf8f4;
+}
+
+.objective-route-copy {
+  min-width: 0;
+}
+
+.objective-route-copy strong,
+.objective-route-copy small {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.route-agent strong {
-  font-size: 12px;
-}
-
-.route-agent small {
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.route-connection {
-  position: relative;
-  height: 2px;
-  background: var(--border-strong);
-}
-
-.route-connection::before,
-.route-connection::after {
-  position: absolute;
-  top: 50%;
-  width: 7px;
-  height: 7px;
-  border: 2px solid #fbfcfa;
-  border-radius: 999px;
-  background: var(--accent-2);
-  content: "";
-  transform: translateY(-50%);
-}
-
-.route-connection::before {
-  left: -1px;
-}
-
-.route-connection::after {
-  right: -1px;
-  background: var(--accent);
-}
-
-.route-steps {
-  display: flex;
-  padding: 0 19px 19px;
-  flex-direction: column;
-}
-
-.route-step {
-  position: relative;
-  display: grid;
-  min-height: 42px;
-  grid-template-columns: 24px minmax(0, 1fr) auto;
-  align-items: center;
-  column-gap: 10px;
-  color: var(--muted);
+.objective-route-copy strong {
   font-size: 11px;
 }
 
-.route-step:not(:last-child)::after {
+.objective-route-copy small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.objective-route-status {
+  border-radius: 999px;
+  padding: 5px 7px;
+  color: var(--muted);
+  background: var(--surface-2);
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.objective-route.is-pending .objective-route-status {
+  color: white;
+  background: var(--accent);
+}
+
+.objective-route.is-closed .objective-route-status {
+  color: #11664f;
+  background: #dff3eb;
+}
+
+.objective-checkpoint {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 12px 12px;
+  border: 1px dashed #b7c8ce;
+  border-radius: 13px;
+  padding: 11px 13px;
+  color: var(--muted);
+  background: #f5f7f5;
+}
+
+.objective-checkpoint svg {
+  flex: 0 0 auto;
+  color: var(--accent-2);
+}
+
+.objective-checkpoint p {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.objective-checkpoint strong {
+  color: var(--foreground);
+}
+
+.product-flow {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 30px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.product-flow-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  align-items: end;
+  gap: 42px;
+}
+
+.product-flow-heading .section-eyebrow {
+  color: var(--accent-dark);
+}
+
+.product-flow-heading h2 {
+  max-width: 660px;
+  margin: 8px 0 0;
+  font-size: clamp(22px, 2.8vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.035em;
+}
+
+.product-flow-heading > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.product-flow-steps {
+  display: grid;
+  margin: 28px 0 0;
+  padding: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  list-style: none;
+}
+
+.product-flow-steps li {
+  position: relative;
+  min-width: 0;
+  padding: 0 17px 0 0;
+}
+
+.product-flow-steps li:not(:last-child)::after {
   position: absolute;
-  top: 30px;
-  bottom: -9px;
-  left: 11px;
-  width: 1px;
-  background: var(--border);
+  top: 18px;
+  right: 7px;
+  left: 43px;
+  height: 1px;
+  background: var(--border-strong);
   content: "";
 }
 
-.route-step-icon {
+.product-flow-steps li > span {
   display: grid;
-  z-index: 1;
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--accent-2);
-  background: white;
-}
-
-.route-step.is-current {
-  color: var(--foreground);
+  border: 1px solid #f1bba7;
+  border-radius: 11px;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  font-family: var(--font-quantico), sans-serif;
+  font-size: 10px;
   font-weight: 700;
 }
 
-.route-step.is-current .route-step-icon {
-  border-color: #ffc2ad;
-  color: var(--accent);
-  background: var(--accent-soft);
+.product-flow-steps strong {
+  display: block;
+  margin-top: 13px;
+  font-family: var(--font-quantico), sans-serif;
+  font-size: 12px;
+  line-height: 1.3;
 }
 
-.route-step time {
+.product-flow-steps p {
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 10px;
-  font-weight: 400;
+  line-height: 1.5;
 }
 
-.decision-snapshot {
-  margin: 0 12px 12px;
-  border: 1px solid #f2c3b2;
-  border-radius: 15px;
-  padding: 15px;
-  background: var(--accent-soft);
-}
-
-.decision-snapshot-label {
-  display: flex;
+.product-flow-note {
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  color: var(--accent-dark);
+  gap: 8px;
+  margin-top: 24px;
+  border-radius: 10px;
+  padding: 9px 11px;
+  color: #11664f;
+  background: #e6f4ee;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.decision-snapshot p {
-  margin: 7px 0 0;
-  font-size: 12px;
-  font-weight: 500;
-  line-height: 1.45;
 }
 
 .dashboard-columns {
@@ -2148,18 +2257,6 @@ h4,
   }
 }
 
-@keyframes breathe {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.58;
-    transform: scale(0.8);
-  }
-}
-
 @media (max-width: 1050px) {
   .desktop-nav {
     gap: 0;
@@ -2180,6 +2277,15 @@ h4,
 
   .hero-copy {
     padding-inline: 36px 24px;
+  }
+
+  .product-flow-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 26px;
+  }
+
+  .product-flow-steps li:nth-child(3)::after {
+    display: none;
   }
 }
 
@@ -2278,8 +2384,17 @@ h4,
     padding: 0 24px 28px;
   }
 
-  .route-card {
+  .objective-card {
     max-width: none;
+  }
+
+  .product-flow-heading {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .product-flow-heading > p {
+    max-width: 620px;
   }
 
   .dashboard-columns {
@@ -2350,8 +2465,51 @@ h4,
     padding: 0 14px 14px;
   }
 
-  .route-agents {
-    grid-template-columns: minmax(0, 1fr) 38px minmax(0, 1fr);
+  .objective-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .objective-route {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .objective-route-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .product-flow {
+    padding: 23px;
+  }
+
+  .product-flow-steps {
+    grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+
+  .product-flow-steps li {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    column-gap: 12px;
+    border-top: 1px solid var(--border);
+    padding: 13px 0;
+  }
+
+  .product-flow-steps li::after {
+    display: none;
+  }
+
+  .product-flow-steps li > span {
+    grid-row: 1 / 3;
+  }
+
+  .product-flow-steps strong {
+    margin-top: 0;
+  }
+
+  .product-flow-steps p {
+    margin-top: 3px;
   }
 
   .dashboard-panel,

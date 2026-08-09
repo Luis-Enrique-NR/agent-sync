@@ -17,9 +17,9 @@ const quantico = Quantico({
 });
 
 export const metadata: Metadata = {
-  title: "AgentSync — Agentes que negocian por ti",
+  title: "AgentSync — Un objetivo, varias negociaciones",
   description:
-    "Configura tu agente, déjalo negociar en el ecosistema y aprueba solo las decisiones sensibles. B2B y P2P, un solo motor.",
+    "Define tu objetivo y tus límites. AgentSync encuentra oportunidades, negocia en paralelo y te consulta solo cuando una decisión importa.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
