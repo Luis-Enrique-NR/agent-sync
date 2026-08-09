@@ -3115,6 +3115,43 @@ h4,
   }
 }
 
+.decision-stream {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.decision-stream-loader {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.decision-stream-loader > span {
+  width: 15px;
+  height: 15px;
+  border: 2px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: decisionLoaderSpin 700ms linear infinite;
+}
+
+.decision-stream-end {
+  margin: 0;
+  padding: 8px 0 2px;
+  color: var(--muted);
+  font-size: 9px;
+  text-align: center;
+}
+
+@keyframes decisionLoaderSpin {
+  to { transform: rotate(360deg); }
+}
+
 .decision-panel {
   border: 1px solid #f0bba8;
   border-radius: 18px;
