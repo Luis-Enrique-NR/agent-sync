@@ -6,20 +6,39 @@ import json
 
 from openai import OpenAI
 
-from ai.domain.models import AgentProfile, AgentTurn, ToolFactVisibility
+from ai.domain.models import (
+    AgentProfile,
+    ProviderStep,
+    ToolFactVisibility,
+    TranscriptMessage,
+)
 from ai.providers.base import GenerationRequest
 
 
 SYSTEM_INSTRUCTIONS = """You represent one entity in a preliminary negotiation.
-Return exactly one candidate turn using the supplied schema.
+Return exactly one step using the supplied schema: either TOOL_CALL or TURN.
 Stay faithful to the speaker objectives, personality, hard limits, and known facts.
 Never invent contact details, addresses, locations, dates, prices, or tool results.
+Use TOOL_CALL only for a capability listed in available_tools and supply only its
+documented arguments. A tool request is internal and must not contain public speech.
+After a tool result, use it as private context; never present simulated data as real.
+Do not retry a rejected or denied tool call unless new conversation context requires it.
+External writes can require human approval. Requesting a tool never authorizes it.
 Every numeric proposal or commitment must also appear in numeric_terms.
 When proposing or accepting a date, include it in commitments with kind DATE.
 Use ACCEPT only when accepting explicit terms already present in the conversation.
-For protected data, use only a supplied opaque value_ref in disclosure_requests.
+Use data_requests only to ask the counterpart for a protected data category.
+Data requests never contain value_ref because the requested data belongs to the counterpart.
+Use proposed_disclosures only when the speaker intends to share its own protected data.
+A proposed disclosure must use a value_ref from speaker_private_context.
+Never reuse, copy, or invent a value_ref from another agent or a prior message.
 Never place an opaque value_ref or an actual protected value in public_message.
-Instead, say that the information can be shared after authorization.
+For a proposed disclosure, say the information can be shared after authorization.
+Use requested_actions only to ask the counterpart to perform a structured action.
+Meeting, reservation, document, and email requests must never be hidden only in prose.
+Do not claim that a requested action was approved unless human_action_authorizations
+contains an approved record for that action_id.
+If an authorization is rejected, acknowledge that outcome without executing the action.
 Keep public_message concise and suitable to send to the counterpart.
 Do not decide whether human approval is required; deterministic code does that.
 """
@@ -36,27 +55,41 @@ class OpenAIProvider:
         max_retries: int = 1,
         max_output_tokens: int = 800,
         client: OpenAI | None = None,
+        api_key: str | None = None,
+        base_url: str | None = None,
     ) -> None:
         self._model = model
         self._max_output_tokens = max_output_tokens
-        self._client = client or OpenAI(
-            timeout=timeout_seconds,
-            max_retries=max_retries,
-        )
+        if client is not None:
+            self._client = client
+        else:
+            client_options: dict[str, object] = {
+                "timeout": timeout_seconds,
+                "max_retries": max_retries,
+            }
+            if api_key:
+                client_options["api_key"] = api_key
+            if base_url:
+                client_options["base_url"] = base_url
+            self._client = OpenAI(**client_options)
 
-    def generate_turn(self, request: GenerationRequest) -> AgentTurn:
+    @property
+    def model(self) -> str:
+        return self._model
+
+    def generate_step(self, request: GenerationRequest) -> ProviderStep:
         prompt = self._build_prompt(request)
         response = self._client.responses.parse(
             model=self._model,
             instructions=SYSTEM_INSTRUCTIONS,
             input=prompt,
-            text_format=AgentTurn,
+            text_format=ProviderStep,
             max_output_tokens=self._max_output_tokens,
             store=False,
         )
         parsed = response.output_parsed
         if parsed is None:
-            raise RuntimeError("model returned no parsed AgentTurn")
+            raise RuntimeError("model returned no parsed ProviderStep")
         return parsed
 
     @staticmethod
@@ -102,6 +135,40 @@ class OpenAIProvider:
             ],
         }
 
+    @staticmethod
+    def _public_transcript_message(
+        message: TranscriptMessage,
+    ) -> dict[str, object]:
+        """Serialize only fields safe to expose to the next model/agent."""
+
+        return {
+            "speaker_id": str(message.speaker_id),
+            "turn_index": message.turn_index,
+            "proposal_id": str(message.proposal_id),
+            "proposal_revision": message.proposal_revision,
+            "responds_to": (
+                message.responds_to.model_dump(mode="json")
+                if message.responds_to
+                else None
+            ),
+            "public_message": message.public_message,
+            "intent": message.intent.value,
+            "numeric_terms": [
+                term.model_dump(mode="json") for term in message.numeric_terms
+            ],
+            "data_requests": [
+                request.model_dump(mode="json") for request in message.data_requests
+            ],
+            "disclosed_categories": [
+                category.value for category in message.disclosed_categories
+            ],
+            "requested_actions": [
+                action.model_dump(mode="json") for action in message.requested_actions
+            ],
+            "created_at": message.created_at.isoformat(),
+            "approved_by_human": message.approved_by_human,
+        }
+
     @classmethod
     def _build_prompt(cls, request: GenerationRequest) -> str:
         payload = {
@@ -110,7 +177,19 @@ class OpenAIProvider:
                 request.counterpart
             ),
             "recent_transcript": [
-                message.model_dump(mode="json") for message in request.transcript[-8:]
+                cls._public_transcript_message(message)
+                for message in request.transcript[-8:]
+            ],
+            "human_action_authorizations": [
+                authorization.model_dump(mode="json")
+                for authorization in request.action_authorizations
+            ],
+            "available_tools": [
+                descriptor.model_dump(mode="json")
+                for descriptor in request.available_tools
+            ],
+            "private_tool_results": [
+                result.model_dump(mode="json") for result in request.tool_results
             ],
             "guardrail_feedback_from_rejected_candidate": list(
                 request.guardrail_feedback

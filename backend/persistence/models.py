@@ -1,9 +1,7 @@
-"""SQLModel tables for AgentSync persistence layer.
+"""SQLModel tables for AgentSync persistence.
 
-Column values that mirror fields inside ``raw_profile`` / ``raw_state`` are
-**derived caches** — the JSON blob is the source of truth and the relational
-columns are rebuilt from it on every ``save_*`` call.  Never update them
-independently.
+The JSON columns are the source of truth. Relational columns are derived caches
+used for filtering and operational dashboards.
 """
 
 from __future__ import annotations
@@ -18,10 +16,6 @@ from sqlmodel import JSON, Column, Field, SQLModel
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
-
-# ---------------------------------------------------------------------------
-# agent_profiles
-# ---------------------------------------------------------------------------
 
 class AgentProfileRow(SQLModel, table=True):
     __tablename__ = "agent_profiles"
@@ -39,87 +33,63 @@ class AgentProfileRow(SQLModel, table=True):
     updated_at: datetime = Field(default_factory=utc_now)
 
 
-# ---------------------------------------------------------------------------
-# negotiation_states
-# ---------------------------------------------------------------------------
-
 class NegotiationStateRow(SQLModel, table=True):
     __tablename__ = "negotiation_states"
 
     session_id: UUID = Field(default_factory=uuid4, primary_key=True)
+    owner_user_id: UUID | None = Field(default=None, index=True)
     portal_channel_id: str | None = Field(default=None, max_length=100, index=True)
-    agent_1_id: UUID = Field(foreign_key="agent_profiles.agent_id", index=True)
-    agent_2_id: UUID = Field(foreign_key="agent_profiles.agent_id", index=True)
-    initiator_id: UUID = Field(foreign_key="agent_profiles.agent_id")
-    current_speaker_id: UUID | None = Field(
-        default=None, foreign_key="agent_profiles.agent_id"
-    )
+    agent_1_id: UUID = Field(index=True)
+    agent_2_id: UUID = Field(index=True)
+    initiator_id: UUID = Field(index=True)
+    current_speaker_id: UUID | None = Field(default=None, index=True)
     status: str = Field(max_length=30, index=True)
     turn_count: int = Field(default=0)
     max_turns: int = Field(default=8)
     started_at: datetime = Field(default_factory=utc_now)
     deadline_at: datetime | None = None
     closed_at: datetime | None = None
-    last_error_code: str | None = Field(default=None, max_length=50)
+    last_error_code: str | None = Field(default=None, max_length=80)
     raw_state: dict = Field(sa_column=Column(JSON))
+    version: int = Field(default=1, ge=1)
     last_updated_at: datetime = Field(default_factory=utc_now)
 
-
-# ---------------------------------------------------------------------------
-# negotiation_outcomes
-# ---------------------------------------------------------------------------
 
 class NegotiationOutcomeRow(SQLModel, table=True):
     __tablename__ = "negotiation_outcomes"
 
     outcome_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    session_id: UUID = Field(
-        foreign_key="negotiation_states.session_id", unique=True, index=True
-    )
+    session_id: UUID = Field(index=True, unique=True)
     resolution: str = Field(max_length=30)
-    agreed_price: Decimal | None = Field(
-        default=None, max_digits=12, decimal_places=2
-    )
+    agreed_price: Decimal | None = Field(default=None, max_digits=12, decimal_places=2)
     agreed_terms: dict | None = Field(default=None, sa_column=Column(JSON))
     disclosed_data: dict | None = Field(default=None, sa_column=Column(JSON))
     summary: str = Field(default="")
     created_at: datetime = Field(default_factory=utc_now)
 
 
-# ---------------------------------------------------------------------------
-# private_resolutions
-# ---------------------------------------------------------------------------
-
 class PrivateResolutionRow(SQLModel, table=True):
     __tablename__ = "private_resolutions"
 
     resolution_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    agent_id: UUID = Field(foreign_key="agent_profiles.agent_id", index=True)
+    agent_id: UUID = Field(index=True)
     value_ref: str = Field(max_length=100, unique=True, index=True)
     category: str = Field(max_length=50)
     real_value: str = Field()
     created_at: datetime = Field(default_factory=utc_now)
 
 
-# ---------------------------------------------------------------------------
-# audit_records
-# ---------------------------------------------------------------------------
-
 class AuditRecordRow(SQLModel, table=True):
     __tablename__ = "audit_records"
 
     audit_id: UUID = Field(default_factory=uuid4, primary_key=True)
     correlation_id: UUID = Field(index=True)
-    session_id: UUID | None = Field(
-        default=None, foreign_key="negotiation_states.session_id", index=True
-    )
-    agent_id: UUID | None = Field(
-        default=None, foreign_key="agent_profiles.agent_id", index=True
-    )
+    session_id: UUID | None = Field(default=None, index=True)
+    agent_id: UUID | None = Field(default=None, index=True)
     user_id: UUID | None = Field(default=None, index=True)
     actor_type: str = Field(max_length=20, index=True)
     actor_id: str = Field(max_length=100)
-    action: str = Field(max_length=50, index=True)
+    action: str = Field(max_length=80, index=True)
     severity: str = Field(max_length=20)
     entity_type: str | None = Field(default=None, max_length=50)
     entity_id: UUID | None = Field(default=None)

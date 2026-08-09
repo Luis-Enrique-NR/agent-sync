@@ -284,13 +284,14 @@ class FakeEngine:
 
     def run_until_pause(self, state):
         from ai.domain.models import (
-            DecisionReason, DecisionRequest, EngineEvent, EngineEventType,
-            EngineResult, SessionStatus,
+            DecisionKind, DecisionReason, DecisionRequest, EngineEvent,
+            EngineEventType, EngineResult, SessionStatus,
         )
         if self.pending:
             decision = DecisionRequest(
                 session_id=state.session_id,
-                speaker_id=state.current_speaker_id,
+                owner_agent_id=state.current_speaker_id,
+                kind=DecisionKind.SYSTEM,
                 reasons=[DecisionReason.USER_RULE],
                 matched_rule_ids=["test-rule"],
             )

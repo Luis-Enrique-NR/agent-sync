@@ -1,8 +1,4 @@
-"""Resolution store for private value references used during the demo.
-
-In production this is replaced by an encrypted vault.  For the MVP the
-fixtures are static data keyed by agent_id.
-"""
+"""Safe, repeatable private-reference fixtures for local demonstrations."""
 
 from __future__ import annotations
 
@@ -11,6 +7,7 @@ from uuid import UUID
 from sqlmodel import Session, select
 
 from persistence.models import PrivateResolutionRow
+
 
 PRIVATE_FIXTURES: dict[str, dict[str, tuple[str, str]]] = {
     "10000000-0000-0000-0000-000000000001": {
@@ -26,27 +23,11 @@ PRIVATE_FIXTURES: dict[str, dict[str, tuple[str, str]]] = {
 }
 
 
-def resolve_private(agent_id: str, value_ref: str) -> str | None:
-    agent_store = PRIVATE_FIXTURES.get(agent_id)
-    if agent_store is None:
-        return None
-    entry = agent_store.get(value_ref)
-    if entry is None:
-        return None
-    _category, real_value = entry
-    return real_value
-
-
 def seed_private_resolutions(session: Session) -> int:
-    """Populate ``private_resolutions`` from the static fixture data.
-
-    Existing rows are skipped so the seeder is safe to call on every
-    ``init_db()``.  Returns the number of newly inserted rows.
-    """
     inserted = 0
-    for agent_id_str, refs in PRIVATE_FIXTURES.items():
-        agent_id = UUID(agent_id_str)
-        for value_ref, (category, real_value) in refs.items():
+    for agent_id_text, references in PRIVATE_FIXTURES.items():
+        agent_id = UUID(agent_id_text)
+        for value_ref, (category, real_value) in references.items():
             existing = session.exec(
                 select(PrivateResolutionRow).where(
                     PrivateResolutionRow.agent_id == agent_id,
