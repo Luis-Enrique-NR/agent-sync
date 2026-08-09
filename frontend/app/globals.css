@@ -191,8 +191,7 @@ h4,
   gap: 9px;
 }
 
-.reset-button,
-.notification-button {
+.reset-button {
   display: inline-flex;
   height: 38px;
   align-items: center;
@@ -212,29 +211,7 @@ h4,
   padding: 0 11px;
 }
 
-.notification-button {
-  position: relative;
-  width: 38px;
-}
-
-.notification-button > span {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  display: grid;
-  width: 18px;
-  height: 18px;
-  place-items: center;
-  border: 2px solid var(--background);
-  border-radius: 999px;
-  color: white;
-  background: var(--accent);
-  font-size: 9px;
-  font-weight: 700;
-}
-
-.reset-button:hover,
-.notification-button:hover {
+.reset-button:hover {
   border-color: var(--accent);
   color: var(--foreground);
   transform: translateY(-1px);

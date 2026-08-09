@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAgentSync } from "@/lib/store";
 import {
-  BellIcon,
   CompassIcon,
   HistoryIcon,
   HomeIcon,
@@ -75,14 +74,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <RotateIcon size={16} />
               <span>Reiniciar demo</span>
             </button>
-            <Link
-              href="/bandeja"
-              className="notification-button"
-              aria-label={`${pendingCount} decisiones pendientes`}
-            >
-              <BellIcon size={19} />
-              {pendingCount > 0 ? <span>{pendingCount}</span> : null}
-            </Link>
             <div className="account-chip" title="Cuenta de demostración">
               <span className="account-avatar">VR</span>
               <span className="account-copy">
