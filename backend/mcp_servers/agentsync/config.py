@@ -38,16 +38,20 @@ class MCPSettings:
     search_provider: str = "generic"
     search_endpoint: str | None = None
     search_token_env: str | None = None
-    calendar_endpoint: str | None = None
-    calendar_token_env: str | None = None
+    prices_provider: str = "generic"
     prices_endpoint: str | None = None
     prices_token_env: str | None = None
+    inventory_provider: str = "generic"
     inventory_endpoint: str | None = None
     inventory_token_env: str | None = None
+    airtable_base_id: str | None = None
+    airtable_table_name: str | None = None
+    airtable_view: str | None = None
+    email_provider: str = "generic"
     email_endpoint: str | None = None
     email_token_env: str | None = None
-    meetings_endpoint: str | None = None
-    meetings_token_env: str | None = None
+    email_from: str | None = None
+    email_to: str | None = None
     upstream_timeout_seconds: int = 15
     upstream_max_response_bytes: int = 1_000_000
 
@@ -64,11 +68,9 @@ class MCPSettings:
             raise ValueError("upstream response limit is too small")
         for name in (
             "search_endpoint",
-            "calendar_endpoint",
             "prices_endpoint",
             "inventory_endpoint",
             "email_endpoint",
-            "meetings_endpoint",
         ):
             endpoint = getattr(self, name)
             if endpoint and urlparse(endpoint).scheme.lower() not in {"http", "https"}:
@@ -80,6 +82,15 @@ class MCPSettings:
         provider = env.get("AGENTSYNC_MCP_SEARCH_PROVIDER", "generic").strip().lower()
         if provider not in {"generic", "brave", "tavily"}:
             raise ValueError("AGENTSYNC_MCP_SEARCH_PROVIDER must be generic, brave, or tavily")
+        prices_provider = env.get("AGENTSYNC_MCP_PRICES_PROVIDER", "generic").strip().lower()
+        if prices_provider not in {"generic", "serpapi"}:
+            raise ValueError("AGENTSYNC_MCP_PRICES_PROVIDER must be generic or serpapi")
+        inventory_provider = env.get("AGENTSYNC_MCP_INVENTORY_PROVIDER", "generic").strip().lower()
+        if inventory_provider not in {"generic", "airtable"}:
+            raise ValueError("AGENTSYNC_MCP_INVENTORY_PROVIDER must be generic or airtable")
+        email_provider = env.get("AGENTSYNC_MCP_EMAIL_PROVIDER", "generic").strip().lower()
+        if email_provider not in {"generic", "resend"}:
+            raise ValueError("AGENTSYNC_MCP_EMAIL_PROVIDER must be generic or resend")
         port = _int_env(env, "AGENTSYNC_MCP_PORT", 8001, minimum=1)
         host = env.get("AGENTSYNC_MCP_HOST", "127.0.0.1").strip() or "127.0.0.1"
         default_hosts = f"{host}:{port},localhost:{port}"
@@ -96,16 +107,20 @@ class MCPSettings:
             search_provider=provider,
             search_endpoint=(env.get("AGENTSYNC_MCP_SEARCH_ENDPOINT") or None),
             search_token_env=(env.get("AGENTSYNC_MCP_SEARCH_TOKEN_ENV") or None),
-            calendar_endpoint=(env.get("AGENTSYNC_MCP_CALENDAR_ENDPOINT") or None),
-            calendar_token_env=(env.get("AGENTSYNC_MCP_CALENDAR_TOKEN_ENV") or None),
+            prices_provider=prices_provider,
             prices_endpoint=(env.get("AGENTSYNC_MCP_PRICES_ENDPOINT") or None),
             prices_token_env=(env.get("AGENTSYNC_MCP_PRICES_TOKEN_ENV") or None),
+            inventory_provider=inventory_provider,
             inventory_endpoint=(env.get("AGENTSYNC_MCP_INVENTORY_ENDPOINT") or None),
             inventory_token_env=(env.get("AGENTSYNC_MCP_INVENTORY_TOKEN_ENV") or None),
+            airtable_base_id=(env.get("AGENTSYNC_MCP_AIRTABLE_BASE_ID") or None),
+            airtable_table_name=(env.get("AGENTSYNC_MCP_AIRTABLE_TABLE_NAME") or None),
+            airtable_view=(env.get("AGENTSYNC_MCP_AIRTABLE_VIEW") or None),
+            email_provider=email_provider,
             email_endpoint=(env.get("AGENTSYNC_MCP_EMAIL_ENDPOINT") or None),
             email_token_env=(env.get("AGENTSYNC_MCP_EMAIL_TOKEN_ENV") or None),
-            meetings_endpoint=(env.get("AGENTSYNC_MCP_MEETINGS_ENDPOINT") or None),
-            meetings_token_env=(env.get("AGENTSYNC_MCP_MEETINGS_TOKEN_ENV") or None),
+            email_from=(env.get("AGENTSYNC_MCP_EMAIL_FROM") or None),
+            email_to=(env.get("AGENTSYNC_MCP_EMAIL_TO") or None),
             upstream_timeout_seconds=_int_env(
                 env, "AGENTSYNC_MCP_UPSTREAM_TIMEOUT_SECONDS", 15, minimum=1
             ),
@@ -117,9 +132,11 @@ class MCPSettings:
     def configured_providers(self) -> dict[str, bool]:
         return {
             "search": self.search_provider != "generic" or bool(self.search_endpoint),
-            "calendar": bool(self.calendar_endpoint),
-            "prices": bool(self.prices_endpoint),
-            "inventory": bool(self.inventory_endpoint),
-            "email": bool(self.email_endpoint),
-            "meetings": bool(self.meetings_endpoint),
+            "prices": self.prices_provider != "generic" or bool(self.prices_endpoint),
+            "inventory": self.inventory_provider == "airtable"
+            and bool(self.airtable_base_id and self.airtable_table_name)
+            or bool(self.inventory_endpoint),
+            "email": self.email_provider == "resend"
+            and bool(self.email_from and self.email_to)
+            or bool(self.email_endpoint),
         }

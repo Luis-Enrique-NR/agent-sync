@@ -99,10 +99,9 @@ The default composition root still registers deterministic simulations for local
 tests. Production can select `AGENTSYNC_TOOLS_PROVIDER=mcp` and point
 `AGENTSYNC_MCP_SERVERS_JSON` at the first-party Streamable HTTP server in
 [`mcp_servers/README.md`](mcp_servers/README.md), which exposes web search,
-calendar, prices, inventory, email and meeting capabilities. The email and
-meeting operations are always treated as external writes and pause for human
-approval. Tool results remain private to the requesting agent and are never
-emitted as `TURN_READY`.
+prices, inventory and email capabilities. Email is always treated as an
+external write and pauses for human approval. Tool results remain private to
+the requesting agent and are never emitted as `TURN_READY`.
 
 `MCPToolAdapter` is the provider-agnostic boundary for the remote MCP client.
 `HTTPMCPClient` speaks Streamable HTTP, validates JSON-RPC responses, sends the

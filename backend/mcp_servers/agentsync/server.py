@@ -10,12 +10,14 @@ from __future__ import annotations
 
 import asyncio
 import os
+from pathlib import Path
 from typing import Annotated, Any
 from uuid import uuid4
 
 from mcp.server import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 from mcp.types import ToolAnnotations
+from dotenv import load_dotenv
 from pydantic import Field
 from starlette.applications import Starlette
 from starlette.requests import Request
@@ -24,7 +26,18 @@ from starlette.routing import Route
 
 from .config import MCPSettings
 from .security import BearerTokenMiddleware
-from .upstream import HTTPUpstream, SearchAdapter, UpstreamError, sanitize_output, write_result
+from .upstream import (
+    AirtableAdapter,
+    HTTPUpstream,
+    ResendAdapter,
+    SearchAdapter,
+    SerpApiAdapter,
+    UpstreamError,
+    sanitize_output,
+)
+
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env", override=False)
 
 
 def _raise_tool_error(exc: UpstreamError) -> None:
@@ -70,21 +83,23 @@ class AgentSyncMCP:
         except UpstreamError as exc:
             _raise_tool_error(exc)
 
-    async def calendar_check_availability(self, start_date: str, end_date: str) -> dict[str, Any]:
-        try:
-            raw = await asyncio.to_thread(
-                self._upstream(self.settings.calendar_endpoint, self.settings.calendar_token_env).post_json,
-                {"start_date": start_date, "end_date": end_date},
-                idempotency_key=str(uuid4()),
-            )
-            return sanitize_output(raw)
-        except UpstreamError as exc:
-            _raise_tool_error(exc)
-
     async def market_reference_prices(
         self, item: str, region: str = "", currency: str = "USD"
     ) -> dict[str, Any]:
         try:
+            if self.settings.prices_provider == "serpapi":
+                return await asyncio.to_thread(
+                    SerpApiAdapter(
+                        endpoint=self.settings.prices_endpoint,
+                        token_env=self.settings.prices_token_env,
+                        timeout_seconds=self.settings.upstream_timeout_seconds,
+                        max_response_bytes=self.settings.upstream_max_response_bytes,
+                        environ=self.environ,
+                    ).search,
+                    item,
+                    region,
+                    currency,
+                )
             raw = await asyncio.to_thread(
                 self._upstream(self.settings.prices_endpoint, self.settings.prices_token_env).post_json,
                 {"item": item, "region": region, "currency": currency},
@@ -96,6 +111,20 @@ class AgentSyncMCP:
 
     async def inventory_check_stock(self, product_id: str, location: str = "") -> dict[str, Any]:
         try:
+            if self.settings.inventory_provider == "airtable":
+                return await asyncio.to_thread(
+                    AirtableAdapter(
+                        token_env=self.settings.inventory_token_env,
+                        base_id=self.settings.airtable_base_id,
+                        table_name=self.settings.airtable_table_name,
+                        view=self.settings.airtable_view,
+                        timeout_seconds=self.settings.upstream_timeout_seconds,
+                        max_response_bytes=self.settings.upstream_max_response_bytes,
+                        environ=self.environ,
+                    ).check_stock,
+                    product_id,
+                    location,
+                )
             raw = await asyncio.to_thread(
                 self._upstream(self.settings.inventory_endpoint, self.settings.inventory_token_env).post_json,
                 {"product_id": product_id, "location": location},
@@ -107,6 +136,21 @@ class AgentSyncMCP:
 
     async def email_send_notification(self, subject: str, body: str) -> dict[str, Any]:
         try:
+            if self.settings.email_provider == "resend":
+                return await asyncio.to_thread(
+                    ResendAdapter(
+                        endpoint=self.settings.email_endpoint,
+                        token_env=self.settings.email_token_env,
+                        from_address=self.settings.email_from,
+                        to_address=self.settings.email_to,
+                        timeout_seconds=self.settings.upstream_timeout_seconds,
+                        max_response_bytes=self.settings.upstream_max_response_bytes,
+                        environ=self.environ,
+                    ).send,
+                    subject,
+                    body,
+                    idempotency_key=str(uuid4()),
+                )
             raw = await asyncio.to_thread(
                 self._upstream(self.settings.email_endpoint, self.settings.email_token_env).post_json,
                 {"subject": subject, "body": body},
@@ -115,32 +159,6 @@ class AgentSyncMCP:
             return write_result(raw, operation="email")
         except UpstreamError as exc:
             _raise_tool_error(exc)
-
-    async def calendar_request_meeting(
-        self,
-        title: str,
-        start: str,
-        end: str,
-        participants: str,
-        timezone: str = "UTC",
-    ) -> dict[str, Any]:
-        participant_values = [value.strip() for value in participants.split(",") if value.strip()]
-        try:
-            raw = await asyncio.to_thread(
-                self._upstream(self.settings.meetings_endpoint, self.settings.meetings_token_env).post_json,
-                {
-                    "title": title,
-                    "start": start,
-                    "end": end,
-                    "participants": participant_values,
-                    "timezone": timezone,
-                },
-                idempotency_key=str(uuid4()),
-            )
-            return write_result(raw, operation="meeting")
-        except UpstreamError as exc:
-            _raise_tool_error(exc)
-
 
 def build_server(
     settings: MCPSettings | None = None,
@@ -152,7 +170,7 @@ def build_server(
     mcp = MCPServer(
         "AgentSync Tools",
         title="AgentSync external capabilities",
-        description="Controlled tools for research, availability, pricing, inventory and owner notifications.",
+        description="Controlled tools for research, pricing, inventory and owner notifications.",
         instructions="The caller must apply its own user policy and approval flow before invoking sensitive tools.",
         version="0.1.0",
     )
@@ -175,26 +193,6 @@ def build_server(
         """Search configured public sources and return bounded result snippets."""
 
         return await service.web_search(query)
-
-    @mcp.tool(
-        name="calendar.check_availability",
-        title="Check calendar availability",
-        annotations=ToolAnnotations(
-            title="Check calendar availability",
-            readOnlyHint=True,
-            destructiveHint=False,
-            idempotentHint=True,
-            openWorldHint=False,
-        ),
-        structured_output=True,
-    )
-    async def calendar_check_availability(
-        start_date: Annotated[str, Field(min_length=10, max_length=10)],
-        end_date: Annotated[str, Field(min_length=10, max_length=10)],
-    ) -> dict[str, Any]:
-        """Read free/busy windows from the configured calendar provider."""
-
-        return await service.calendar_check_availability(start_date, end_date)
 
     @mcp.tool(
         name="market.reference_prices",
@@ -257,29 +255,6 @@ def build_server(
 
         return await service.email_send_notification(subject, body)
 
-    @mcp.tool(
-        name="calendar.request_meeting",
-        title="Request a meeting",
-        annotations=ToolAnnotations(
-            title="Request a meeting",
-            readOnlyHint=False,
-            destructiveHint=False,
-            idempotentHint=True,
-            openWorldHint=False,
-        ),
-        structured_output=True,
-    )
-    async def calendar_request_meeting(
-        title: Annotated[str, Field(min_length=1, max_length=160)],
-        start: Annotated[str, Field(min_length=1, max_length=64)],
-        end: Annotated[str, Field(min_length=1, max_length=64)],
-        participants: Annotated[str, Field(min_length=1, max_length=1_000)],
-        timezone: Annotated[str, Field(min_length=1, max_length=64)] = "UTC",
-    ) -> dict[str, Any]:
-        """Request a meeting; the AI gateway must require human approval first."""
-
-        return await service.calendar_request_meeting(title, start, end, participants, timezone)
-
     async def health(_: Request) -> JSONResponse:
         return JSONResponse(
             {
@@ -289,11 +264,9 @@ def build_server(
                 "configured_providers": resolved.configured_providers(),
                 "tools": [
                     "web.search",
-                    "calendar.check_availability",
                     "market.reference_prices",
                     "inventory.check_stock",
                     "email.send_notification",
-                    "calendar.request_meeting",
                 ],
             }
         )

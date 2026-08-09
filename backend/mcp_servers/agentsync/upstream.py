@@ -7,7 +7,7 @@ import os
 from dataclasses import dataclass
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from urllib.request import Request, urlopen
 
 
@@ -74,22 +74,37 @@ class HTTPUpstream:
             headers["Authorization"] = f"Bearer {token}"
         body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
         request = Request(self.endpoint, data=body, headers=headers, method="POST")
-        try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
-                raw = response.read(self.max_response_bytes + 1)
-        except HTTPError as exc:
-            raise UpstreamError(f"UPSTREAM_HTTP_{exc.code}") from exc
-        except (URLError, TimeoutError) as exc:
-            raise UpstreamError("UPSTREAM_NETWORK_ERROR") from exc
-        if len(raw) > self.max_response_bytes:
-            raise UpstreamError("UPSTREAM_RESPONSE_TOO_LARGE")
-        try:
-            value = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise UpstreamError("UPSTREAM_INVALID_JSON") from exc
-        if not isinstance(value, dict):
-            raise UpstreamError("UPSTREAM_INVALID_OBJECT")
-        return sanitize_output(value)
+        return read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
+
+
+def read_json_response(
+    request: Request,
+    *,
+    timeout_seconds: int,
+    max_response_bytes: int,
+) -> dict[str, Any]:
+    """Read one bounded JSON object from a provider without leaking its body."""
+
+    try:
+        with urlopen(request, timeout=timeout_seconds) as response:
+            raw = response.read(max_response_bytes + 1)
+    except HTTPError as exc:
+        raise UpstreamError(f"UPSTREAM_HTTP_{exc.code}") from exc
+    except (URLError, TimeoutError) as exc:
+        raise UpstreamError("UPSTREAM_NETWORK_ERROR") from exc
+    if len(raw) > max_response_bytes:
+        raise UpstreamError("UPSTREAM_RESPONSE_TOO_LARGE")
+    try:
+        value = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise UpstreamError("UPSTREAM_INVALID_JSON") from exc
+    if not isinstance(value, dict):
+        raise UpstreamError("UPSTREAM_INVALID_OBJECT")
+    return sanitize_output(value)
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,7 +142,11 @@ class SearchAdapter:
             headers={"Accept": "application/json", "X-Subscription-Token": token},
             method="GET",
         )
-        raw = self._read_json(request)
+        raw = read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
         return self._normalize_results(raw, provider="brave", query=query)
 
     def _tavily(self, query: str, *, idempotency_key: str) -> dict[str, Any]:
@@ -149,26 +168,12 @@ class SearchAdapter:
             },
             method="POST",
         )
-        raw = self._read_json(request)
+        raw = read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
         return self._normalize_results(raw, provider="tavily", query=query)
-
-    def _read_json(self, request: Request) -> dict[str, Any]:
-        try:
-            with urlopen(request, timeout=self.timeout_seconds) as response:
-                raw = response.read(self.max_response_bytes + 1)
-        except HTTPError as exc:
-            raise UpstreamError(f"UPSTREAM_HTTP_{exc.code}") from exc
-        except (URLError, TimeoutError) as exc:
-            raise UpstreamError("UPSTREAM_NETWORK_ERROR") from exc
-        if len(raw) > self.max_response_bytes:
-            raise UpstreamError("UPSTREAM_RESPONSE_TOO_LARGE")
-        try:
-            value = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise UpstreamError("UPSTREAM_INVALID_JSON") from exc
-        if not isinstance(value, dict):
-            raise UpstreamError("UPSTREAM_INVALID_OBJECT")
-        return sanitize_output(value)
 
     @staticmethod
     def _normalize_results(raw: dict[str, Any], *, provider: str, query: str) -> dict[str, Any]:
@@ -192,6 +197,183 @@ class SearchAdapter:
                 }
             )
         return {"query": query, "provider": provider, "results": normalized}
+
+
+@dataclass(frozen=True, slots=True)
+class SerpApiAdapter:
+    """Google Shopping adapter for reference prices."""
+
+    endpoint: str | None
+    token_env: str | None
+    timeout_seconds: int
+    max_response_bytes: int
+    environ: Mapping[str, str]
+
+    def search(self, item: str, region: str, currency: str) -> dict[str, Any]:
+        token_name = self.token_env or "SERPAPI_API_KEY"
+        token = self.environ.get(token_name)
+        if not token:
+            raise UpstreamError("UPSTREAM_TOKEN_NOT_CONFIGURED")
+        params = {
+            "engine": "google_shopping",
+            "q": item,
+            "api_key": token,
+            "output": "json",
+        }
+        if region:
+            params["location"] = region
+        if currency:
+            params["currency"] = currency.upper()
+        endpoint = self.endpoint or "https://serpapi.com/search"
+        request = Request(
+            f"{endpoint}?{urlencode(params)}",
+            headers={"Accept": "application/json", "User-Agent": "AgentSync-MCP/0.1.0"},
+            method="GET",
+        )
+        raw = read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
+        shopping_results = raw.get("shopping_results", [])
+        if not isinstance(shopping_results, list):
+            raise UpstreamError("UPSTREAM_INVALID_RESULTS")
+        items = []
+        for result in shopping_results[:20]:
+            if not isinstance(result, dict):
+                continue
+            items.append(
+                {
+                    "product_id": str(result.get("product_id", result.get("title", "")))[:200],
+                    "name": str(result.get("title", ""))[:500],
+                    "price": result.get("extracted_price", result.get("price")),
+                    "currency": currency.upper(),
+                    "seller": str(result.get("source", ""))[:200],
+                    "url": str(result.get("link", ""))[:2_000],
+                }
+            )
+        return {
+            "provider": "serpapi",
+            "item": item,
+            "region": region,
+            "currency": currency.upper(),
+            "items": sanitize_output(items),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class AirtableAdapter:
+    """Read-only inventory adapter backed by an Airtable base."""
+
+    token_env: str | None
+    base_id: str | None
+    table_name: str | None
+    view: str | None
+    timeout_seconds: int
+    max_response_bytes: int
+    environ: Mapping[str, str]
+
+    def check_stock(self, product_id: str, location: str) -> dict[str, Any]:
+        token_name = self.token_env or "AIRTABLE_TOKEN"
+        token = self.environ.get(token_name)
+        if not token:
+            raise UpstreamError("UPSTREAM_TOKEN_NOT_CONFIGURED")
+        if not self.base_id or not self.table_name:
+            raise UpstreamError("UPSTREAM_NOT_CONFIGURED")
+        query: dict[str, str] = {"pageSize": "100"}
+        if self.view:
+            query["view"] = self.view
+        endpoint = (
+            f"https://api.airtable.com/v0/{quote(self.base_id, safe='')}/"
+            f"{quote(self.table_name, safe='')}?{urlencode(query)}"
+        )
+        request = Request(
+            endpoint,
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
+                "User-Agent": "AgentSync-MCP/0.1.0",
+            },
+            method="GET",
+        )
+        raw = read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
+        records = raw.get("records", [])
+        if not isinstance(records, list):
+            raise UpstreamError("UPSTREAM_INVALID_RESULTS")
+        items = []
+        for record in records[:100]:
+            if not isinstance(record, dict):
+                continue
+            fields = record.get("fields", {})
+            if not isinstance(fields, dict):
+                continue
+            if product_id and str(fields.get("product_id", "")) != product_id:
+                continue
+            if location and str(fields.get("location", "")) != location:
+                continue
+            items.append(
+                {
+                    "product_id": str(fields.get("product_id", product_id))[:160],
+                    "name": str(fields.get("name", ""))[:500],
+                    "available": fields.get("available_units", fields.get("available", 0)),
+                    "location": str(fields.get("location", ""))[:120],
+                    "version": str(record.get("id", ""))[:120],
+                    "observed_at": str(fields.get("updated_at", ""))[:64],
+                }
+            )
+        return {"provider": "airtable", "product_id": product_id, "location": location, "items": items}
+
+
+@dataclass(frozen=True, slots=True)
+class ResendAdapter:
+    """Owner notification adapter using Resend's transactional email API."""
+
+    endpoint: str | None
+    token_env: str | None
+    from_address: str | None
+    to_address: str | None
+    timeout_seconds: int
+    max_response_bytes: int
+    environ: Mapping[str, str]
+
+    def send(self, subject: str, body: str, *, idempotency_key: str) -> dict[str, Any]:
+        token_name = self.token_env or "RESEND_API_KEY"
+        token = self.environ.get(token_name)
+        if not token:
+            raise UpstreamError("UPSTREAM_TOKEN_NOT_CONFIGURED")
+        if not self.from_address or not self.to_address:
+            raise UpstreamError("UPSTREAM_DESTINATION_NOT_CONFIGURED")
+        request = Request(
+            self.endpoint or "https://api.resend.com/emails",
+            data=json.dumps(
+                {
+                    "from": self.from_address,
+                    "to": [self.to_address],
+                    "subject": subject,
+                    "text": body,
+                },
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8"),
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+                "Idempotency-Key": idempotency_key,
+                "User-Agent": "AgentSync-MCP/0.1.0",
+            },
+            method="POST",
+        )
+        raw = read_json_response(
+            request,
+            timeout_seconds=self.timeout_seconds,
+            max_response_bytes=self.max_response_bytes,
+        )
+        return write_result(raw, operation="email")
 
 
 def write_result(raw: dict[str, Any], *, operation: str) -> dict[str, Any]:
