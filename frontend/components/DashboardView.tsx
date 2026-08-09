@@ -5,7 +5,7 @@ import { AgentStatusCard } from "@/components/AgentStatusCard";
 import { CommercialHome } from "@/components/CommercialHome";
 import { ArrowRightIcon, ShieldIcon } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
-import { belongsToDemoOwner, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
+import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import { useAgentSync } from "@/lib/store";
 import type { MatchSession } from "@/lib/types";
 
@@ -55,8 +55,8 @@ const statusCopy: Record<
   },
 };
 
-function counterpartId(session: MatchSession) {
-  return session.agent_1_id === DEMO_OWNER_AGENT_ID
+function counterpartId(session: MatchSession, ownerAgentId: string) {
+  return session.agent_1_id === ownerAgentId
     ? session.agent_2_id
     : session.agent_1_id;
 }
@@ -76,9 +76,12 @@ function decisionTitle(session: MatchSession, counterpartName: string) {
 }
 
 export function DashboardView() {
-  const { signedIn } = useAuth();
+  const { signedIn, agentId } = useAuth();
   const { sessions, agentsById } = useAgentSync();
-  const ownerSessions = sessions.filter(belongsToDemoOwner);
+  const ownerAgentId = agentId ?? DEMO_OWNER_AGENT_ID;
+  const ownerSessions = sessions.filter((session) =>
+    belongsToAgent(session, ownerAgentId),
+  );
   const pending = ownerSessions.filter(
     (session) =>
       session.status === "PENDING_HUMAN_APPROVAL" && session.pending_decision,
@@ -96,13 +99,36 @@ export function DashboardView() {
     sessions[0];
   const agentA = agentsById[featured?.agent_1_id];
   const agentB = agentsById[featured?.agent_2_id];
-  const ownerAgent = agentsById[DEMO_OWNER_AGENT_ID];
+  const ownerAgent = agentsById[ownerAgentId];
   if (!signedIn) {
     return (
       <CommercialHome
         objective={agentA?.objectives[0]}
         counterpartName={agentB?.display_name?.split(" — ")[0]}
       />
+    );
+  }
+
+  if (!agentId || !ownerAgent) {
+    return (
+      <div className="empty-agent-home">
+        <section>
+          <span className="section-eyebrow">Tu espacio está listo</span>
+          <h1>Activa un agente para empezar</h1>
+          <p>
+            Define varios objetivos, fija lo que nunca debe cruzar y elige cuándo
+            quieres intervenir.
+          </p>
+          <Link href="/setup" className="primary-action">
+            Configurar mi agente <ArrowRightIcon size={15} />
+          </Link>
+        </section>
+        <aside aria-label="Qué ocurrirá después">
+          <span><strong>1</strong> Añade tus objetivos</span>
+          <span><strong>2</strong> Marca límites y decisiones</span>
+          <span><strong>3</strong> El agente empieza a explorar</span>
+        </aside>
+      </div>
     );
   }
 
@@ -136,7 +162,7 @@ export function DashboardView() {
                       <strong>
                         {decisionTitle(
                           session,
-                          agentsById[counterpartId(session)]?.display_name.split(" — ")[0] ??
+                          agentsById[counterpartId(session, ownerAgentId)]?.display_name.split(" — ")[0] ??
                             "la otra parte",
                         )}
                       </strong>
@@ -155,9 +181,13 @@ export function DashboardView() {
         </section>
 
         <AgentStatusCard
-          agentId={DEMO_OWNER_AGENT_ID}
+          agentId={ownerAgentId}
           agentName={ownerAgent?.display_name ?? "Valentina R."}
-          objective={ownerAgent?.objectives[0] ?? "Vender mi auto sin bajar del mínimo configurado"}
+          objective={
+            ownerAgent.objectives.length > 1
+              ? `${ownerAgent.objectives[0]} · +${ownerAgent.objectives.length - 1} más`
+              : ownerAgent.objectives[0] ?? "Objetivo por configurar"
+          }
           pendingCount={pending.length}
           activeNegotiations={activeSessions.length}
         />

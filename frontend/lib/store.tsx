@@ -35,6 +35,7 @@ interface AgentSyncState {
   toggleAgentStatus: (agentId: string) => void;
   /** agent.registered → persiste perfil y dispara matchmaking simulado. */
   registerAgent: (profile: AgentProfile) => number;
+  updateAgent: (profile: AgentProfile) => void;
   resetDemo: () => void;
 }
 
@@ -453,6 +454,14 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
     [agents],
   );
 
+  const updateAgent = useCallback((profile: AgentProfile) => {
+    setAgents((prev) =>
+      prev.map((agent) =>
+        agent.agent_id === profile.agent_id ? profile : agent,
+      ),
+    );
+  }, []);
+
   const resetDemo = useCallback(() => {
     setAgents(data.agents);
     setSessions(data.sessions);
@@ -471,6 +480,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
+      updateAgent,
       resetDemo,
     }),
     [
@@ -480,6 +490,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       dispatchHumanDecision,
       toggleAgentStatus,
       registerAgent,
+      updateAgent,
       resetDemo,
     ],
   );

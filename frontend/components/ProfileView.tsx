@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type ProfileData, useAuth } from "@/lib/auth";
+import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import {
   ArrowRightIcon,
   CardIcon,
@@ -83,7 +84,10 @@ export function ProfileView() {
             className="auth-form"
             onSubmit={(event) => {
               event.preventDefault();
-              signIn(profile);
+              signIn(
+                profile,
+                authMode === "login" ? DEMO_OWNER_AGENT_ID : null,
+              );
               setPassword("");
             }}
           >

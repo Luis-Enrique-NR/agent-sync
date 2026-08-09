@@ -10,6 +10,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 
 export interface ProfileData {
   name: string;
@@ -22,10 +23,12 @@ interface AuthState {
   profile: ProfileData;
   signedIn: boolean;
   authReady: boolean;
+  agentId: string | null;
   setProfile: Dispatch<SetStateAction<ProfileData>>;
-  signIn: (profile: ProfileData) => void;
+  signIn: (profile: ProfileData, agentId: string | null) => void;
   signOut: () => void;
   saveProfile: (profile: ProfileData) => void;
+  attachAgent: (agentId: string) => void;
 }
 
 const STORAGE_KEY = "agentsync-profile-demo-v1";
@@ -41,6 +44,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileData>(initialProfile);
   const [signedIn, setSignedIn] = useState(false);
+  const [agentId, setAgentId] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
@@ -50,9 +54,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const parsed = JSON.parse(stored) as {
           profile?: ProfileData;
           signedIn?: boolean;
+          agentId?: string | null;
         };
         if (parsed.profile) setProfile(parsed.profile);
         if (typeof parsed.signedIn === "boolean") setSignedIn(parsed.signedIn);
+        if (Object.prototype.hasOwnProperty.call(parsed, "agentId")) {
+          setAgentId(parsed.agentId ?? null);
+        } else if (parsed.signedIn) {
+          setAgentId(DEMO_OWNER_AGENT_ID);
+        }
       }
     } catch {
       // Si el dato local está dañado, la demo usa una sesión nueva.
@@ -61,11 +71,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const persist = useCallback((nextProfile: ProfileData, nextSignedIn: boolean) => {
+  const persist = useCallback((
+    nextProfile: ProfileData,
+    nextSignedIn: boolean,
+    nextAgentId: string | null,
+  ) => {
     try {
       localStorage.setItem(
         STORAGE_KEY,
-        JSON.stringify({ profile: nextProfile, signedIn: nextSignedIn }),
+        JSON.stringify({
+          profile: nextProfile,
+          signedIn: nextSignedIn,
+          agentId: nextAgentId,
+        }),
       );
     } catch {
       // La demo continúa en memoria cuando el almacenamiento no está disponible.
@@ -73,25 +91,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = useCallback(
-    (nextProfile: ProfileData) => {
+    (nextProfile: ProfileData, nextAgentId: string | null) => {
       setProfile(nextProfile);
       setSignedIn(true);
-      persist(nextProfile, true);
+      setAgentId(nextAgentId);
+      persist(nextProfile, true, nextAgentId);
     },
     [persist],
   );
 
   const signOut = useCallback(() => {
     setSignedIn(false);
-    persist(profile, false);
-  }, [persist, profile]);
+    persist(profile, false, agentId);
+  }, [agentId, persist, profile]);
 
   const saveProfile = useCallback(
     (nextProfile: ProfileData) => {
       setProfile(nextProfile);
-      persist(nextProfile, signedIn);
+      persist(nextProfile, signedIn, agentId);
     },
-    [persist, signedIn],
+    [agentId, persist, signedIn],
+  );
+
+  const attachAgent = useCallback(
+    (nextAgentId: string) => {
+      setAgentId(nextAgentId);
+      persist(profile, signedIn, nextAgentId);
+    },
+    [persist, profile, signedIn],
   );
 
   const value = useMemo(
@@ -99,12 +126,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       signedIn,
       authReady,
+      agentId,
       setProfile,
       signIn,
       signOut,
       saveProfile,
+      attachAgent,
     }),
-    [profile, signedIn, authReady, signIn, signOut, saveProfile],
+    [
+      profile,
+      signedIn,
+      authReady,
+      agentId,
+      signIn,
+      signOut,
+      saveProfile,
+      attachAgent,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
