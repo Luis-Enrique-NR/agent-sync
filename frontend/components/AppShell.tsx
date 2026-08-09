@@ -83,7 +83,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="brand" aria-label="AgentSync, ir al inicio">
             <LogoMark />
             <span className="brand-name">AgentSync</span>
-            <span className="demo-badge">Demo</span>
           </Link>
 
           {signedIn ? (

@@ -122,17 +122,6 @@ h4,
   letter-spacing: -0.03em;
 }
 
-.demo-badge {
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  padding: 2px 7px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
 .desktop-nav {
   display: flex;
   min-width: 0;
@@ -5909,10 +5898,6 @@ body.is-resizing-agent-editor {
 
   .brand-name {
     font-size: 17px;
-  }
-
-  .demo-badge {
-    display: none;
   }
 
   .hero-panel {
