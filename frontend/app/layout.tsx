@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "Define tu objetivo y tus límites. AgentSync encuentra oportunidades, negocia en paralelo y te consulta solo cuando una decisión importa.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${ubuntu.variable} ${quantico.variable}`}>
       <body>

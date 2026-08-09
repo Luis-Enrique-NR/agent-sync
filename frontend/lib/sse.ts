@@ -116,20 +116,16 @@ export function connectNegotiationStream(
   // Start the initial connection
   es = createEventSource();
 
-  // Hook the actual EventSource error via a polling-like proxy.
-  // Native EventSource fires its own onerror; we listen to that via the
-  // source's onerror handler above, and then dispatch a custom event
-  // to trigger our reconnection logic.
-  const originalError = es.onerror;
-  if (es) {
-    es.onerror = (ev) => {
-      if (originalError) originalError.call(es, ev);
-      if (!closed) {
-        es = null;
-        reconnect();
-      }
-    };
-  }
+  // Override the native onerror to trigger reconnection logic
+  const initialSource = es;
+  const originalError = initialSource.onerror;
+  initialSource.onerror = (ev) => {
+    if (originalError) originalError.call(initialSource, ev);
+    if (!closed) {
+      es = null;
+      reconnect();
+    }
+  };
 
   return {
     close: () => {

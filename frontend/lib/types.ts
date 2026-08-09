@@ -303,18 +303,3 @@ export interface SensitiveCategory {
   key?: string;
   threshold?: number;
 }
-
-export interface MockData {
-  schemaVersion: string;
-  meta: {
-    source: string;
-    environment: string;
-    purpose: string;
-  };
-  agents: AgentProfile[];
-  sessions: MatchSession[];
-  sensitive_categories: {
-    default_required: SensitiveCategory[];
-    editable: SensitiveCategory[];
-  };
-}
