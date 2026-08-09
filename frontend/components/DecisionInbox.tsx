@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { PendingDecision, Segment } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
 import { HumanEscalationModal } from "@/components/HumanEscalationModal";
+import { belongsToDemoOwner } from "@/lib/demo";
 
 type Filter = "todas" | Segment;
 
@@ -15,6 +16,7 @@ export function DecisionInbox() {
   const pending = useMemo(
     () =>
       sessions
+        .filter(belongsToDemoOwner)
         .map((session) => ({
           session,
           decision: session.pending_decision as PendingDecision | undefined,
@@ -41,7 +43,10 @@ export function DecisionInbox() {
       : pending.filter(({ session }) => session.segment === filter);
 
   const resolvedThisSession = sessions.filter(
-    (s) => s.pending_decision && s.pending_decision.status !== "PENDING",
+    (s) =>
+      belongsToDemoOwner(s) &&
+      s.pending_decision &&
+      s.pending_decision.status !== "PENDING",
   ).length;
 
   const filters: { key: Filter; label: string }[] = [

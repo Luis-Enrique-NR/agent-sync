@@ -342,12 +342,7 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
     setAgents((prev) =>
       prev.map((agent) => {
         if (agent.agent_id !== agentId) return agent;
-        const next =
-          agent.status === "PAUSED"
-            ? "AVAILABLE"
-            : agent.status === "BUSY"
-              ? "BUSY"
-              : "PAUSED";
+        const next = agent.status === "PAUSED" ? "AVAILABLE" : "PAUSED";
         return { ...agent, status: next };
       }),
     );

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, ViewTransition } from "react";
 import { useAuth } from "@/lib/auth";
+import { belongsToDemoOwner } from "@/lib/demo";
 import { useAgentSync } from "@/lib/store";
 import {
   CompassIcon,
@@ -32,7 +33,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { signedIn } = useAuth();
   const { sessions, resetDemo } = useAgentSync();
   const pendingCount = sessions.filter(
-    (session) => session.status === "PENDING_HUMAN_APPROVAL",
+    (session) =>
+      belongsToDemoOwner(session) && session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
 
   useLayoutEffect(() => {

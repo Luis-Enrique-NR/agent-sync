@@ -1462,7 +1462,7 @@ h4,
 .panel-heading h2,
 .activity-heading h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
   letter-spacing: -0.025em;
 }
 
@@ -1470,7 +1470,7 @@ h4,
 .activity-heading p {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.45;
 }
 
@@ -1532,7 +1532,7 @@ h4,
 
 .attention-copy strong {
   overflow: hidden;
-  font-size: 13px;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1540,7 +1540,8 @@ h4,
 .attention-copy span {
   margin-top: 3px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .attention-cta {
@@ -1548,7 +1549,7 @@ h4,
   align-items: center;
   gap: 5px;
   color: var(--accent-dark);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1616,13 +1617,13 @@ h4,
 
 .agent-identity h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .agent-identity p {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .agent-status {
@@ -1633,7 +1634,7 @@ h4,
   padding: 4px 8px;
   color: var(--accent-2);
   background: var(--accent-2-soft);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -1647,10 +1648,35 @@ h4,
   background: var(--accent-soft);
 }
 
-.agent-summary {
+.agent-objective {
   margin: 20px 0 0;
-  color: var(--muted);
+  border-left: 3px solid var(--accent);
+  padding: 2px 0 2px 11px;
+}
+
+.agent-objective span,
+.agent-objective strong {
+  display: block;
+}
+
+.agent-objective span {
+  color: var(--accent-dark);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.agent-objective strong {
+  margin-top: 4px;
   font-size: 12px;
+  line-height: 1.45;
+}
+
+.agent-summary {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
   line-height: 1.55;
 }
 
@@ -1683,7 +1709,7 @@ h4,
 .agent-fact small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .agent-toggle {
@@ -1698,7 +1724,7 @@ h4,
   border-radius: 11px;
   color: var(--foreground);
   background: var(--surface);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: border-color 160ms ease, background 160ms ease;
@@ -1707,11 +1733,6 @@ h4,
 .agent-toggle:hover {
   border-color: var(--foreground);
   background: var(--background);
-}
-
-.agent-toggle:disabled {
-  cursor: not-allowed;
-  opacity: 0.58;
 }
 
 .activity-panel {
@@ -1731,7 +1752,7 @@ h4,
 .activity-row {
   display: grid;
   min-height: 78px;
-  grid-template-columns: 42px minmax(0, 1fr) minmax(140px, 0.5fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
   gap: 14px;
   border-top: 1px solid var(--border);
@@ -1773,7 +1794,7 @@ h4,
 
 .session-copy strong {
   overflow: hidden;
-  font-size: 12px;
+  font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1781,32 +1802,7 @@ h4,
 .session-copy span {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 10px;
-}
-
-.session-progress {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.session-progress span {
-  color: var(--muted);
-  font-size: 10px;
-}
-
-.progress-track {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--surface-2);
-}
-
-.progress-track i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-2);
+  font-size: 11px;
 }
 
 .status-label {
@@ -1817,7 +1813,7 @@ h4,
   padding: 5px 9px;
   color: var(--muted);
   background: var(--surface-2);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -2685,10 +2681,6 @@ h4,
     grid-template-columns: 38px minmax(0, 1fr) auto;
     gap: 10px;
     padding-inline: 18px;
-  }
-
-  .session-progress {
-    display: none;
   }
 
   .profile-heading {
