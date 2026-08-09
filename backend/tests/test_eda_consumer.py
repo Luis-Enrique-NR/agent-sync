@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from uuid import UUID, uuid4
 
 import pytest
@@ -306,6 +307,56 @@ class FakeEngine:
             deadline_at="2026-08-08T14:00:00Z",  # type: ignore[arg-type]
         )
         return self.run_until_pause(s)
+
+
+def test_public_turn_adapter_uses_generated_turn_not_inbound_text() -> None:
+    """Only a generated TURN_READY payload is eligible for Portal publish."""
+    from ai.domain.models import EngineEvent, EngineEventType, EngineResult, NegotiationState
+    from eda.handlers import _public_turns
+
+    speaker_id = uuid4()
+    counterpart_id = uuid4()
+    started_at = datetime.now(timezone.utc)
+    state = NegotiationState(
+        agents=(
+            AgentProfile(
+                agent_id=speaker_id,
+                display_name="seller",
+                entity_type=EntityType.COMPANY,
+                public_description="test",
+                personality="test",
+                objectives=["test"],
+            ),
+            AgentProfile(
+                agent_id=counterpart_id,
+                display_name="buyer",
+                entity_type=EntityType.COMPANY,
+                public_description="test",
+                personality="test",
+                objectives=["test"],
+            ),
+        ),
+        current_speaker_id=speaker_id,
+        started_at=started_at,
+        deadline_at=started_at + timedelta(hours=1),
+    )
+    result = EngineResult(
+        state=state,
+        events=[
+            EngineEvent(
+                session_id=state.session_id,
+                event_type=EngineEventType.TURN_READY,
+                payload={
+                    "message": {
+                        "speaker_id": str(speaker_id),
+                        "public_message": "mensaje generado por AI",
+                    }
+                },
+            )
+        ],
+    )
+
+    assert _public_turns(result) == [(speaker_id, "mensaje generado por AI")]
 
 
 # ── TDD CASE 6: handler publishes turn response to Portal ───────────────

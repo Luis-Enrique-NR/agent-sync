@@ -21,6 +21,7 @@ from ai.domain.models import (
     NegotiationState,
     SessionStatus,
 )
+from ai.domain.models import EngineEventType
 from ai.engine.graph import NegotiationEngine
 from persistence.database import get_session
 from persistence.models import NegotiationStateRow, AgentProfileRow
@@ -218,19 +219,25 @@ class NegotiationHandler:
                     )
                     trace("AUDIT_WRITE", f"APPROVAL_REQUESTED session={state_row.session_id} — pausing outbound")
                 else:
-                    # Publish generated turn to Portal
+                    # Publish only generated public turns to Portal.  The
+                    # inbound envelope is an event trigger, never the
+                    # outbound message body.
                     if self._portal is not None and state_row is not None:
-                        try:
-                            cmd = PublishMessage(
-                                authorization_id=str(state_row.session_id),
-                                channel_id=channel,
-                                sender_id=str(state.current_speaker_id),
-                                content={"text": envelope.message.text if envelope.message else ""},
-                            )
-                            await self._portal.execute(cmd)
-                            trace("OUTBOUND_PUBLISH", f"published to channel={channel}")
-                        except Exception:
-                            logger.exception("portal publish failed channel=%s", channel)
+                        for speaker_id, text in _public_turns(result):
+                            try:
+                                cmd = PublishMessage(
+                                    # Portal authorization belongs to the
+                                    # initiating agent, not to the internal
+                                    # negotiation session identifier.
+                                    authorization_id=str(state_row.initiator_id),
+                                    channel_id=channel,
+                                    sender_id=str(speaker_id),
+                                    content={"text": text},
+                                )
+                                await self._portal.execute(cmd)
+                                trace("OUTBOUND_PUBLISH", f"published to channel={channel}")
+                            except Exception:
+                                logger.exception("portal publish failed channel=%s", channel)
 
             # Write audit
             write_audit(
@@ -377,3 +384,34 @@ def _is_uuid(value: str) -> bool:
         return True
     except ValueError:
         return False
+
+
+def _public_turns(result: object) -> list[tuple[UUID, str]]:
+    """Extract generated public turns, failing closed for malformed events.
+
+    The current EDA branch uses the legacy event model (without an audience
+    field).  ``getattr`` keeps this adapter compatible with the newer AI
+    model, where internal events carry ``audience=INTERNAL`` and must never be
+    sent to Portal.
+    """
+
+    turns: list[tuple[UUID, str]] = []
+    for event in getattr(result, "events", []):
+        if event.event_type is not EngineEventType.TURN_READY:
+            continue
+        audience = getattr(event, "audience", None)
+        if audience is not None and getattr(audience, "value", audience) != "PUBLIC":
+            continue
+        message = event.payload.get("message")
+        if not isinstance(message, dict):
+            continue
+        text = message.get("public_message")
+        if not isinstance(text, str) or not text.strip():
+            continue
+        raw_speaker_id = message.get("speaker_id")
+        try:
+            speaker_id = UUID(str(raw_speaker_id))
+        except (TypeError, ValueError):
+            speaker_id = result.state.current_speaker_id
+        turns.append((speaker_id, text.strip()))
+    return turns

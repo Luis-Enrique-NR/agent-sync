@@ -23,7 +23,7 @@ test = ["pytest>=8.0,<10.0", "pytest-asyncio>=0.24,<2.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["ai*", "api*", "persistence*", "transport*"]
+include = ["ai*", "api*", "eda*", "matchmaking*", "persistence*", "transport*"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

@@ -36,6 +36,24 @@ def test_normalizes_only_published_and_audit_retracted() -> None:
     assert normalize_event(event("message.edited", message)) is None
 
 
+@pytest.mark.parametrize(
+    "type_",
+    ["agent.registered", "intent.published", "negotiation.failed", "negotiation.rejected"],
+)
+def test_normalizes_lifecycle_events_without_message(type_: str) -> None:
+    envelope = normalize_event(event(type_, None))
+    assert isinstance(envelope, TransportEnvelopeV1)
+    assert envelope.event_type == type_
+    assert envelope.message is None
+    assert envelope.retracted is False
+
+
+def test_rejects_message_on_lifecycle_event() -> None:
+    message = {"id": "m1", "text": "hello", "author_id": "u1", "seq": 1}
+    with pytest.raises(ValueError, match="lifecycle event"):
+        normalize_event(event("agent.registered", message))
+
+
 @pytest.mark.parametrize("type_,message", [("message.published", None), ("message.retracted", {"id": "m1", "text": "x", "author_id": "u1", "seq": 1})])
 def test_rejects_invalid_supported_shapes(type_: str, message: dict | None) -> None:
     with pytest.raises(ValueError):
