@@ -56,6 +56,31 @@ El proyecto usa **2 servicios** en Railway:
 
 ---
 
+## Portal (Webhooks + Mensajería)
+
+El backend usa Portal para recibir eventos de canales. Para configurarlo:
+
+1. **Instalar CLI de Portal**:
+   ```bash
+   npm install -g @portalsdk/cli
+   ```
+
+2. **Autenticar**:
+   ```bash
+   export PORTAL_SECRET=sk_tu_secret_key
+   ```
+
+3. **Editar `portal.config.ts`** con la URL de tu backend en Railway.
+
+4. **Desplegar configuración**:
+   ```bash
+   portal deploy
+   ```
+
+5. **Obtener el webhook signing secret** y configurarlo como `PORTAL_SECRET_KEY` en Railway.
+
+---
+
 ## Desarrollo local
 
 ```bash
