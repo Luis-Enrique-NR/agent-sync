@@ -1,0 +1,128 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useAgentSync } from "@/lib/store";
+import {
+  BellIcon,
+  CompassIcon,
+  HistoryIcon,
+  HomeIcon,
+  InboxIcon,
+  LogoMark,
+  RotateIcon,
+  SlidersIcon,
+} from "@/components/Icons";
+
+const navigation = [
+  { href: "/", label: "Inicio", icon: HomeIcon },
+  { href: "/setup", label: "Mi agente", icon: SlidersIcon },
+  { href: "/ecosistema", label: "Explorar", icon: CompassIcon },
+  { href: "/bandeja", label: "Decisiones", icon: InboxIcon },
+  { href: "/historial", label: "Historial", icon: HistoryIcon },
+];
+
+function isCurrent(pathname: string, href: string) {
+  if (href === "/") return pathname === href || pathname.startsWith("/chat/");
+  return pathname.startsWith(href);
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const { sessions, resetDemo } = useAgentSync();
+  const pendingCount = sessions.filter(
+    (session) => session.status === "PENDING_HUMAN_APPROVAL",
+  ).length;
+
+  return (
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="header-inner">
+          <Link href="/" className="brand" aria-label="AgentSync, ir al inicio">
+            <LogoMark />
+            <span className="brand-name">AgentSync</span>
+            <span className="demo-badge">Demo</span>
+          </Link>
+
+          <nav className="desktop-nav" aria-label="Navegación principal">
+            {navigation.map((item) => {
+              const active = isCurrent(pathname, item.href);
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`nav-link ${active ? "is-active" : ""}`}
+                  aria-current={active ? "page" : undefined}
+                >
+                  <Icon size={17} />
+                  {item.label}
+                  {item.href === "/bandeja" && pendingCount > 0 ? (
+                    <span className="nav-count">{pendingCount}</span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="header-actions">
+            <button
+              type="button"
+              className="reset-button"
+              onClick={resetDemo}
+              title="Restablecer los datos de la demo"
+            >
+              <RotateIcon size={16} />
+              <span>Reiniciar demo</span>
+            </button>
+            <Link
+              href="/bandeja"
+              className="notification-button"
+              aria-label={`${pendingCount} decisiones pendientes`}
+            >
+              <BellIcon size={19} />
+              {pendingCount > 0 ? <span>{pendingCount}</span> : null}
+            </Link>
+            <div className="account-chip" title="Cuenta de demostración">
+              <span className="account-avatar">VR</span>
+              <span className="account-copy">
+                <strong>Valentina R.</strong>
+                <small>Cuenta personal</small>
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="app-main">{children}</main>
+
+      <footer className="app-footer">
+        <span>AgentSync · entorno de demostración</span>
+        <span>Los límites duros nunca se negocian.</span>
+      </footer>
+
+      <nav className="mobile-nav" aria-label="Navegación móvil">
+        {navigation.map((item) => {
+          const active = isCurrent(pathname, item.href);
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={active ? "is-active" : ""}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="mobile-icon-wrap">
+                <Icon size={19} />
+                {item.href === "/bandeja" && pendingCount > 0 ? (
+                  <span className="mobile-count">{pendingCount}</span>
+                ) : null}
+              </span>
+              <small>{item.label}</small>
+            </Link>
+          );
+        })}
+      </nav>
+    </div>
+  );
+}

@@ -11,6 +11,17 @@ function isFinal(session: MatchSession): boolean {
   return session.status === "RESOLVED" || session.status === "REJECTED";
 }
 
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("es", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function MatchHistory() {
   const { sessions, agentsById } = useAgentSync();
   const [filter, setFilter] = useState<Filter>("todas");
@@ -105,7 +116,7 @@ export function MatchHistory() {
                 {session.summary}
               </h3>
               <p className="mt-0.5 text-xs text-[var(--muted)]">
-                {session.messages.length} mensajes · {session.started_at}
+                {session.messages.length} mensajes · {formatDate(session.started_at)}
               </p>
 
               {isMatch && revealed ? (
@@ -120,7 +131,7 @@ export function MatchHistory() {
                     </span>
                   </p>
                   <p className="mt-0.5 text-[11px] text-[var(--muted)]">
-                    Revelado el {revealed.revealed_at}. En una versión real, aquí
+                    Revelado el {formatDate(revealed.revealed_at)}. En una versión real, aquí
                     continúa el contacto fuera de la plataforma.
                   </p>
                 </div>

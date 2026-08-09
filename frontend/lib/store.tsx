@@ -236,7 +236,11 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
                 created_at: now,
               },
               raw_state: { ...session.raw_state, status: "REJECTED" },
-              pending_decision: { ...pending, status: decisionStatus },
+              pending_decision: {
+                ...pending,
+                status: decisionStatus,
+                manual_response: undefined,
+              },
             };
           }
 
@@ -319,7 +323,14 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
             },
             raw_state: { ...session.raw_state, status: "RESOLVED" },
             revealed_contact,
-            pending_decision: { ...pending, status: decisionStatus },
+            pending_decision: {
+              ...pending,
+              status: decisionStatus,
+              manual_response:
+                action === "REPLACE"
+                  ? decision.replacement_message?.trim()
+                  : undefined,
+            },
           };
         }),
       );

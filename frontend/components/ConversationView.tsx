@@ -8,6 +8,15 @@ import { AuditTrail } from "@/components/AuditTrail";
 
 const TURN_DELAY_MS = 1800;
 
+function formatMessageTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("es", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 type Phase =
   | "searching"
   | "live"
@@ -211,7 +220,7 @@ export function ConversationView({
                 </p>
                 <p className="mt-1 text-sm leading-relaxed">{message.content}</p>
                 <p className="mt-1.5 font-mono text-[10px] text-[var(--muted)]">
-                  {message.sent_at}
+                  {formatMessageTime(message.sent_at)}
                 </p>
               </div>
               {message.flagged ? (

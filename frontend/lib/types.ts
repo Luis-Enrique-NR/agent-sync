@@ -171,6 +171,7 @@ export interface PendingDecision {
   matched_rule_ids?: string[];
   created_at: string;
   status: DecisionStatus;
+  manual_response?: string;
 }
 
 /** HumanDecisionDTO — el humano aprueba/rechaza/reemplaza; reanuda o retira. */

@@ -245,13 +245,12 @@ export function AgentSetupForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="mx-auto flex max-w-3xl flex-col gap-6">
+    <form onSubmit={handleSubmit} className="setup-form mx-auto flex max-w-4xl flex-col gap-6">
       {/* Tipo de entidad */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="text-base font-semibold">Tipo de entidad</h2>
+      <section className="setup-section rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="text-base font-semibold">¿A quién representará?</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          Un solo motor agnóstico. B2B (empresa) y P2P (persona) solo cambian la
-          data de configuración y el segmento derivado.
+          Elige el contexto para adaptar los ejemplos y las reglas de la negociación.
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(
@@ -259,13 +258,13 @@ export function AgentSetupForm() {
               {
                 type: "person",
                 segment: "P2P",
-                title: "P2P — Persona",
+                title: "A una persona",
                 desc: "Vender un artículo, buscar roomie, coordinar un trueque.",
               },
               {
                 type: "company",
                 segment: "B2B",
-                title: "B2B — Empresa",
+                title: "A una empresa",
                 desc: "Buscar proveedores, distribuidores o socios comerciales.",
               },
             ] as {
@@ -308,8 +307,8 @@ export function AgentSetupForm() {
       </section>
 
       {/* Perfil */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="text-base font-semibold">Perfil del agente</h2>
+      <section className="setup-section rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="text-base font-semibold">¿Cómo debe actuar?</h2>
         <div className="mt-4 grid grid-cols-1 gap-4">
           <div>
             <label className={labelClass} htmlFor="displayName">
@@ -337,7 +336,7 @@ export function AgentSetupForm() {
           </div>
           <div>
             <label className={labelClass} htmlFor="personality">
-              Personalidad
+              Cómo quieres que se comunique
             </label>
             <textarea
               id="personality"
@@ -349,7 +348,7 @@ export function AgentSetupForm() {
           </div>
           <div>
             <label className={labelClass} htmlFor="objectives">
-              Objetivos
+              Qué quieres conseguir (un objetivo por línea)
             </label>
             <textarea
               id="objectives"
@@ -363,17 +362,16 @@ export function AgentSetupForm() {
       </section>
 
       {/* Tags: interests ∩ capabilities (motor agnóstico B2B/P2P) */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="text-base font-semibold">Intereses y capacidades</h2>
+      <section className="setup-section rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="text-base font-semibold">¿Qué buscas y qué ofreces?</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          El matchmaking cruza <code className="font-mono">interests</code> de un
-          agente con <code className="font-mono">capabilities</code> de otro en
-          ambas direcciones. Etiquetas separadas por línea.
+          Usaremos estas etiquetas para encontrar agentes compatibles en ambas
+          direcciones. Escribe una por línea.
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label className={labelClass} htmlFor="interests">
-              Intereses (busco…)
+              Estoy buscando…
             </label>
             <textarea
               id="interests"
@@ -385,7 +383,7 @@ export function AgentSetupForm() {
           </div>
           <div>
             <label className={labelClass} htmlFor="capabilities">
-              Capacidades (ofrezco…)
+              Puedo ofrecer…
             </label>
             <textarea
               id="capabilities"
@@ -399,18 +397,18 @@ export function AgentSetupForm() {
       </section>
 
       {/* Límites duros (NumericLimit[]) */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
-        <h2 className="text-base font-semibold">Límites duros</h2>
+      <section className="setup-section rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="text-base font-semibold">¿Qué nunca debe cruzar?</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          No negociables. Se validan fuera del modelo de lenguaje antes de emitir
-          cualquier mensaje (NumericLimit con operador).
+          Estas reglas no son negociables. Se comprueban antes de que el agente
+          envíe cualquier respuesta.
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {entityType === "company" ? (
             <>
               <div>
                 <label className={labelClass} htmlFor="maxUnitPrice">
-                  Precio máximo por unidad (USD) — lte
+                  Precio máximo por unidad (USD)
                 </label>
                 <input
                   id="maxUnitPrice"
@@ -425,7 +423,7 @@ export function AgentSetupForm() {
               </div>
               <div>
                 <label className={labelClass} htmlFor="minAnnualVolume">
-                  Volumen anual mínimo (unidades) — gte
+                  Volumen anual mínimo (unidades)
                 </label>
                 <input
                   id="minAnnualVolume"
@@ -446,14 +444,14 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noPersonalData")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir datos personales → never_disclose
+                No compartir datos personales
               </label>
             </>
           ) : (
             <>
               <div>
                 <label className={labelClass} htmlFor="minSalePrice">
-                  Precio mínimo de venta (USD) — gte
+                  Precio mínimo de venta (USD)
                 </label>
                 <input
                   id="minSalePrice"
@@ -473,7 +471,7 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noShareAddress")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir dirección sin aprobación → never_disclose
+                No compartir dirección sin aprobación
               </label>
               <label className="flex items-center gap-3 text-sm">
                 <input
@@ -482,7 +480,7 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noSharePhone")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir teléfono sin aprobación → never_disclose
+                No compartir teléfono sin aprobación
               </label>
             </>
           )}
@@ -490,18 +488,17 @@ export function AgentSetupForm() {
       </section>
 
       {/* Reglas de escalamiento humano (EscalationRule[]) */}
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+      <section className="setup-section rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="text-base font-semibold">
-          Reglas de escalamiento humano
+          ¿Cuándo debe preguntarte?
         </h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          Cada categoría activa se serializa como <code className="font-mono">escalation_rules</code>.
-          El AI Backend pausa la sesión (PENDING_HUMAN_APPROVAL) y pide tu decisión.
+          Cada opción activa pausará la conversación para que tú tomes la decisión.
         </p>
 
         <fieldset className="mb-5">
           <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--danger)]">
-            Obligatorias por seguridad
+            Siempre requieren tu aprobación
           </legend>
           <div className="flex flex-col gap-2">
             {requiredRules.map((rule) => (
@@ -516,9 +513,6 @@ export function AgentSetupForm() {
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
                 <span className="flex-1">{rule.label}</span>
-                <span className="font-mono text-[10px] text-[var(--muted)]">
-                  {rule.ruleType}
-                </span>
                 <span className="rounded-full bg-[var(--danger)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--danger)]">
                   fija
                 </span>
@@ -529,7 +523,7 @@ export function AgentSetupForm() {
 
         <fieldset>
           <legend className="mb-2 text-xs font-bold uppercase tracking-wide text-[var(--muted)]">
-            A tu criterio
+            También quiero revisar
           </legend>
           <div className="flex flex-col gap-2">
             {editableRules.map((rule) => {
@@ -544,9 +538,6 @@ export function AgentSetupForm() {
                       className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                     />
                     <span className="flex-1">{rule.label}</span>
-                    <span className="font-mono text-[10px] text-[var(--muted)]">
-                      {rule.ruleType}
-                    </span>
                   </label>
                   {checked && rule.ruleType === "AMOUNT_ABOVE" ? (
                     <div className="px-11 pb-2">
@@ -579,35 +570,32 @@ export function AgentSetupForm() {
           {saving ? "Registrando agente…" : "Registrar agente"}
         </button>
         <p className="text-xs text-[var(--muted)]">
-          Simula un <code className="font-mono">agent.registered</code> →
-          matchmaking automático bidireccional.
+          En esta demo, el agente se registra y empieza a buscar compatibilidad automáticamente.
         </p>
       </div>
 
       {saved ? (
         <section className="rounded-2xl border border-[var(--accent-2)]/40 bg-[var(--accent-2)]/10 p-6">
           <h2 className="text-base font-semibold text-[var(--accent-2)]">
-            Agente registrado — {saved.entity_type === "company" ? "B2B" : "P2P"}
+            Listo: tu agente ya está en el ecosistema
           </h2>
           <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-            Evento <code className="font-mono">{saved.event}</code> emitido para
-            <span className="font-mono"> {saved.agent_id}</span>. El motor
-            encontro{" "}
+            Encontramos{" "}
             <strong>
               {saved.matches === 0
                 ? "0 candidatos compatibles"
                 : `${saved.matches} candidato${saved.matches === 1 ? "" : "s"} compatible${saved.matches === 1 ? "" : "s"}`}
             </strong>
-            ; cada match creo un canal privado en Portal y una negociacion ACTIVE.
-            Revisalo en{" "}
+            . Cada coincidencia abre una conversación privada lista para negociar.
+            Revísalo en{" "}
             <a href="/ecosistema" className="text-[var(--accent)] hover:underline">
-              /ecosistema
+              el ecosistema
             </a>
             .
           </p>
           <details className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
             <summary className="cursor-pointer text-sm font-semibold">
-              Ver payload exacto enviado
+              Ver detalles técnicos de la simulación
             </summary>
             <pre className="mt-3 overflow-x-auto text-xs leading-relaxed text-[var(--muted)]">
               {JSON.stringify(saved.profile, null, 2)}
