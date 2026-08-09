@@ -8,7 +8,14 @@ from starlette.testclient import TestClient
 from ai.tools.mcp_http import HTTPMCPClient, MCPProtocolError
 from mcp_servers.agentsync.config import MCPSettings
 from mcp_servers.agentsync.server import build_server
-from mcp_servers.agentsync.upstream import HTTPUpstream, SearchAdapter, UpstreamError
+from mcp_servers.agentsync.upstream import (
+    AirtableAdapter,
+    HTTPUpstream,
+    ResendAdapter,
+    SearchAdapter,
+    SerpApiAdapter,
+    UpstreamError,
+)
 
 
 class _Response:
@@ -52,11 +59,9 @@ def test_server_catalog_and_health_are_explicit() -> None:
         assert response.status_code == 200
         assert {tool["name"] for tool in response.json()["result"]["tools"]} == {
             "web.search",
-            "calendar.check_availability",
             "market.reference_prices",
             "inventory.check_stock",
             "email.send_notification",
-            "calendar.request_meeting",
         }
 
 
@@ -136,6 +141,109 @@ def test_search_normalizes_brave_results() -> None:
         "provider": "brave",
         "results": [{"title": "A", "url": "https://a", "snippet": "B"}],
     }
+
+
+def test_serpapi_normalizes_google_shopping_results(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["request"] = request
+        return _Response(
+            json.dumps(
+                {
+                    "shopping_results": [
+                        {
+                            "product_id": "p-1",
+                            "title": "Cotton lot",
+                            "extracted_price": 900,
+                            "source": "Vendor",
+                            "link": "https://vendor.example/p-1",
+                        }
+                    ]
+                }
+            ).encode()
+        )
+
+    monkeypatch.setattr("mcp_servers.agentsync.upstream.urlopen", fake_urlopen)
+    result = SerpApiAdapter(
+        endpoint=None,
+        token_env=None,
+        timeout_seconds=5,
+        max_response_bytes=10_000,
+        environ={"SERPAPI_API_KEY": "secret"},
+    ).search("cotton", "Bogota", "USD")
+    assert result["items"] == [
+        {
+            "product_id": "p-1",
+            "name": "Cotton lot",
+            "price": 900,
+            "currency": "USD",
+            "seller": "Vendor",
+            "url": "https://vendor.example/p-1",
+        }
+    ]
+    assert "api_key=secret" in captured["request"].full_url
+
+
+def test_airtable_filters_inventory_records(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_urlopen(request, timeout):
+        assert request.headers["Authorization"] == "Bearer secret"
+        return _Response(
+            json.dumps(
+                {
+                    "records": [
+                        {
+                            "id": "rec-1",
+                            "fields": {
+                                "product_id": "bike-1",
+                                "name": "Bike",
+                                "available_units": 3,
+                                "location": "Bogota",
+                            },
+                        },
+                        {"id": "rec-2", "fields": {"product_id": "other"}},
+                    ]
+                }
+            ).encode()
+        )
+
+    monkeypatch.setattr("mcp_servers.agentsync.upstream.urlopen", fake_urlopen)
+    result = AirtableAdapter(
+        token_env=None,
+        base_id="app123",
+        table_name="Inventory",
+        view=None,
+        timeout_seconds=5,
+        max_response_bytes=10_000,
+        environ={"AIRTABLE_TOKEN": "secret"},
+    ).check_stock("bike-1", "Bogota")
+    assert result["items"][0]["available"] == 3
+    assert len(result["items"]) == 1
+
+
+def test_resend_sends_owner_notification_without_exposing_addresses(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured = {}
+
+    def fake_urlopen(request, timeout):
+        captured["request"] = request
+        return _Response(json.dumps({"id": "email-1"}).encode())
+
+    monkeypatch.setattr("mcp_servers.agentsync.upstream.urlopen", fake_urlopen)
+    result = ResendAdapter(
+        endpoint=None,
+        token_env=None,
+        from_address="agent@example.com",
+        to_address="owner@example.com",
+        timeout_seconds=5,
+        max_response_bytes=10_000,
+        environ={"RESEND_API_KEY": "secret"},
+    ).send("Decision", "Please approve", idempotency_key="call-1")
+    assert result == {"delivery_id": "email-1", "status": "accepted"}
+    assert captured["request"].headers["Authorization"] == "Bearer secret"
+    assert "owner@example.com" in captured["request"].data.decode()
+    assert "secret" not in captured["request"].data.decode()
 
 
 def test_http_client_emits_current_mcp_headers_and_meta() -> None:
