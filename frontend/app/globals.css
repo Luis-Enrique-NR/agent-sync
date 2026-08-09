@@ -3771,10 +3771,12 @@ h4,
   box-shadow: 0 10px 26px rgba(22, 50, 79, 0.07);
 }
 
+.tag-editor.is-seeking:hover,
 .tag-editor.is-seeking:focus-within {
   border-top-color: var(--foreground);
 }
 
+.tag-editor.is-offering:hover,
 .tag-editor.is-offering:focus-within {
   border-top-color: var(--accent);
 }
