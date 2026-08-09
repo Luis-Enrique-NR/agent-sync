@@ -33,6 +33,7 @@ from .upstream import (
     SerpApiAdapter,
     UpstreamError,
     sanitize_output,
+    validate_recipient_address,
 )
 
 
@@ -108,26 +109,29 @@ class AgentSyncMCP:
         except UpstreamError as exc:
             _raise_tool_error(exc)
 
-    async def email_send_notification(self, subject: str, body: str) -> dict[str, Any]:
+    async def email_send_notification(
+        self, to: str, subject: str, body: str
+    ) -> dict[str, Any]:
         try:
+            recipient = validate_recipient_address(to)
             if self.settings.email_provider == "resend":
                 return await asyncio.to_thread(
                     ResendAdapter(
                         endpoint=self.settings.email_endpoint,
                         token_env=self.settings.email_token_env,
                         from_address=self.settings.email_from,
-                        to_address=self.settings.email_to,
                         timeout_seconds=self.settings.upstream_timeout_seconds,
                         max_response_bytes=self.settings.upstream_max_response_bytes,
                         environ=self.environ,
                     ).send,
                     subject,
                     body,
+                    recipient,
                     idempotency_key=str(uuid4()),
                 )
             raw = await asyncio.to_thread(
                 self._upstream(self.settings.email_endpoint, self.settings.email_token_env).post_json,
-                {"subject": subject, "body": body},
+                {"to": recipient, "subject": subject, "body": body},
                 idempotency_key=str(uuid4()),
             )
             return write_result(raw, operation="email")
@@ -191,9 +195,9 @@ def build_server(
 
     @mcp.tool(
         name="email.send_notification",
-        title="Send owner notification",
+        title="Send email notification",
         annotations=ToolAnnotations(
-            title="Send owner notification",
+            title="Send email notification",
             readOnlyHint=False,
             destructiveHint=False,
             idempotentHint=True,
@@ -202,12 +206,13 @@ def build_server(
         structured_output=True,
     )
     async def email_send_notification(
+        to: Annotated[str, Field(min_length=3, max_length=320)],
         subject: Annotated[str, Field(min_length=1, max_length=160)],
         body: Annotated[str, Field(min_length=1, max_length=2_000)],
     ) -> dict[str, Any]:
-        """Send a notification to the owner through the configured provider."""
+        """Send an approved notification to the requested recipient."""
 
-        return await service.email_send_notification(subject, body)
+        return await service.email_send_notification(to, subject, body)
 
     async def health(_: Request) -> JSONResponse:
         return JSONResponse(

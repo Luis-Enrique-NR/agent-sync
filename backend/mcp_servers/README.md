@@ -54,7 +54,18 @@ AGENTSYNC_MCP_PRICES_TOKEN_ENV=SERPAPI_API_KEY
 AGENTSYNC_MCP_EMAIL_PROVIDER=resend
 AGENTSYNC_MCP_EMAIL_TOKEN_ENV=RESEND_API_KEY
 AGENTSYNC_MCP_EMAIL_FROM=notificaciones@example.com
-AGENTSYNC_MCP_EMAIL_TO=owner@example.com
+```
+
+El destinatario no se configura en el servidor: se recibe como el argumento
+`to` de cada llamada a `email.send_notification`, se valida antes de llegar al
+proveedor y la ejecución sigue requiriendo aprobación humana en el AI Backend.
+Así el agente puede notificar al propietario o a un contacto autorizado sin
+fijar una dirección global.
+
+Ejemplo de argumentos enviados por el AI Backend:
+
+```json
+{"to":"contacto@example.com","subject":"Decisión pendiente","body":"Tu agente requiere una respuesta."}
 ```
 
 Para proteger el endpoint entre procesos, definir
@@ -76,6 +87,16 @@ Para conectar el backend al proceso local:
 AGENTSYNC_TOOLS_PROVIDER=mcp
 AGENTSYNC_MCP_DEFAULT_SERVER=default
 AGENTSYNC_MCP_SERVERS_JSON={"default":{"endpoint":"http://127.0.0.1:8001/mcp","allowed_tools":["web.search","market.reference_prices","email.send_notification"]}}
+```
+
+Este JSON solo cambia cuando cambia la ubicación o la autenticación del
+servidor MCP. En el mismo equipo se mantiene `127.0.0.1:8001`; después de un
+despliegue separado se sustituye por la URL desplegada (incluyendo `/mcp`) y,
+si aplica, se agrega `token_env_var` con el nombre de una variable de entorno,
+nunca el secreto:
+
+```dotenv
+AGENTSYNC_MCP_SERVERS_JSON={"default":{"endpoint":"https://mcp.example.com/mcp","token_env_var":"MCP_SERVER_TOKEN","allowed_tools":["web.search","market.reference_prices","email.send_notification"]}}
 ```
 
 Las credenciales de proveedores nunca se colocan en `AGENTSYNC_MCP_SERVERS_JSON`

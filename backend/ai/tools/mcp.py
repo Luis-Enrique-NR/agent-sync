@@ -131,6 +131,12 @@ def build_mcp_tool_gateway(
             requires_human_approval=True,
             parameters=[
                 ToolParameterDefinition(
+                    name="to",
+                    value_type=ToolValueType.STRING,
+                    description="Recipient email address or approved agent contact.",
+                    max_length=320,
+                ),
+                ToolParameterDefinition(
                     name="subject",
                     value_type=ToolValueType.STRING,
                     description="Notification subject.",
