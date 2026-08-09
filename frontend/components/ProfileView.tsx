@@ -148,7 +148,7 @@ export function ProfileView() {
           </form>
 
           <small className="auth-demo-note">
-            Acceso simulado: los datos permanecen únicamente en este navegador.
+            Tus datos se almacenan solo en este navegador.
           </small>
         </section>
 
@@ -287,14 +287,6 @@ export function ProfileView() {
             Gestión de planes próximamente
           </button>
         </aside>
-      </div>
-
-      <div className="profile-security-note">
-        <ShieldIcon size={18} />
-        <span>
-          <strong>Cuenta de demostración.</strong> La autenticación y el plan son
-          simulados; no se envía información a servicios externos.
-        </span>
       </div>
     </div>
   );

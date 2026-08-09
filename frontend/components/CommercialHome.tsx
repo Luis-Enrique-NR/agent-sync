@@ -33,12 +33,12 @@ export function CommercialHome({
             separado, incluso mientras otra espera tu respuesta.
           </p>
           <div className="hero-actions">
-            <Link href="/perfil" className="primary-action has-attention">
+            <Link href="/setup" className="primary-action has-attention">
               Crear mi agente
               <ArrowRightIcon size={16} />
             </Link>
             <Link href="#product-flow-title" className="secondary-action">
-              Ver la demo en acción
+              Ver cómo funciona
             </Link>
           </div>
           <div className="hero-trust">

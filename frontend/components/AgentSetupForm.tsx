@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowRightIcon,
   BoxIcon,
@@ -992,6 +993,7 @@ function SafetyFields({
 function CreationWizard({ ownerName }: { ownerName: string }) {
   const { registerAgent } = useAgentSync();
   const { attachAgent } = useAuth();
+  const router = useRouter();
   const [draft, setDraft] = useState<ConfigurationDraft>(() => {
     const initial = draftFromAgent(undefined, "person");
     return {
@@ -1050,6 +1052,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
     });
     attachAgent(agentId);
     setSaving(false);
+    router.push("/");
   };
 
   return (
@@ -1172,7 +1175,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
                   <div className="field-heading">
                     <div>
                       <strong>Recursos permitidos</strong>
-                      <span>En la demo son simulados y nunca cambian tus límites.</span>
+                      <span>Son simulados y nunca cambian tus límites.</span>
                     </div>
                   </div>
                   <ToolSelector

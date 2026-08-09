@@ -34,6 +34,9 @@ def _build_app() -> "FastAPI":  # noqa: F821
 
     load_dotenv(override=False)
 
+    from persistence.database import init_db
+    init_db()
+
     settings = TransportSettings.from_env()
 
     secret_key = os.getenv("PORTAL_SECRET_KEY")
@@ -73,6 +76,7 @@ def _build_app() -> "FastAPI":  # noqa: F821
         portal_secret=secret_key,
         sse_broadcaster=sse_broadcaster,
     )
+    app.state.engine = engine
 
     @contextlib.asynccontextmanager
     async def _lifespan(app: "FastAPI") -> "AsyncIterator[None]":  # noqa: F821
