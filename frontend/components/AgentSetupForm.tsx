@@ -84,7 +84,7 @@ const TOOL_OPTIONS: ToolOption[] = [
     group: "information",
     effect: "READ",
     connection_status: "UNCONFIGURED",
-    scope: "Fuente de mercado pendiente de registrar",
+    scope: "Fuente de mercado aún no conectada",
     defaultMode: "DISABLED",
     icon: "prices",
     lastRun: "Sin ejecuciones",
@@ -98,7 +98,7 @@ const TOOL_OPTIONS: ToolOption[] = [
     group: "information",
     effect: "READ",
     connection_status: "UNCONFIGURED",
-    scope: "Inventario pendiente de registrar",
+    scope: "Inventario aún no conectado",
     defaultMode: "DISABLED",
     icon: "inventory",
     lastRun: "Sin ejecuciones",
@@ -112,7 +112,7 @@ const TOOL_OPTIONS: ToolOption[] = [
     group: "actions",
     effect: "WRITE",
     connection_status: "UNCONFIGURED",
-    scope: "Calendario principal · crear invitaciones",
+    scope: "Calendario principal · invitaciones no conectadas",
     defaultMode: "DISABLED",
     icon: "meeting",
     lastRun: "Sin ejecuciones",
@@ -688,7 +688,7 @@ function ToolSelector({
         <span><SparkIcon size={15} /></span>
         <div>
           <strong>Entorno simulado</strong>
-          <p>Las pruebas usan respuestas mock. No hay cuentas, calendarios ni correos reales conectados.</p>
+          <p>Las pruebas usan respuestas de ejemplo. No hay cuentas, calendarios ni correos reales conectados.</p>
         </div>
         <small>{enabledToolCount(toolModes)} recursos permitidos</small>
       </div>
@@ -733,34 +733,39 @@ function ToolSelector({
                     </div>
 
                     <div className="tool-mode">
-                      <span>Cómo puede usarlo</span>
-                      <div role="group" aria-label={`Modo de ${tool.name}`}>
-                        {TOOL_MODE_OPTIONS.map((option) => {
-                          const automaticWrite =
-                            tool.effect === "WRITE" && option.value === "AUTO";
-                          return (
-                            <button
-                              type="button"
-                              key={option.value}
-                              className={mode === option.value ? "is-selected" : ""}
-                              aria-pressed={mode === option.value}
-                              disabled={unavailable || automaticWrite}
-                              title={
-                                automaticWrite
-                                  ? "Las acciones externas siempre requieren aprobación"
-                                  : unavailable
-                                    ? "Este recurso todavía no está registrado en el backend"
+                      <span>Cuándo puede usarlo</span>
+                      {unavailable ? (
+                        <div className="tool-unavailable-note">
+                          <strong>Deshabilitado</strong>
+                          <small>Aún no está disponible en esta versión.</small>
+                        </div>
+                      ) : (
+                        <div className="tool-mode-options" role="group" aria-label={`Modo de ${tool.name}`}>
+                          {TOOL_MODE_OPTIONS.map((option) => {
+                            const automaticWrite =
+                              tool.effect === "WRITE" && option.value === "AUTO";
+                            return (
+                              <button
+                                type="button"
+                                key={option.value}
+                                className={mode === option.value ? "is-selected" : ""}
+                                aria-pressed={mode === option.value}
+                                disabled={automaticWrite}
+                                title={
+                                  automaticWrite
+                                    ? "Las acciones externas siempre requieren aprobación"
                                     : undefined
-                              }
-                              onClick={() =>
-                                onChange({ ...toolModes, [tool.id]: option.value })
-                              }
-                            >
-                              {option.label}
-                            </button>
-                          );
-                        })}
-                      </div>
+                                }
+                                onClick={() =>
+                                  onChange({ ...toolModes, [tool.id]: option.value })
+                                }
+                              >
+                                {option.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
 
                     <footer>
@@ -776,7 +781,7 @@ function ToolSelector({
                         onClick={() => testTool(tool.id)}
                       >
                         {unavailable
-                          ? "Pendiente"
+                          ? "No disponible"
                           : mode === "DISABLED"
                             ? "Deshabilitado"
                           : testState === "running"
@@ -1330,7 +1335,7 @@ function AgentControlCenter({
         <div className="agent-editor-layer">
           <button type="button" className="agent-editor-backdrop" onClick={closeEditor} aria-label="Cerrar editor" />
           <aside
-            className={`agent-editor ${editSection === "objectives" ? "is-objectives" : ""}`}
+            className={`agent-editor ${editSection === "objectives" ? "is-objectives" : ""} ${editSection === "tools" ? "is-tools" : ""}`}
             style={
               editSection === "objectives"
                 ? ({ "--agent-editor-width": `${editorWidth}px` } as CSSProperties)

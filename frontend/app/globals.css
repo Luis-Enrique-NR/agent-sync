@@ -4578,13 +4578,13 @@ h4,
 .tool-group > header p {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.4;
 }
 
 .tool-group > header > small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 9px;
   white-space: nowrap;
 }
 
@@ -4648,14 +4648,14 @@ h4,
 }
 
 .tool-card-title strong {
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.25;
 }
 
 .tool-card-title small {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .tool-card > header em {
@@ -4663,7 +4663,7 @@ h4,
   padding: 4px 7px;
   color: var(--muted);
   background: var(--surface-2);
-  font-size: 8px;
+  font-size: 9px;
   font-style: normal;
   font-weight: 700;
   white-space: nowrap;
@@ -4683,7 +4683,7 @@ h4,
   min-height: 34px;
   margin: 0;
   color: var(--muted);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.45;
 }
 
@@ -4699,12 +4699,12 @@ h4,
 .tool-mode > span,
 .tool-card > footer small {
   color: var(--muted);
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .tool-scope span {
   overflow: hidden;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4719,7 +4719,7 @@ h4,
   font-weight: 700;
 }
 
-.tool-mode > div {
+.tool-mode-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   border: 1px solid var(--border);
@@ -4736,7 +4736,7 @@ h4,
   padding: 6px 4px;
   color: var(--muted);
   background: transparent;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 700;
   line-height: 1.15;
   cursor: pointer;
@@ -4758,6 +4758,28 @@ h4,
   cursor: not-allowed;
 }
 
+.tool-unavailable-note {
+  display: flex;
+  min-height: 35px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  padding: 7px 9px;
+  background: var(--background);
+}
+
+.tool-unavailable-note strong {
+  font-size: 9px;
+}
+
+.tool-unavailable-note small {
+  color: var(--muted);
+  font-size: 9px;
+  text-align: right;
+}
+
 .tool-card > footer {
   display: flex;
   margin-top: auto;
@@ -4776,13 +4798,13 @@ h4,
 
 .tool-card > footer strong {
   margin-top: 1px;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .tool-card > footer i {
   margin-top: 2px;
   color: var(--muted);
-  font-size: 8px;
+  font-size: 9px;
   font-style: normal;
 }
 
@@ -4792,7 +4814,7 @@ h4,
   padding: 7px 9px;
   color: var(--foreground);
   background: var(--surface);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
@@ -5163,7 +5185,7 @@ h4,
 
 .agent-editor-layer {
   position: fixed;
-  z-index: 80;
+  z-index: 120;
   inset: 0;
 }
 
@@ -5186,6 +5208,10 @@ h4,
   background: var(--surface);
   box-shadow: -18px 0 55px rgba(22, 50, 79, 0.18);
   animation: editor-enter 230ms ease both;
+}
+
+.agent-editor.is-tools {
+  --agent-editor-width: 860px;
 }
 
 .agent-editor-resizer {
@@ -5280,8 +5306,7 @@ body.is-resizing-agent-editor {
   gap: 22px;
 }
 
-.agent-editor-content .safety-grid,
-.agent-editor-content .tool-card-grid {
+.agent-editor-content .safety-grid {
   grid-template-columns: 1fr;
 }
 
@@ -5297,6 +5322,10 @@ body.is-resizing-agent-editor {
 @media (max-width: 700px) {
   .agent-editor {
     width: 100%;
+  }
+
+  .agent-editor.is-tools .tool-card-grid {
+    grid-template-columns: 1fr;
   }
 
   .agent-editor-resizer {
