@@ -6,6 +6,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.portal_webhooks import build_portal_webhook_router
 from api.v1.router import router as v1_router
@@ -28,7 +29,13 @@ def create_app(
     settings = settings or TransportSettings.from_env()
     if secret_provider is None or bus is None:
         raise ValueError("webhook dependencies must be injected")
-    app = FastAPI(title="AgentSync Transport API")
+    app = FastAPI(title="AgentSync API")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.state.bus = bus
     app.include_router(
         build_portal_webhook_router(settings, secret_provider, bus, clock or _utc_now)
