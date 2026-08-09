@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { type ProfileData, useAuth } from "@/lib/auth";
 import {
   ArrowRightIcon,
   CardIcon,
@@ -13,53 +14,19 @@ import {
 
 type AuthMode = "login" | "register";
 
-interface ProfileData {
-  name: string;
-  email: string;
-  accountType: "personal" | "company";
-  role: string;
-}
-
-const STORAGE_KEY = "agentsync-profile-demo-v1";
-const initialProfile: ProfileData = {
-  name: "Valentina R.",
-  email: "valentina@agentsync.demo",
-  accountType: "personal",
-  role: "Propietaria del agente",
-};
-
 export function ProfileView() {
-  const [profile, setProfile] = useState<ProfileData>(initialProfile);
-  const [signedIn, setSignedIn] = useState(true);
+  const {
+    profile,
+    setProfile,
+    signedIn,
+    authReady,
+    signIn,
+    signOut,
+    saveProfile,
+  } = useAuth();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [password, setPassword] = useState("");
   const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) return;
-      const parsed = JSON.parse(stored) as {
-        profile?: ProfileData;
-        signedIn?: boolean;
-      };
-      if (parsed.profile) setProfile(parsed.profile);
-      if (typeof parsed.signedIn === "boolean") setSignedIn(parsed.signedIn);
-    } catch {
-      // Si el dato local está dañado, la demo usa el perfil inicial.
-    }
-  }, []);
-
-  const persist = (nextProfile: ProfileData, nextSignedIn: boolean) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ profile: nextProfile, signedIn: nextSignedIn }),
-      );
-    } catch {
-      // La demo continúa en memoria cuando el almacenamiento no está disponible.
-    }
-  };
 
   const updateField = <Key extends keyof ProfileData>(
     key: Key,
@@ -68,6 +35,14 @@ export function ProfileView() {
     setProfile((current) => ({ ...current, [key]: value }));
     setSaved(false);
   };
+
+  if (!authReady) {
+    return (
+      <div className="auth-page auth-page-loading" role="status" aria-live="polite">
+        Preparando tu cuenta…
+      </div>
+    );
+  }
 
   if (!signedIn) {
     return (
@@ -111,8 +86,7 @@ export function ProfileView() {
             className="auth-form"
             onSubmit={(event) => {
               event.preventDefault();
-              setSignedIn(true);
-              persist(profile, true);
+              signIn(profile);
               setPassword("");
             }}
           >
@@ -197,8 +171,7 @@ export function ProfileView() {
           type="button"
           className="profile-logout"
           onClick={() => {
-            setSignedIn(false);
-            persist(profile, false);
+            signOut();
           }}
         >
           Cerrar sesión
@@ -226,7 +199,7 @@ export function ProfileView() {
             className="profile-form"
             onSubmit={(event) => {
               event.preventDefault();
-              persist(profile, true);
+              saveProfile(profile);
               setSaved(true);
             }}
           >

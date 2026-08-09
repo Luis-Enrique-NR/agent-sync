@@ -1,18 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import type { MatchSession } from "@/lib/types";
-import { useAgentSync } from "@/lib/store";
 import { AgentStatusCard } from "@/components/AgentStatusCard";
+import { CommercialHome } from "@/components/CommercialHome";
 import { kindLabel } from "@/components/HumanEscalationModal";
-import {
-  ArrowRightIcon,
-  CheckIcon,
-  InboxIcon,
-  SearchIcon,
-  ShieldIcon,
-  SparkIcon,
-} from "@/components/Icons";
+import { ArrowRightIcon, ShieldIcon } from "@/components/Icons";
+import { useAuth } from "@/lib/auth";
+import { useAgentSync } from "@/lib/store";
+import type { MatchSession } from "@/lib/types";
 
 const statusCopy: Record<
   MatchSession["status"],
@@ -36,17 +31,8 @@ function progressPercent(session: MatchSession) {
   return Math.min(100, Math.max(8, (session.current_turn / session.max_turns) * 100));
 }
 
-function initials(name?: string) {
-  if (!name) return "AI";
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
-
 export function DashboardView() {
+  const { signedIn } = useAuth();
   const { sessions, agents, agentsById } = useAgentSync();
   const pending = sessions.filter(
     (session) =>
@@ -59,95 +45,27 @@ export function DashboardView() {
       session.status === "PENDING_HUMAN_APPROVAL" ||
       session.status === "SEARCHING",
   );
-  const featured = pending.find((session) => session.segment === "P2P") ?? pending[0] ?? sessions[0];
+  const featured =
+    pending.find((session) => session.segment === "P2P") ??
+    sessions.find((session) => session.segment === "P2P") ??
+    pending[0] ??
+    sessions[0];
   const agentA = agentsById[featured?.agent_1_id];
   const agentB = agentsById[featured?.agent_2_id];
-  const primaryHref = pending[0] ? `/chat/${pending[0].session_id}` : "/ecosistema";
+  const p2pSessions = sessions.filter((session) => session.segment === "P2P");
+
+  if (!signedIn) {
+    return (
+      <CommercialHome
+        objective={agentA?.objectives[0]}
+        counterpartName={agentB?.display_name?.split(" — ")[0]}
+        opportunityCount={p2pSessions.length}
+      />
+    );
+  }
 
   return (
     <div className="dashboard">
-      <section className="hero-panel" aria-labelledby="dashboard-title">
-        <div className="hero-copy">
-          <span className="hero-eyebrow">
-            <SparkIcon size={15} /> Resumen de hoy
-          </span>
-          <h1 id="dashboard-title">
-            Tu agente avanza. <span>Tú das la última palabra.</span>
-          </h1>
-          <p className="hero-description">
-            AgentSync explora, filtra y negocia por ti. Cuando una conversación
-            toca un límite que marcaste como sensible, se detiene y te explica
-            exactamente qué debes decidir.
-          </p>
-          <div className="hero-actions">
-            <Link href={primaryHref} className="primary-action">
-              {pending.length > 0 ? `Revisar ${pending.length} decisiones` : "Explorar oportunidades"}
-              <ArrowRightIcon size={16} />
-            </Link>
-            <Link href="/setup" className="secondary-action">
-              Ajustar lo que mi agente puede hacer
-            </Link>
-          </div>
-          <div className="hero-trust">
-            <ShieldIcon size={17} />
-            <span>
-              Tus límites duros se validan antes de enviar cualquier mensaje.
-            </span>
-          </div>
-        </div>
-
-        <div className="hero-visual" aria-label="Vista previa de una negociación">
-          <div className="route-card">
-            <div className="route-card-header">
-              <span>Ruta de negociación</span>
-              <span className="live-chip">Agente en pausa</span>
-            </div>
-
-            <div className="route-agents">
-              <div className="route-agent">
-                <span className="route-avatar">{initials(agentA?.display_name)}</span>
-                <strong>{agentA?.display_name?.split(" — ")[0] ?? "Tu agente"}</strong>
-                <small>Te representa</small>
-              </div>
-              <span className="route-connection" aria-hidden="true" />
-              <div className="route-agent">
-                <span className="route-avatar">{initials(agentB?.display_name)}</span>
-                <strong>{agentB?.display_name?.split(" — ")[0] ?? "Contraparte"}</strong>
-                <small>{featured?.segment ?? "P2P"} · compatible</small>
-              </div>
-            </div>
-
-            <div className="route-steps">
-              <div className="route-step">
-                <span className="route-step-icon"><SearchIcon size={13} /></span>
-                <span>Encontró una oportunidad compatible</span>
-                <time>10:05</time>
-              </div>
-              <div className="route-step">
-                <span className="route-step-icon"><CheckIcon size={13} /></span>
-                <span>Negoció {featured?.messages.length ?? 0} mensajes por ti</span>
-                <time>10:17</time>
-              </div>
-              <div className="route-step is-current">
-                <span className="route-step-icon"><InboxIcon size={13} /></span>
-                <span>Detectó una decisión sensible</span>
-                <time>Ahora</time>
-              </div>
-            </div>
-
-            <div className="decision-snapshot">
-              <span className="decision-snapshot-label">
-                <ShieldIcon size={13} /> Requiere tu aprobación
-              </span>
-              <p>
-                {featured?.pending_decision?.summary ??
-                  "Tu agente esperará antes de compartir información sensible."}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
       <div className="dashboard-columns">
         <section className="dashboard-panel" aria-labelledby="attention-title">
           <div className="panel-heading">
@@ -215,7 +133,10 @@ export function DashboardView() {
                   </span>
                   <span className="session-copy">
                     <strong>{session.summary}</strong>
-                    <span>{session.messages.length} mensajes · turno {session.current_turn} de {session.max_turns}</span>
+                    <span>
+                      {session.messages.length} mensajes · turno {session.current_turn} de{" "}
+                      {session.max_turns}
+                    </span>
                   </span>
                   <span className="session-progress">
                     <span>Progreso de la conversación</span>

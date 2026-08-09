@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, ViewTransition } from "react";
+import { useAuth } from "@/lib/auth";
 import { useAgentSync } from "@/lib/store";
 import { BackendStatusBadge } from "@/components/BackendStatusBadge";
 import {
@@ -29,6 +30,7 @@ function isCurrent(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { signedIn } = useAuth();
   const { sessions, resetDemo } = useAgentSync();
   const pendingCount = sessions.filter(
     (session) => session.status === "PENDING_HUMAN_APPROVAL",
@@ -45,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${signedIn ? "is-authenticated" : "is-guest"}`}>
       <header className="app-header">
         <div className="header-inner">
           <Link href="/" className="brand" aria-label="AgentSync, ir al inicio">
@@ -54,45 +56,50 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <span className="demo-badge">Demo</span>
           </Link>
 
-          <nav className="desktop-nav" aria-label="Navegación principal">
-            {navigation.map((item) => {
-              const active = isCurrent(pathname, item.href);
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`nav-link ${active ? "is-active" : ""}`}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <Icon size={17} />
-                  {item.label}
-                  {item.href === "/bandeja" && pendingCount > 0 ? (
-                    <span className="nav-count">{pendingCount}</span>
-                  ) : null}
-                </Link>
-              );
-            })}
-          </nav>
+          {signedIn ? (
+            <nav className="desktop-nav" aria-label="Navegación principal">
+              {navigation.map((item) => {
+                const active = isCurrent(pathname, item.href);
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`nav-link ${active ? "is-active" : ""}`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <Icon size={17} />
+                    {item.label}
+                    {item.href === "/bandeja" && pendingCount > 0 ? (
+                      <span className="nav-count">{pendingCount}</span>
+                    ) : null}
+                  </Link>
+                );
+              })}
+            </nav>
+          ) : null}
 
           <div className="header-actions">
             <BackendStatusBadge />
-            <button
-              type="button"
-              className="reset-button"
-              onClick={resetDemo}
-              title="Restablecer los datos de la demo"
-            >
-              <RotateIcon size={16} />
-              <span>Reiniciar demo</span>
-            </button>
+            {signedIn ? (
+              <button
+                type="button"
+                className="reset-button"
+                onClick={resetDemo}
+                title="Restablecer los datos de la demo"
+              >
+                <RotateIcon size={16} />
+                <span>Reiniciar demo</span>
+              </button>
+            ) : null}
             <Link
               href="/perfil"
-              className={`profile-button ${pathname.startsWith("/perfil") ? "is-active" : ""}`}
-              aria-label="Abrir mi perfil"
-              title="Mi perfil"
+              className={`profile-button ${!signedIn ? "is-entry" : ""} ${pathname.startsWith("/perfil") ? "is-active" : ""}`}
+              aria-label={signedIn ? "Abrir mi perfil" : "Ingresar o crear una cuenta"}
+              title={signedIn ? "Mi perfil" : "Ingresar"}
             >
               <UserIcon size={19} />
+              {!signedIn ? <span>Ingresar</span> : null}
             </Link>
           </div>
         </div>
@@ -115,28 +122,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <span>Los límites duros nunca se negocian.</span>
       </footer>
 
-      <nav className="mobile-nav" aria-label="Navegación móvil">
-        {navigation.map((item) => {
-          const active = isCurrent(pathname, item.href);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={active ? "is-active" : ""}
-              aria-current={active ? "page" : undefined}
-            >
-              <span className="mobile-icon-wrap">
-                <Icon size={19} />
-                {item.href === "/bandeja" && pendingCount > 0 ? (
-                  <span className="mobile-count">{pendingCount}</span>
-                ) : null}
-              </span>
-              <small>{item.label}</small>
-            </Link>
-          );
-        })}
-      </nav>
+      {signedIn ? (
+        <nav className="mobile-nav" aria-label="Navegación móvil">
+          {navigation.map((item) => {
+            const active = isCurrent(pathname, item.href);
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={active ? "is-active" : ""}
+                aria-current={active ? "page" : undefined}
+              >
+                <span className="mobile-icon-wrap">
+                  <Icon size={19} />
+                  {item.href === "/bandeja" && pendingCount > 0 ? (
+                    <span className="mobile-count">{pendingCount}</span>
+                  ) : null}
+                </span>
+                <small>{item.label}</small>
+              </Link>
+            );
+          })}
+        </nav>
+      ) : null}
     </div>
   );
 }
