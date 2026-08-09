@@ -55,6 +55,8 @@ class AgentProfileDTO(StrictModel):
     public_description: str
     interests: list[str]
     capabilities: list[str]
+    price_range: dict[str, float] | None
+    logistics_preferences: list[str]
     personality: str
     objectives: list[str]
     hard_limits: list[dict[str, Any]]
@@ -139,6 +141,8 @@ def to_agent_profile_dto(profile: AgentProfile) -> AgentProfileDTO:
         public_description=profile.public_description,
         interests=list(profile.interests),
         capabilities=list(profile.capabilities),
+        price_range=profile.price_range,
+        logistics_preferences=list(profile.logistics_preferences),
         personality=profile.personality,
         objectives=list(profile.objectives),
         hard_limits=payload["hard_limits"],

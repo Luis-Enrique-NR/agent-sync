@@ -453,6 +453,8 @@ class AgentProfile(StrictModel):
     interests: list[str] = Field(default_factory=list, max_length=20)
     capabilities: list[str] = Field(default_factory=list, max_length=20)
     status: AgentStatus = AgentStatus.AVAILABLE
+    price_range: dict[str, float] | None = None
+    logistics_preferences: list[str] = Field(default_factory=list, max_length=10)
     personality: str = Field(min_length=1, max_length=1_000)
     objectives: list[str] = Field(min_length=1, max_length=20)
     hard_limits: list[NumericLimit] = Field(default_factory=list)
@@ -465,6 +467,18 @@ class AgentProfile(StrictModel):
 
     @model_validator(mode="after")
     def validate_goal_tracking(self) -> Self:
+        if self.price_range is not None:
+            unknown_keys = set(self.price_range) - {"min", "max"}
+            if unknown_keys:
+                raise ValueError("price_range only supports min and max")
+            minimum = self.price_range.get("min")
+            maximum = self.price_range.get("max")
+            if minimum is not None and minimum < 0:
+                raise ValueError("price_range.min cannot be negative")
+            if maximum is not None and maximum < 0:
+                raise ValueError("price_range.max cannot be negative")
+            if minimum is not None and maximum is not None and minimum > maximum:
+                raise ValueError("price_range.min cannot exceed price_range.max")
         if (
             self.goal_completion_mode is GoalCompletionMode.QUANTITY
             and self.remaining_goal_units is None
