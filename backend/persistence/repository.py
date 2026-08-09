@@ -142,28 +142,21 @@ def save_negotiation_state(
     raw = sanitize_for_persistence(state.model_dump(mode="json"))
     existing = current.get(NegotiationStateRow, state.session_id)
     if existing is not None:
-        if expected_version is not None and existing.version != expected_version:
-            raise PersistenceConflictError(
-                f"session {state.session_id} version {expected_version} is stale"
-            )
-        existing.owner_user_id = state.owner_user_id
         existing.status = state.status.value
         existing.turn_count = state.turn_count
         existing.max_turns = state.max_turns
         existing.current_speaker_id = state.current_speaker_id
         existing.deadline_at = state.deadline_at
         existing.closed_at = (
-            existing.closed_at or _now() if state.status in TERMINAL_STATUSES else None
+            datetime.now(timezone.utc) if state.status in (SessionStatus.RESOLVED, SessionStatus.REJECTED, SessionStatus.FAILED) else existing.closed_at
         )
         existing.last_error_code = state.last_error_code
         existing.raw_state = raw
-        existing.version += 1
-        existing.last_updated_at = _now()
+        existing.last_updated_at = datetime.now(timezone.utc)
         row = existing
     else:
         row = NegotiationStateRow(
             session_id=state.session_id,
-            owner_user_id=state.owner_user_id,
             portal_channel_id=portal_channel_id,
             agent_1_id=state.agents[0].agent_id,
             agent_2_id=state.agents[1].agent_id,
@@ -363,12 +356,6 @@ def persist_engine_result(
 
     current, owns_session = _session_or_default(session)
     try:
-        if user_id is not None and result.state.owner_user_id != user_id:
-            result = result.model_copy(
-                update={
-                    "state": result.state.model_copy(update={"owner_user_id": user_id})
-                }
-            )
         row = save_negotiation_state(
             result,
             portal_channel_id=portal_channel_id,
@@ -379,7 +366,7 @@ def persist_engine_result(
             write_audit(
                 correlation_id=event.correlation_id or event.event_id,
                 session_id=event.session_id,
-                user_id=user_id or result.state.owner_user_id,
+                user_id=user_id or None,
                 actor_type="SYSTEM",
                 actor_id="ai-engine",
                 action=_event_action(event.event_type),

@@ -37,7 +37,6 @@ class NegotiationStateRow(SQLModel, table=True):
     __tablename__ = "negotiation_states"
 
     session_id: UUID = Field(default_factory=uuid4, primary_key=True)
-    owner_user_id: UUID | None = Field(default=None, index=True)
     portal_channel_id: str | None = Field(default=None, max_length=100, index=True)
     agent_1_id: UUID = Field(index=True)
     agent_2_id: UUID = Field(index=True)
@@ -51,7 +50,6 @@ class NegotiationStateRow(SQLModel, table=True):
     closed_at: datetime | None = None
     last_error_code: str | None = Field(default=None, max_length=80)
     raw_state: dict = Field(sa_column=Column(JSON))
-    version: int = Field(default=1, ge=1)
     last_updated_at: datetime = Field(default_factory=utc_now)
 
 
