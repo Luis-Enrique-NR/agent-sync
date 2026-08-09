@@ -6,7 +6,6 @@ import { useAgentSync } from "@/lib/store";
 import { AgentStatusCard } from "@/components/AgentStatusCard";
 import {
   ArrowRightIcon,
-  CheckIcon,
   InboxIcon,
   RotateIcon,
   SearchIcon,
@@ -75,7 +74,10 @@ export function DashboardView() {
             separado, incluso mientras otra espera tu respuesta.
           </p>
           <div className="hero-actions">
-            <Link href={primaryHref} className="primary-action">
+            <Link
+              href={primaryHref}
+              className={`primary-action ${pending.length > 0 ? "has-attention" : ""}`}
+            >
               {pending.length > 0 ? `Revisar ${pending.length} decisiones` : "Definir mi objetivo"}
               <ArrowRightIcon size={16} />
             </Link>
@@ -84,9 +86,10 @@ export function DashboardView() {
             </Link>
           </div>
           <div className="hero-trust">
-            <RotateIcon size={17} />
-            <span>
-              Si respondes más tarde, el agente comprueba que la propuesta siga vigente.
+            <span className="portal-presence" aria-hidden="true"><i /></span>
+            <span className="hero-trust-copy">
+              <strong>Atento 24/7 con Portal</strong>
+              <span>Recibe oportunidades, retiros y cambios aunque no estés conectado.</span>
             </span>
           </div>
         </div>
@@ -150,48 +153,42 @@ export function DashboardView() {
 
       <section className="product-flow" aria-labelledby="product-flow-title">
         <div className="product-flow-heading">
-          <div>
-            <span className="section-eyebrow">Así trabaja AgentSync</span>
-            <h2 id="product-flow-title">Tú marcas el rumbo. El agente sostiene el proceso.</h2>
-          </div>
-          <p>
-            No tienes que vigilar cada mensaje. Entras cuando una decisión puede
-            cambiar el precio, compartir datos o crear un compromiso.
-          </p>
+          <span className="section-eyebrow">Así trabaja AgentSync</span>
+          <h2 id="product-flow-title">Tú marcas el rumbo. El agente sostiene el proceso.</h2>
         </div>
 
         <ol className="product-flow-steps">
           <li>
-            <span>01</span>
+            <span className="product-flow-number">01</span>
+            <span className="product-flow-owner is-user">Tú</span>
             <strong>Define el objetivo</strong>
             <p>Indica qué buscas, qué nunca debe ceder y cuándo debe consultarte.</p>
           </li>
           <li>
-            <span>02</span>
+            <span className="product-flow-number">02</span>
+            <span className="product-flow-owner is-agent">Tu agente</span>
             <strong>Encuentra compatibilidad</strong>
             <p>Publica tu intención y filtra personas o empresas con intereses compatibles.</p>
           </li>
           <li>
-            <span>03</span>
+            <span className="product-flow-number">03</span>
+            <span className="product-flow-owner is-agent">Tu agente</span>
             <strong>Negocia en paralelo</strong>
             <p>Cada oportunidad avanza por separado; una retirada no frena las demás.</p>
           </li>
           <li>
-            <span>04</span>
-            <strong>Te entrega la decisión</strong>
-            <p>Precio final, datos personales y compromisos esperan tu aprobación.</p>
+            <span className="product-flow-number">04</span>
+            <span className="product-flow-owner is-user">Tú</span>
+            <strong>Resuelve lo sensible</strong>
+            <p>Aprueba o cambia el precio final, los datos y los compromisos.</p>
           </li>
           <li>
-            <span>05</span>
+            <span className="product-flow-number">05</span>
+            <span className="product-flow-owner is-shared">Tu agente + tú</span>
             <strong>Revalida y continúa</strong>
             <p>Confirma que todo siga vigente y te pregunta si debe cerrar o seguir buscando.</p>
           </li>
         </ol>
-
-        <div className="product-flow-note">
-          <CheckIcon size={16} />
-          <span>Una conversación puede esperar tu respuesta sin detener las otras.</span>
-        </div>
       </section>
 
       <div className="dashboard-columns">
