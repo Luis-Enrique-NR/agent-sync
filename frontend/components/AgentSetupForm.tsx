@@ -44,7 +44,7 @@ const TOOL_OPTIONS: AgentTool[] = [
     id: "avaluo",
     name: "Precios de referencia",
     simulated: true,
-    notes: "Compara valores de mercado sin modificar tus límites.",
+    notes: "Compara valores de mercado sin alterar las condiciones de tus objetivos.",
   },
   {
     id: "inventario",
@@ -82,12 +82,6 @@ const COMPANY_CAPABILITY_SUGGESTIONS = [
 type EntityType = "company" | "person";
 type EditSection = "objectives" | "safety" | "tools";
 
-interface HardLimitsState {
-  maxUnitPrice: string;
-  minAnnualVolume: string;
-  minSalePrice: string;
-}
-
 interface SensitiveRules {
   [categoryId: string]: boolean;
 }
@@ -98,7 +92,6 @@ interface ConfigurationDraft {
   publicDescription: string;
   personality: string;
   objectiveContexts: AgentObjectiveContext[];
-  hardLimits: HardLimitsState;
   neverDisclose: SensitiveDataCategory[];
   sensitiveRules: SensitiveRules;
   amountThreshold: string;
@@ -161,17 +154,6 @@ function rulesFromAgent(agent?: AgentProfile): SensitiveRules {
   return rules;
 }
 
-function hardLimitsFromAgent(agent?: AgentProfile): HardLimitsState {
-  const valueOf = (key: string) =>
-    String(agent?.hard_limits.find((limit) => limit.key === key)?.value ?? "");
-
-  return {
-    maxUnitPrice: valueOf("max_unit_price_usd"),
-    minAnnualVolume: valueOf("min_annual_volume_units"),
-    minSalePrice: valueOf("min_sale_price_usd"),
-  };
-}
-
 function draftFromAgent(
   agent: AgentProfile | undefined,
   fallbackType: EntityType = "person",
@@ -189,7 +171,6 @@ function draftFromAgent(
       agent?.personality ??
       "Claro, respetuoso y directo. Explica sus razones y nunca presiona a la otra parte.",
     objectiveContexts: objectiveContextsFromAgent(agent),
-    hardLimits: hardLimitsFromAgent(agent),
     neverDisclose: [...(agent?.never_disclose ?? [])],
     sensitiveRules: rulesFromAgent(agent),
     amountThreshold: String(threshold ?? 10000),
@@ -224,7 +205,6 @@ function profileFromDraft(
     previous?: AgentProfile;
   },
 ): AgentProfile {
-  const hardLimits = [] as AgentProfile["hard_limits"];
   const objectiveContexts = draft.objectiveContexts
     .map((objective) => ({
       ...objective,
@@ -235,32 +215,6 @@ function profileFromDraft(
     }))
     .filter((objective) => objective.goal);
   const uniqueSignals = (values: string[]) => [...new Set(values)];
-
-  if (draft.entityType === "company") {
-    if (draft.hardLimits.maxUnitPrice) {
-      hardLimits.push({
-        key: "max_unit_price_usd",
-        operator: "lte",
-        value: Number(draft.hardLimits.maxUnitPrice),
-        unit: "usd",
-      });
-    }
-    if (draft.hardLimits.minAnnualVolume) {
-      hardLimits.push({
-        key: "min_annual_volume_units",
-        operator: "gte",
-        value: Number(draft.hardLimits.minAnnualVolume),
-        unit: "units",
-      });
-    }
-  } else if (draft.hardLimits.minSalePrice) {
-    hardLimits.push({
-      key: "min_sale_price_usd",
-      operator: "gte",
-      value: Number(draft.hardLimits.minSalePrice),
-      unit: "usd",
-    });
-  }
 
   return {
     agent_id:
@@ -274,7 +228,7 @@ function profileFromDraft(
     interests: uniqueSignals(objectiveContexts.flatMap((objective) => objective.seeks)),
     capabilities: uniqueSignals(objectiveContexts.flatMap((objective) => objective.offers)),
     objective_contexts: objectiveContexts,
-    hard_limits: hardLimits,
+    hard_limits: [],
     never_disclose: draft.neverDisclose,
     escalation_rules: escalationRulesFromDraft(draft),
     status: options?.status ?? "AVAILABLE",
@@ -434,7 +388,7 @@ function ObjectivesEditor({
                   <label className="objective-context-field">
                     <span>
                       <strong>Contexto útil para negociar</strong>
-                      <small>Fechas, ubicación, preferencias o hechos que solo importan en esta ruta.</small>
+                      <small>Incluye los límites propios de esta ruta: precio, cantidad, fechas, ubicación, calidad o cualquier condición que no deba cruzar.</small>
                     </span>
                     <textarea
                       value={objective.negotiation_context}
@@ -443,7 +397,7 @@ function ObjectivesEditor({
                           negotiation_context: event.target.value,
                         })
                       }
-                      placeholder="Ej. Necesito cerrar antes del 30 de septiembre; puedo recibir muestras en Bogotá."
+                      placeholder="Ej. Máximo PEN 2,80 por unidad; necesito 300 al mes y entrega local antes del día 5."
                     />
                   </label>
                 </div>
@@ -608,62 +562,19 @@ function SafetyFields({
     { category: "LIVE_LOCATION", label: "Mi ubicación en tiempo real" },
   ];
 
-  const setLimit = (key: keyof HardLimitsState, value: string) =>
-    onChange({
-      ...draft,
-      hardLimits: { ...draft.hardLimits, [key]: value },
-    });
-
   return (
     <div className="safety-grid">
       <section className="safety-block is-hard">
         <div className="safety-block-heading">
           <ShieldIcon size={19} />
           <div>
-            <strong>Nunca puede cruzar</strong>
-            <span>Ni siquiera con una aprobación posterior.</span>
+            <strong>Datos que siempre protege</strong>
+            <span>Estas reglas sí se aplican a todos tus objetivos.</span>
           </div>
         </div>
 
-        <div className="numeric-limits">
-          {draft.entityType === "company" ? (
-            <>
-              <label>
-                <span>Precio máximo por unidad (USD)</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={draft.hardLimits.maxUnitPrice}
-                  onChange={(event) => setLimit("maxUnitPrice", event.target.value)}
-                />
-              </label>
-              <label>
-                <span>Volumen anual mínimo</span>
-                <input
-                  type="number"
-                  min="0"
-                  value={draft.hardLimits.minAnnualVolume}
-                  onChange={(event) => setLimit("minAnnualVolume", event.target.value)}
-                />
-              </label>
-            </>
-          ) : (
-            <label>
-              <span>Precio mínimo de venta (USD)</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={draft.hardLimits.minSalePrice}
-                onChange={(event) => setLimit("minSalePrice", event.target.value)}
-              />
-            </label>
-          )}
-        </div>
-
         <div className="privacy-options">
-          <span className="mini-label">Bloquear siempre</span>
+          <span className="mini-label">No compartir nunca</span>
           {privateOptions.map((option) => {
             const checked = draft.neverDisclose.includes(option.category);
             return (
@@ -765,7 +676,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
   const steps = [
     { title: "Representación", copy: "Quién es y cómo se presenta" },
     { title: "Objetivos", copy: "Qué explora en paralelo" },
-    { title: "Control", copy: "Límites y decisiones" },
+    { title: "Control", copy: "Privacidad y decisiones" },
     { title: "Recursos", copy: "Qué puede consultar" },
   ];
 
@@ -810,8 +721,8 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
           <span className="section-eyebrow">Tu primer agente</span>
           <h1>Configura cómo te representará</h1>
           <p>
-            Dale varios objetivos, marca sus límites y deja que explore cada ruta
-            por separado.
+            Dale varios objetivos, agrega las condiciones de cada uno y deja que
+            explore cada ruta por separado.
           </p>
         </div>
         <aside>
@@ -923,7 +834,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
                   <div className="field-heading">
                     <div>
                       <strong>Recursos permitidos</strong>
-                      <span>En la demo son simulados y nunca cambian tus límites.</span>
+                      <span>En la demo son simulados y nunca cambian las condiciones de tus objetivos.</span>
                     </div>
                   </div>
                   <ToolSelector
@@ -962,19 +873,6 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
       </div>
     </div>
   );
-}
-
-function formatHardLimit(agent: AgentProfile) {
-  const limit = agent.hard_limits[0];
-  if (!limit) return "Sin límite numérico adicional";
-
-  if (limit.key === "min_sale_price_usd") {
-    return `Precio mínimo USD ${limit.value.toLocaleString("en-US")}`;
-  }
-  if (limit.key === "max_unit_price_usd") {
-    return `Máximo USD ${limit.value.toLocaleString("en-US")} por unidad`;
-  }
-  return `${limit.value.toLocaleString("en-US")} ${limit.unit ?? ""}`.trim();
 }
 
 function AgentControlCenter({ agent }: { agent: AgentProfile }) {
@@ -1037,7 +935,7 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
 
   const editorTitle: Record<EditSection, string> = {
     objectives: "Objetivos y oportunidades",
-    safety: "Límites y decisiones",
+    safety: "Privacidad y decisiones",
     tools: "Recursos permitidos",
   };
 
@@ -1116,10 +1014,6 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
 
         <div className="contract-rails">
           <div>
-            <ShieldIcon size={17} />
-            <span><small>Nunca cruza</small><strong>{formatHardLimit(agent)}</strong></span>
-          </div>
-          <div>
             <UserIcon size={17} />
             <span><small>Te consulta</small><strong>{agent.escalation_rules.length} situaciones configuradas</strong></span>
           </div>
@@ -1136,12 +1030,12 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
             <span className="section-eyebrow">Configuración</span>
             <h2 id="agent-settings-title">Ajusta solo lo que necesitas</h2>
           </div>
-          <p>Aquí defines sus límites y las herramientas que puede consultar.</p>
+          <p>Aquí defines sus reglas de seguridad y las herramientas que puede consultar.</p>
         </div>
         <div className="agent-setting-grid">
           <button type="button" onClick={() => setEditSection("safety")}>
             <ShieldIcon size={19} />
-            <span><strong>Límites y decisiones</strong><small>Define precios, datos privados y cuándo debe consultarte.</small></span>
+            <span><strong>Privacidad y decisiones</strong><small>Define qué datos protege y cuándo debe consultarte.</small></span>
             <ArrowRightIcon size={15} />
           </button>
           <button type="button" onClick={() => setEditSection("tools")}>

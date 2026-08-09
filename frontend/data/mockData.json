@@ -170,11 +170,7 @@
         "clases particulares de matemática",
         "compra recurrente de embalaje"
       ],
-      "hard_limits": [
-        { "key": "min_sale_price_usd", "operator": "gte", "value": 8000, "unit": "usd" },
-        { "key": "min_tutoring_rate_pen", "operator": "gte", "value": 45, "unit": "pen/hora" },
-        { "key": "max_cardboard_unit_price_pen", "operator": "lte", "value": 2.8, "unit": "pen/plancha" }
-      ],
+      "hard_limits": [],
       "never_disclose": ["PHONE", "EXACT_ADDRESS", "LIVE_LOCATION"],
       "escalation_rules": [
         { "rule_id": "esc-val-address", "rule_type": "SHARE_PERSONAL_DATA", "categories": ["EXACT_ADDRESS"], "enabled": true },

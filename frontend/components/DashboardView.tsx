@@ -167,8 +167,8 @@ export function DashboardView() {
           <span className="section-eyebrow">Tu espacio está listo</span>
           <h1>Activa un agente para empezar</h1>
           <p>
-            Define varios objetivos, fija lo que nunca debe cruzar y elige cuándo
-            quieres intervenir.
+            Define varios objetivos, agrega las condiciones de cada ruta y elige
+            cuándo quieres intervenir.
           </p>
           <Link href="/setup" className="primary-action">
             Configurar mi agente <ArrowRightIcon size={15} />
@@ -176,7 +176,7 @@ export function DashboardView() {
         </section>
         <aside aria-label="Qué ocurrirá después">
           <span><strong>1</strong> Añade tus objetivos</span>
-          <span><strong>2</strong> Marca límites y decisiones</span>
+          <span><strong>2</strong> Agrega contexto y privacidad</span>
           <span><strong>3</strong> El agente empieza a trabajar</span>
         </aside>
       </div>

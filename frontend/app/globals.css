@@ -3823,15 +3823,13 @@ h4,
   grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
 }
 
-.setup-fields label,
-.numeric-limits label {
+.setup-fields label {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 
-.setup-fields label > span,
-.numeric-limits label > span {
+.setup-fields label > span {
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
@@ -3839,7 +3837,6 @@ h4,
 
 .setup-fields input,
 .setup-fields textarea,
-.numeric-limits input,
 .objective-brief-fields input,
 .objective-brief-fields textarea,
 .tag-input-wrap input,
@@ -3868,7 +3865,6 @@ h4,
 
 .setup-fields input:focus,
 .setup-fields textarea:focus,
-.numeric-limits input:focus,
 .objective-brief-fields input:focus,
 .objective-brief-fields textarea:focus,
 .tag-input-wrap input:focus,
@@ -4365,18 +4361,9 @@ h4,
   font-size: 10px;
 }
 
-.numeric-limits {
-  display: grid;
-  margin-top: 15px;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 9px;
-}
-
 .privacy-options {
   display: flex;
-  margin-top: 16px;
-  border-top: 1px solid var(--border);
-  padding-top: 13px;
+  margin-top: 15px;
   flex-direction: column;
   gap: 7px;
 }
@@ -4757,7 +4744,7 @@ h4,
 .contract-rails {
   display: grid;
   margin-top: 14px;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   border-top: 1px solid var(--border);
   padding-top: 14px;
 }
@@ -5777,13 +5764,6 @@ body.is-resizing-agent-editor {
     row-gap: 12px;
   }
 
-  .contract-rails > div:nth-child(3) {
-    grid-column: 1 / -1;
-    border-top: 1px solid var(--border);
-    border-left: 0;
-    padding-top: 12px;
-    padding-left: 0;
-  }
 }
 
 @media (max-width: 560px) {
@@ -6044,16 +6024,14 @@ body.is-resizing-agent-editor {
   }
 
   .contract-rails > div,
-  .contract-rails > div:first-child,
-  .contract-rails > div:nth-child(3) {
+  .contract-rails > div:first-child {
     grid-column: auto;
     border-top: 0;
     border-left: 0;
     padding: 9px 0;
   }
 
-  .contract-rails > div + div,
-  .contract-rails > div:nth-child(3) {
+  .contract-rails > div + div {
     border-top: 1px solid var(--border);
   }
 

@@ -27,7 +27,7 @@ import mockData from "@/data/mockData.json";
 
 const data = mockData as unknown as MockData;
 
-const STORAGE_KEY = "agentsync-demo-v9";
+const STORAGE_KEY = "agentsync-demo-v10";
 
 export const INCOMING_DECISION_DELAY_MS = 5_500;
 
