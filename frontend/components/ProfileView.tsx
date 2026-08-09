@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { type ProfileData, useAuth } from "@/lib/auth";
 import { DEMO_OWNER_AGENT_ID } from "@/lib/demo";
 import {
@@ -16,6 +17,7 @@ import {
 type AuthMode = "login" | "register";
 
 export function ProfileView() {
+  const router = useRouter();
   const {
     profile,
     setProfile,
@@ -89,6 +91,7 @@ export function ProfileView() {
                 authMode === "login" ? DEMO_OWNER_AGENT_ID : null,
               );
               setPassword("");
+              router.replace("/");
             }}
           >
             <div
