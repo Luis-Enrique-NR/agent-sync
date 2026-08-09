@@ -392,6 +392,110 @@
       "tools": [
         { "id": "inventario", "name": "Inventario de cartón", "simulated": true, "notes": "Stock y fechas de entrega disponibles." }
       ]
+    },
+    {
+      "agent_id": "agent-p2p-mariana",
+      "display_name": "Mariana P. — busca tutoría continua",
+      "entity_type": "person",
+      "public_description": "Busca una profesora de matemática para acompañamiento semanal de secundaria.",
+      "personality": "Práctica y comprometida. Valora horarios estables y reportes de avance.",
+      "objectives": ["Reservar tutorías de matemática durante ocho semanas"],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-mariana-tutor",
+          "goal": "Reservar tutorías de matemática durante ocho semanas",
+          "seeks": ["profesora de matemática", "seguimiento semanal", "horario de tarde"],
+          "offers": ["un alumno", "pago quincenal", "plan de ocho semanas"],
+          "negotiation_context": "Mariana necesita clases lunes y miércoles después de las 17:00 y puede pagar hasta PEN 50 por hora."
+        }
+      ],
+      "interests": ["tutoría de matemática", "secundaria", "plan recurrente"],
+      "capabilities": ["pago quincenal", "horario estable"],
+      "hard_limits": [{ "key": "max_tutoring_rate_pen", "operator": "lte", "value": 50, "unit": "pen/hora" }],
+      "never_disclose": ["PHONE"],
+      "escalation_rules": [{ "rule_id": "esc-mariana-schedule", "rule_type": "COMMIT_DATE", "categories": [], "enabled": true }],
+      "status": "AVAILABLE",
+      "price_range": { "min": 45, "max": 50 },
+      "logistics_preferences": ["modalidad virtual", "lunes y miércoles"],
+      "tools": [{ "id": "calendario", "name": "Agenda familiar", "simulated": true, "notes": "Disponibilidad semanal del alumno." }]
+    },
+    {
+      "agent_id": "agent-p2p-nicolas",
+      "display_name": "Nicolás V. — estudiante preuniversitario",
+      "entity_type": "person",
+      "public_description": "Busca preparación intensiva de álgebra para su examen de admisión.",
+      "personality": "Enfocado y puntual. Prioriza resultados medibles y práctica guiada.",
+      "objectives": ["Completar cuatro clases intensivas de álgebra"],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-nicolas-algebra",
+          "goal": "Completar cuatro clases intensivas de álgebra",
+          "seeks": ["profesora de álgebra", "preparación preuniversitaria", "clases intensivas"],
+          "offers": ["pago anticipado", "disponibilidad nocturna", "objetivo definido"],
+          "negotiation_context": "Nicolás necesita cuatro sesiones virtuales antes de su examen y puede pagar PEN 50 por hora."
+        }
+      ],
+      "interests": ["álgebra", "examen de admisión", "tutoría virtual"],
+      "capabilities": ["pago anticipado", "horario nocturno"],
+      "hard_limits": [{ "key": "max_tutoring_rate_pen", "operator": "lte", "value": 50, "unit": "pen/hora" }],
+      "never_disclose": ["PHONE"],
+      "escalation_rules": [{ "rule_id": "esc-nicolas-final", "rule_type": "FINAL_AGREEMENT", "categories": [], "enabled": true }],
+      "status": "AVAILABLE",
+      "price_range": { "min": 45, "max": 50 },
+      "logistics_preferences": ["modalidad virtual", "horario nocturno"],
+      "tools": [{ "id": "calendario", "name": "Agenda de estudio", "simulated": true, "notes": "Fechas disponibles antes del examen." }]
+    },
+    {
+      "agent_id": "agent-p2p-rosa-carton",
+      "display_name": "Rosa L. — distribuidora de cartón",
+      "entity_type": "person",
+      "public_description": "Distribuye cartón corrugado certificado con entregas semanales y mensuales.",
+      "personality": "Resolutiva y transparente. Negocia precio, muestras y frecuencia de despacho.",
+      "objectives": ["Asegurar un pedido mensual de 300 planchas"],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-rosa-carton",
+          "goal": "Asegurar un pedido mensual de 300 planchas",
+          "seeks": ["comprador recurrente", "pedido mensual", "pago contra entrega"],
+          "offers": ["cartón doble pared", "entrega en 48 horas", "certificado de resistencia"],
+          "negotiation_context": "Rosa ofrece 300 planchas a PEN 2,70 por unidad y puede mantener el precio por seis meses."
+        }
+      ],
+      "interests": ["venta recurrente", "cartón corrugado", "entrega local"],
+      "capabilities": ["doble pared", "certificado de resistencia", "despacho en 48 horas"],
+      "hard_limits": [{ "key": "min_cardboard_unit_price_pen", "operator": "gte", "value": 2.7, "unit": "pen/plancha" }],
+      "never_disclose": ["PHONE", "EXACT_ADDRESS"],
+      "escalation_rules": [{ "rule_id": "esc-rosa-contract", "rule_type": "FINAL_AGREEMENT", "categories": [], "enabled": true }],
+      "status": "AVAILABLE",
+      "price_range": { "min": 2.7, "max": 2.95 },
+      "logistics_preferences": ["entrega en 48 horas", "pedido mensual"],
+      "tools": [{ "id": "inventario", "name": "Stock certificado", "simulated": true, "notes": "Lotes y certificados disponibles." }]
+    },
+    {
+      "agent_id": "agent-p2p-martin-carton",
+      "display_name": "Martín C. — proveedor económico",
+      "entity_type": "person",
+      "public_description": "Ofrece cartón de pared simple para embalaje liviano y retiro en almacén.",
+      "personality": "Competitivo en precio. Prioriza pedidos rápidos con retiro por cuenta del comprador.",
+      "objectives": ["Vender un lote de cartón de pared simple"],
+      "objective_contexts": [
+        {
+          "objective_id": "obj-martin-carton",
+          "goal": "Vender un lote de cartón de pared simple",
+          "seeks": ["comprador de cartón", "retiro en almacén", "pago inmediato"],
+          "offers": ["cartón de pared simple", "precio bajo", "stock inmediato"],
+          "negotiation_context": "Martín solo dispone de pared simple y no realiza entregas."
+        }
+      ],
+      "interests": ["venta de cartón", "stock inmediato"],
+      "capabilities": ["cartón pared simple", "precio económico"],
+      "hard_limits": [{ "key": "min_cardboard_unit_price_pen", "operator": "gte", "value": 1.9, "unit": "pen/plancha" }],
+      "never_disclose": ["EXACT_ADDRESS"],
+      "escalation_rules": [],
+      "status": "AVAILABLE",
+      "price_range": { "min": 1.9, "max": 2.2 },
+      "logistics_preferences": ["retiro en almacén"],
+      "tools": [{ "id": "inventario", "name": "Stock económico", "simulated": true, "notes": "Lotes disponibles para retiro." }]
     }
   ],
   "sessions": [
@@ -812,6 +916,456 @@
           "decided_at": "2026-08-08T15:07:00Z"
         }
       ]
+    },
+    {
+      "session_id": "ses-p2p-math-002",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-mariana",
+      "agent_1_objective_id": "obj-valentina-tutorias",
+      "agent_2_objective_id": "obj-mariana-tutor",
+      "initiator_id": "agent-p2p-mariana",
+      "decision_turn": "OWNER",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "summary": "Mariana quiere reservar el último cupo recurrente de Valentina",
+      "started_at": "2026-08-08T16:00:00Z",
+      "max_turns": 10,
+      "current_turn": 6,
+      "matchmaking": {
+        "score": 0.9,
+        "ic_score": 0.93,
+        "logistics_score": 0.86,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.91, "b_to_a": 0.89 },
+        "channel_id": "ch_match_math_valentina_mariana",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-math-mariana-001",
+          "sender_agent_id": "agent-p2p-mariana",
+          "content": "Busco apoyo de matemática para un alumno de cuarto de secundaria durante ocho semanas.",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T16:00:00Z"
+        },
+        {
+          "id": "msg-math-mariana-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Valentina tiene un último cupo y puede trabajar dos sesiones semanales con seguimiento de tareas.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T16:02:00Z"
+        },
+        {
+          "id": "msg-math-mariana-003",
+          "sender_agent_id": "agent-p2p-mariana",
+          "content": "Podemos lunes y miércoles a las 17:30. Mi presupuesto máximo es PEN 50 por hora.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T16:04:00Z"
+        },
+        {
+          "id": "msg-math-mariana-004",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "La tarifa puede quedar en PEN 48 por hora. Antes de reservar el horario recurrente necesito confirmación de Valentina.",
+          "intent": "COUNTER_OFFER",
+          "numeric_terms": [{ "key": "tutoring_rate_pen", "value": 48, "unit": "pen/hora" }],
+          "sent_at": "2026-08-08T16:06:00Z"
+        },
+        {
+          "id": "msg-math-mariana-005",
+          "sender_agent_id": "agent-p2p-mariana",
+          "content": "Acepto PEN 48. Quiero reservar lunes y miércoles a las 17:30 por las ocho semanas.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T16:08:00Z"
+        }
+      ],
+      "pending_script": [
+        {
+          "id": "msg-math-mariana-006",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Confirmo el último cupo: lunes y miércoles a las 17:30, PEN 48 por hora, durante ocho semanas.",
+          "intent": "ACCEPT",
+          "commitments": [{ "kind": "DATE", "value": "lunes y miércoles 17:30 durante ocho semanas" }],
+          "sent_at": "2026-08-08T16:10:00Z",
+          "pending_human_approval": true,
+          "flagged": {
+            "category": "horario recurrente",
+            "detail": "La propuesta ocupará el último cupo disponible durante ocho semanas.",
+            "requires_human": true
+          }
+        },
+        {
+          "id": "msg-math-mariana-007",
+          "sender_agent_id": "agent-p2p-mariana",
+          "content": "Perfecto. Enviaré los temas y el material actual antes de la primera sesión.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T16:12:00Z"
+        }
+      ],
+      "pending_decision": {
+        "decision_id": "dec-math-mariana-schedule",
+        "session_id": "ses-p2p-math-002",
+        "speaker_id": "agent-p2p-valentina",
+        "category": "horario recurrente",
+        "summary": "Mariana acepta PEN 48 por hora y solicita reservar el último cupo durante ocho semanas.",
+        "proposal": "Reservar lunes y miércoles a las 17:30 durante ocho semanas para las clases de Mariana",
+        "requested_by": "agent-p2p-valentina",
+        "reasons": ["USER_RULE", "COMMIT_DATE"],
+        "matched_rule_ids": ["esc-val-schedule"],
+        "created_at": "2026-08-08T16:09:00Z",
+        "status": "PENDING"
+      },
+      "decision_history": [
+        {
+          "decision_id": "dec-math-mariana-level",
+          "agent_id": "agent-p2p-mariana",
+          "category": "Nivel académico",
+          "summary": "Mariana confirmó que el alumno cursa cuarto de secundaria.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T16:00:00Z",
+          "decided_at": "2026-08-08T16:01:00Z"
+        },
+        {
+          "decision_id": "dec-math-mariana-capacity",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Último cupo disponible",
+          "summary": "Valentina autorizó explorar una tercera tutoría recurrente.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T16:02:00Z",
+          "decided_at": "2026-08-08T16:03:00Z"
+        },
+        {
+          "decision_id": "dec-math-mariana-rate",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Ajustar tarifa",
+          "summary": "Valentina permitió reducir la propuesta de PEN 50 a PEN 48 por hora.",
+          "status": "REPLACED",
+          "created_at": "2026-08-08T16:05:00Z",
+          "decided_at": "2026-08-08T16:06:00Z"
+        }
+      ]
+    },
+    {
+      "session_id": "ses-p2p-math-003",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-nicolas",
+      "agent_1_objective_id": "obj-valentina-tutorias",
+      "agent_2_objective_id": "obj-nicolas-algebra",
+      "initiator_id": "agent-p2p-nicolas",
+      "status": "RESOLVED",
+      "summary": "Nicolás contrató cuatro clases intensivas de álgebra",
+      "started_at": "2026-08-08T13:00:00Z",
+      "max_turns": 10,
+      "current_turn": 8,
+      "matchmaking": {
+        "score": 0.94,
+        "ic_score": 0.96,
+        "logistics_score": 0.92,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.95, "b_to_a": 0.93 },
+        "channel_id": "ch_match_math_valentina_nicolas",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-math-nicolas-001",
+          "sender_agent_id": "agent-p2p-nicolas",
+          "content": "Necesito cuatro clases intensivas de álgebra antes de mi examen de admisión.",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T13:00:00Z"
+        },
+        {
+          "id": "msg-math-nicolas-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Valentina puede preparar un plan de cuatro sesiones virtuales con ejercicios de diagnóstico.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T13:02:00Z"
+        },
+        {
+          "id": "msg-math-nicolas-003",
+          "sender_agent_id": "agent-p2p-nicolas",
+          "content": "Puedo pagar PEN 50 por hora por adelantado y asistir por la noche.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T13:04:00Z"
+        },
+        {
+          "id": "msg-math-nicolas-004",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Aceptado. Serán cuatro sesiones de 60 minutos con material de práctica incluido.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T13:06:00Z"
+        },
+        {
+          "id": "msg-math-nicolas-005",
+          "sender_agent_id": "agent-p2p-nicolas",
+          "content": "Confirmo el plan y el pago total de PEN 200. Podemos iniciar mañana.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T13:08:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-math-nicolas-plan",
+          "agent_id": "agent-p2p-nicolas",
+          "category": "Plan intensivo",
+          "summary": "Nicolás eligió un plan de cuatro sesiones antes del examen.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T13:00:00Z",
+          "decided_at": "2026-08-08T13:01:00Z"
+        },
+        {
+          "decision_id": "dec-math-nicolas-rate",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Tarifa final",
+          "summary": "Valentina confirmó PEN 50 por hora con material incluido.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T13:05:00Z",
+          "decided_at": "2026-08-08T13:06:00Z"
+        },
+        {
+          "decision_id": "dec-math-nicolas-payment",
+          "agent_id": "agent-p2p-nicolas",
+          "category": "Pago anticipado",
+          "summary": "Nicolás confirmó el pago total de PEN 200.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T13:07:00Z",
+          "decided_at": "2026-08-08T13:08:00Z"
+        }
+      ],
+      "outcome": {
+        "outcome_id": "out-math-nicolas",
+        "session_id": "ses-p2p-math-003",
+        "resolution": "RESOLVED",
+        "agreed_price": 200,
+        "agreed_terms": { "sessions": 4, "rate_pen": 50, "modality": "virtual" },
+        "summary": "1 alumno contrató cuatro clases por PEN 200.",
+        "created_at": "2026-08-08T13:09:00Z"
+      },
+      "goal_progress_review": {
+        "objective_id": "obj-valentina-tutorias",
+        "session_id": "ses-p2p-math-003",
+        "proposed_delta": "1 de los 3 cupos quedó confirmado con un plan de cuatro clases.",
+        "proposed_remaining": "Quedan 2 alumnos por conseguir.",
+        "suggested_status": "CONTINUE",
+        "status": "PENDING",
+        "evidence": ["Pago total confirmado", "Cuatro sesiones acordadas"]
+      }
+    },
+    {
+      "session_id": "ses-p2p-cardboard-002",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-rosa-carton",
+      "agent_1_objective_id": "obj-valentina-carton",
+      "agent_2_objective_id": "obj-rosa-carton",
+      "initiator_id": "agent-p2p-valentina",
+      "decision_turn": "OWNER",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "summary": "Rosa ofrece abastecimiento mensual de cartón certificado",
+      "started_at": "2026-08-08T16:30:00Z",
+      "max_turns": 10,
+      "current_turn": 6,
+      "matchmaking": {
+        "score": 0.92,
+        "ic_score": 0.95,
+        "logistics_score": 0.9,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.93, "b_to_a": 0.91 },
+        "channel_id": "ch_match_cardboard_valentina_rosa",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-cardboard-rosa-001",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Necesito 300 planchas mensuales de doble pared y entrega local incluida.",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T16:30:00Z"
+        },
+        {
+          "id": "msg-cardboard-rosa-002",
+          "sender_agent_id": "agent-p2p-rosa-carton",
+          "content": "Puedo ofrecer cartón certificado a PEN 2,70 por plancha y despachar en 48 horas.",
+          "intent": "OFFER",
+          "numeric_terms": [{ "key": "cardboard_unit_price_pen", "value": 2.7, "unit": "pen/plancha" }],
+          "sent_at": "2026-08-08T16:32:00Z"
+        },
+        {
+          "id": "msg-cardboard-rosa-003",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "La oferta cumple precio, calidad y entrega. ¿Puedes mantener esas condiciones durante seis meses?",
+          "intent": "COUNTER_OFFER",
+          "sent_at": "2026-08-08T16:34:00Z"
+        },
+        {
+          "id": "msg-cardboard-rosa-004",
+          "sender_agent_id": "agent-p2p-rosa-carton",
+          "content": "Sí. Mantengo PEN 2,70 durante seis meses si confirmamos el pedido mensual de 300 planchas.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T16:36:00Z"
+        },
+        {
+          "id": "msg-cardboard-rosa-005",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Las condiciones cumplen la configuración. El compromiso recurrente necesita aprobación de Valentina.",
+          "intent": "COUNTER_OFFER",
+          "sent_at": "2026-08-08T16:38:00Z"
+        }
+      ],
+      "pending_script": [
+        {
+          "id": "msg-cardboard-rosa-006",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "Confirmo 300 planchas mensuales a PEN 2,70 durante seis meses, con entrega en 48 horas.",
+          "intent": "ACCEPT",
+          "commitments": [{ "kind": "OTHER", "value": "pedido mensual durante seis meses" }],
+          "sent_at": "2026-08-08T16:40:00Z",
+          "pending_human_approval": true,
+          "flagged": {
+            "category": "compra recurrente",
+            "detail": "La propuesta crea un compromiso mensual durante seis meses.",
+            "requires_human": true
+          }
+        },
+        {
+          "id": "msg-cardboard-rosa-007",
+          "sender_agent_id": "agent-p2p-rosa-carton",
+          "content": "Perfecto. Reservaré capacidad mensual y enviaré el calendario de entregas.",
+          "intent": "ACCEPT",
+          "sent_at": "2026-08-08T16:42:00Z"
+        }
+      ],
+      "pending_decision": {
+        "decision_id": "dec-cardboard-rosa-contract",
+        "session_id": "ses-p2p-cardboard-002",
+        "speaker_id": "agent-p2p-valentina",
+        "category": "compra recurrente",
+        "summary": "Rosa ofrece 300 planchas mensuales a PEN 2,70 durante seis meses con entrega incluida.",
+        "proposal": "Confirmar el abastecimiento mensual con Rosa durante seis meses",
+        "requested_by": "agent-p2p-valentina",
+        "reasons": ["USER_RULE", "FINAL_AGREEMENT"],
+        "matched_rule_ids": ["esc-val-cardboard"],
+        "created_at": "2026-08-08T16:39:00Z",
+        "status": "PENDING"
+      },
+      "decision_history": [
+        {
+          "decision_id": "dec-cardboard-rosa-quality",
+          "agent_id": "agent-p2p-rosa-carton",
+          "category": "Calidad certificada",
+          "summary": "Rosa confirmó cartón de doble pared con certificado de resistencia.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T16:31:00Z",
+          "decided_at": "2026-08-08T16:32:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-rosa-price",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Precio dentro del límite",
+          "summary": "Valentina autorizó continuar al comprobarse un precio de PEN 2,70.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T16:33:00Z",
+          "decided_at": "2026-08-08T16:34:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-rosa-delivery",
+          "agent_id": "agent-p2p-rosa-carton",
+          "category": "Entrega local",
+          "summary": "Rosa garantizó despacho local dentro de 48 horas.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T16:35:00Z",
+          "decided_at": "2026-08-08T16:36:00Z"
+        }
+      ]
+    },
+    {
+      "session_id": "ses-p2p-cardboard-003",
+      "segment": "P2P",
+      "agent_1_id": "agent-p2p-valentina",
+      "agent_2_id": "agent-p2p-martin-carton",
+      "agent_1_objective_id": "obj-valentina-carton",
+      "agent_2_objective_id": "obj-martin-carton",
+      "initiator_id": "agent-p2p-martin-carton",
+      "status": "REJECTED",
+      "summary": "El agente descartó la oferta de cartón de Martín por calidad y entrega",
+      "started_at": "2026-08-08T12:30:00Z",
+      "max_turns": 8,
+      "current_turn": 5,
+      "matchmaking": {
+        "score": 0.61,
+        "ic_score": 0.72,
+        "logistics_score": 0.32,
+        "price_pass": true,
+        "direction": { "a_to_b": 0.66, "b_to_a": 0.55 },
+        "channel_id": "ch_match_cardboard_valentina_martin",
+        "channel_status": "CREATED"
+      },
+      "messages": [
+        {
+          "id": "msg-cardboard-martin-001",
+          "sender_agent_id": "agent-p2p-martin-carton",
+          "content": "Tengo 400 planchas disponibles a PEN 1,95 por unidad para retiro inmediato.",
+          "intent": "OFFER",
+          "sent_at": "2026-08-08T12:30:00Z"
+        },
+        {
+          "id": "msg-cardboard-martin-002",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "¿Son de doble pared y puedes sostener una entrega mensual de 300 unidades?",
+          "intent": "QUESTION",
+          "sent_at": "2026-08-08T12:32:00Z"
+        },
+        {
+          "id": "msg-cardboard-martin-003",
+          "sender_agent_id": "agent-p2p-martin-carton",
+          "content": "Son de pared simple. El volumen futuro depende del stock y solo manejo retiro en almacén.",
+          "intent": "DECLINE",
+          "sent_at": "2026-08-08T12:34:00Z"
+        },
+        {
+          "id": "msg-cardboard-martin-004",
+          "sender_agent_id": "agent-p2p-valentina",
+          "content": "La oferta no cumple la resistencia ni la entrega configuradas, así que cierro esta conversación.",
+          "intent": "DECLINE",
+          "sent_at": "2026-08-08T12:36:00Z"
+        }
+      ],
+      "decision_history": [
+        {
+          "decision_id": "dec-cardboard-martin-price",
+          "agent_id": "agent-p2p-martin-carton",
+          "category": "Precio económico",
+          "summary": "Martín ofreció PEN 1,95 por plancha para retiro inmediato.",
+          "status": "APPROVED",
+          "created_at": "2026-08-08T12:30:00Z",
+          "decided_at": "2026-08-08T12:31:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-martin-quality",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Calidad insuficiente",
+          "summary": "El agente comprobó que el cartón era de pared simple y no cumplía el objetivo.",
+          "status": "REJECTED",
+          "created_at": "2026-08-08T12:34:00Z",
+          "decided_at": "2026-08-08T12:35:00Z"
+        },
+        {
+          "decision_id": "dec-cardboard-martin-logistics",
+          "agent_id": "agent-p2p-valentina",
+          "category": "Entrega incompatible",
+          "summary": "La ausencia de entrega local hizo que la oportunidad dejara de ser accionable.",
+          "status": "REJECTED",
+          "created_at": "2026-08-08T12:35:00Z",
+          "decided_at": "2026-08-08T12:36:00Z"
+        }
+      ],
+      "outcome": {
+        "outcome_id": "out-cardboard-martin",
+        "session_id": "ses-p2p-cardboard-003",
+        "resolution": "REJECTED",
+        "summary": "Descartada: cartón de pared simple y sin entrega local.",
+        "created_at": "2026-08-08T12:36:00Z"
+      }
     },
     {
       "session_id": "ses-p2p-001",
