@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ViewTransition } from "react";
 import { useAgentSync } from "@/lib/store";
 import {
   CompassIcon,
@@ -85,7 +86,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <main className="app-main">{children}</main>
+      <main className="app-main">
+        <ViewTransition
+          key={pathname}
+          name="agentsync-page"
+          share="page-swap"
+          enter="page-swap"
+          default="none"
+        >
+          <div className="page-transition-content">{children}</div>
+        </ViewTransition>
+      </main>
 
       <footer className="app-footer">
         <span>AgentSync · entorno de demostración</span>
