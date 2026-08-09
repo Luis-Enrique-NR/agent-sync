@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from fastapi import FastAPI
 
 from api.portal_webhooks import build_portal_webhook_router
+from api.v1.router import router as v1_router
 from transport.bus import DurableEventBus
 from transport.config import TransportSettings
 from transport.portal import WebhookSecretProvider
@@ -32,4 +33,5 @@ def create_app(
     app.include_router(
         build_portal_webhook_router(settings, secret_provider, bus, clock or _utc_now)
     )
+    app.include_router(v1_router)
     return app
