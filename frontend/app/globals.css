@@ -3044,35 +3044,122 @@ h4,
 }
 
 @media (max-width: 700px) {
+  .live-dashboard {
+    gap: 14px;
+  }
+
   .live-dashboard-heading {
-    padding: 22px;
+    gap: 16px;
+    border-radius: 18px;
+    padding: 19px;
+  }
+
+  .live-dashboard-heading h1 {
+    margin-block: 8px 7px;
+    font-size: clamp(25px, 8vw, 32px);
+    line-height: 1.08;
+  }
+
+  .live-dashboard-heading > div > p {
+    font-size: 11px;
+  }
+
+  .live-agent-control {
+    width: 100%;
+    max-width: none;
+  }
+
+  .live-control-room {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .live-control-room > header {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
+    gap: 16px;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .live-control-room > header h2 {
+    font-size: 18px;
+  }
+
+  .live-control-room > header p {
+    font-size: 10px;
   }
 
   .live-summary {
+    display: grid;
     width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .live-summary > span {
     min-width: 0;
-    flex: 1;
-    padding-inline: 10px;
+    border-radius: 11px;
+    padding: 9px 8px;
+    background: var(--surface-2);
   }
 
-  .live-summary > span:first-child {
-    padding-left: 0;
+  .live-summary > span + span {
+    border-left: 0;
+  }
+
+  .live-summary strong {
+    font-size: 15px;
+  }
+
+  .live-summary small {
+    font-size: 8px;
+  }
+
+  .live-lanes {
+    display: flex;
+    margin-top: 12px;
+    flex-direction: column;
+    gap: 12px;
   }
 
   .live-lane {
     display: flex;
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 17px;
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .live-lane + .live-lane {
+    border: 1px solid var(--border);
+  }
+
+  .live-lane-status {
+    padding: 6px 8px;
+    font-size: 8px;
   }
 
   .live-lane-goal {
     min-height: 0;
+    margin-top: 19px;
+  }
+
+  .live-lane-goal small {
+    font-size: 8px;
+  }
+
+  .live-lane-goal h3 {
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.45;
   }
 
   .live-route-picker,
@@ -3082,8 +3169,50 @@ h4,
     width: 100%;
   }
 
+  .live-route-picker {
+    margin-top: 16px;
+    border-radius: 14px;
+  }
+
+  .live-route-trigger {
+    min-height: 76px;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 11px;
+  }
+
+  .live-route-avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .live-route-copy small {
+    font-size: 8px;
+  }
+
+  .live-route-copy strong {
+    font-size: 11px;
+  }
+
+  .live-route-copy p {
+    font-size: 9px;
+  }
+
+  .live-route-count {
+    min-width: 44px;
+  }
+
+  .live-route-options {
+    max-height: min(320px, 52vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+  }
+
   .live-route-options > button {
     grid-template-columns: 29px minmax(0, 1fr) 13px;
+    min-height: 54px;
+    padding: 9px;
   }
 
   .live-route-options > button > i {
@@ -3091,8 +3220,83 @@ h4,
     justify-self: start;
   }
 
+  .live-route-options > button strong {
+    font-size: 10px;
+  }
+
+  .live-route-options > button small {
+    font-size: 8px;
+  }
+
+  .live-decision-handoff {
+    margin-block: 18px 6px;
+    padding-top: 15px;
+  }
+
+  .live-decision-handoff > header small,
+  .live-decision-handoff > div > span > small {
+    font-size: 8px;
+  }
+
+  .live-decision-handoff > header strong {
+    font-size: 9px;
+  }
+
+  .goal-progress-review {
+    margin: 15px 0 0;
+    border-radius: 13px;
+    padding: 14px;
+  }
+
+  .goal-progress-review > header strong,
+  .goal-review-confirmation strong {
+    font-size: 10px;
+  }
+
+  .goal-progress-review > p,
+  .goal-review-confirmation p {
+    font-size: 9px;
+  }
+
+  .goal-progress-review > label > span {
+    font-size: 9px;
+  }
+
+  .goal-progress-review textarea {
+    min-height: 72px;
+    padding: 10px;
+    font-size: 9px;
+  }
+
+  .goal-review-actions {
+    display: grid;
+    margin-top: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .goal-review-actions > button {
+    min-height: 42px;
+    padding: 6px 10px;
+    font-size: 8px;
+    line-height: 1.2;
+  }
+
+  .live-lane > footer {
+    min-height: 0;
+    margin-top: 18px;
+    padding-top: 14px;
+  }
+
+  .live-lane > footer > span,
+  .live-lane > footer > a {
+    font-size: 9px;
+  }
+
   .live-safety-note {
     grid-template-columns: 26px minmax(0, 1fr);
+    border-radius: 15px;
+    padding: 14px;
   }
 
   .live-safety-note > a {
@@ -5521,7 +5725,7 @@ body.is-resizing-agent-editor {
 
   .app-main {
     width: min(100% - 28px, 760px);
-    padding-block: 24px 104px;
+    padding-block: 20px 132px;
   }
 
   .app-shell.is-guest .app-main {
@@ -5540,7 +5744,7 @@ body.is-resizing-agent-editor {
     z-index: 50;
     display: grid;
     min-height: 68px;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     border: 1px solid var(--border);
     border-radius: 18px;
     padding: 7px;
