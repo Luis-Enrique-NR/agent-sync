@@ -2,7 +2,7 @@
 
 import { useAgentSync } from "@/lib/store";
 import { DecisionInbox } from "@/components/DecisionInbox";
-import { PauseIcon } from "@/components/Icons";
+import { ShieldIcon } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
 import { belongsToAgent } from "@/lib/demo";
 
@@ -28,10 +28,10 @@ export function BandejaView() {
           </p>
         </div>
         <aside className="page-heading-note">
-          <PauseIcon size={20} />
+          <ShieldIcon size={20} />
           <span>
-            <strong>{pendingCount} conversación{pendingCount === 1 ? "" : "es"} en pausa.</strong>
-            Ningún mensaje sensible se envía mientras esperas.
+            <strong>{pendingCount} conversación{pendingCount === 1 ? "" : "es"} esperando tu decisión.</strong>
+            Tu agente no enviará esa propuesta hasta que respondas.
           </span>
         </aside>
       </header>

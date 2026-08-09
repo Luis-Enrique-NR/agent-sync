@@ -64,7 +64,7 @@ export function ChatView({ sessionId }: { sessionId: string }) {
           </div>
           {waiting ? (
             <span className="conversation-waiting">
-              <ShieldIcon size={13} /> Pausada para proteger una regla
+              <ShieldIcon size={13} /> Esperando tu decisión
             </span>
           ) : null}
         </aside>

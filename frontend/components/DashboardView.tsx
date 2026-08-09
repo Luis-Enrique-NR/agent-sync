@@ -6,8 +6,6 @@ import { CommercialHome } from "@/components/CommercialHome";
 import {
   ArrowRightIcon,
   CheckIcon,
-  PauseIcon,
-  PlayIcon,
   SearchIcon,
   ShieldIcon,
   SparkIcon,
@@ -116,7 +114,7 @@ function conversationTerms(session: MatchSession) {
 
 export function DashboardView() {
   const { signedIn, agentId } = useAuth();
-  const { sessions, agentsById, toggleAgentStatus } = useAgentSync();
+  const { sessions, agentsById } = useAgentSync();
   const [selectedByObjective, setSelectedByObjective] = useState<
     Record<string, string>
   >({});
@@ -241,10 +239,6 @@ export function DashboardView() {
             <strong>{displayName}</strong>
             <i>{paused ? "En pausa" : activeSessions.length > 0 ? "Trabajando en paralelo" : "Atento a nuevas oportunidades"}</i>
           </span>
-          <button type="button" onClick={() => toggleAgentStatus(ownerAgentId)}>
-            {paused ? <PlayIcon size={14} /> : <PauseIcon size={14} />}
-            {paused ? "Reactivar" : "Pausar"}
-          </button>
         </aside>
       </header>
 

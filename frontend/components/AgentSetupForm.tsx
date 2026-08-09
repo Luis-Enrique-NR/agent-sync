@@ -5,8 +5,6 @@ import mockData from "@/data/mockData.json";
 import {
   ArrowRightIcon,
   CheckIcon,
-  PauseIcon,
-  PlayIcon,
   ShieldIcon,
   SlidersIcon,
   SparkIcon,
@@ -980,7 +978,7 @@ function formatHardLimit(agent: AgentProfile) {
 }
 
 function AgentControlCenter({ agent }: { agent: AgentProfile }) {
-  const { sessions, toggleAgentStatus, updateAgent } = useAgentSync();
+  const { sessions, updateAgent } = useAgentSync();
   const [draft, setDraft] = useState(() => draftFromAgent(agent));
   const [editSection, setEditSection] = useState<EditSection | null>(null);
   const [editorWidth, setEditorWidth] = useState(700);
@@ -1077,10 +1075,6 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
           <span className={`existing-agent-status ${paused ? "is-paused" : negotiating ? "is-active" : ""}`}>
             {paused ? "En pausa" : negotiating ? "Trabajando" : "Disponible"}
           </span>
-          <button type="button" onClick={() => toggleAgentStatus(agent.agent_id)}>
-            {paused ? <PlayIcon size={15} /> : <PauseIcon size={15} />}
-            {paused ? "Reactivar" : "Pausar"}
-          </button>
         </div>
       </header>
 

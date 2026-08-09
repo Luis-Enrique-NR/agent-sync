@@ -2109,7 +2109,7 @@ h4,
 
 .live-agent-control {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) auto;
+  grid-template-columns: 44px minmax(0, 1fr);
   align-items: center;
   gap: 11px;
   border: 1px solid var(--border);
@@ -2172,25 +2172,6 @@ h4,
   color: var(--accent-dark);
   font-size: 8px;
   font-style: normal;
-}
-
-.live-agent-control > button {
-  display: inline-flex;
-  min-height: 34px;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--border-strong);
-  border-radius: 10px;
-  padding: 0 10px;
-  color: var(--foreground);
-  background: var(--surface);
-  font-size: 9px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.live-agent-control > button:hover {
-  border-color: var(--foreground);
 }
 
 .live-control-room {
@@ -3308,11 +3289,6 @@ h4,
 @media (max-width: 480px) {
   .live-agent-control {
     grid-template-columns: 40px minmax(0, 1fr);
-  }
-
-  .live-agent-control > button {
-    grid-column: 2;
-    justify-self: start;
   }
 
   .live-control-room > header,
@@ -4751,21 +4727,6 @@ h4,
 .existing-agent-status.is-paused {
   color: var(--warning);
   background: var(--warning-soft);
-}
-
-.existing-agent-actions button {
-  display: inline-flex;
-  min-height: 38px;
-  align-items: center;
-  gap: 7px;
-  border: 1px solid var(--border-strong);
-  border-radius: 11px;
-  padding: 0 13px;
-  color: var(--foreground);
-  background: var(--surface);
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
 }
 
 .representation-contract,

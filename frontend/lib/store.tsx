@@ -48,7 +48,6 @@ interface AgentSyncState {
   dismissIncomingDecision: () => void;
   /** AIBackendService.resume_negotiation — aprueba/rechaza/reemplaza y reanuda. */
   dispatchHumanDecision: (sessionId: string, decision: HumanDecision) => void;
-  toggleAgentStatus: (agentId: string) => void;
   /** agent.registered → persiste perfil y dispara matchmaking simulado. */
   registerAgent: (profile: AgentProfile) => number;
   updateAgent: (profile: AgentProfile) => void;
@@ -818,16 +817,6 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
-  const toggleAgentStatus = useCallback((agentId: string) => {
-    setAgents((prev) =>
-      prev.map((agent) => {
-        if (agent.agent_id !== agentId) return agent;
-        const next = agent.status === "PAUSED" ? "AVAILABLE" : "PAUSED";
-        return { ...agent, status: next };
-      }),
-    );
-  }, []);
-
   /** agent.registered → persiste y dispara matchmaking automático bidireccional.
    *  Devuelve cuántos candidatos compatibles encontró (0 = sin matches). */
   const registerAgent = useCallback(
@@ -961,7 +950,6 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       simulateIncomingDecision,
       dismissIncomingDecision,
       dispatchHumanDecision,
-      toggleAgentStatus,
       registerAgent,
       updateAgent,
       resetDemo,
@@ -974,7 +962,6 @@ export function AgentSyncProvider({ children }: { children: React.ReactNode }) {
       simulateIncomingDecision,
       dismissIncomingDecision,
       dispatchHumanDecision,
-      toggleAgentStatus,
       registerAgent,
       updateAgent,
       resetDemo,

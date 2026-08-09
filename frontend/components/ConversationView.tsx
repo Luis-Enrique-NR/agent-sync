@@ -59,7 +59,6 @@ const DECISION_STATUS: Record<
 type Phase =
   | "searching"
   | "live"
-  | "paused"
   | "waiting_approval"
   | "resolved"
   | "rejected"
@@ -98,10 +97,6 @@ const PHASE_BADGES: Record<Phase, { label: string; className: string } | null> =
   live: {
     label: "Conversación en vivo",
     className: "text-[var(--accent-2)]",
-  },
-  paused: {
-    label: "Pausada",
-    className: "text-[var(--warning)]",
   },
   waiting_approval: {
     label: "⏸ Esperando tu decisión",
@@ -143,16 +138,11 @@ export function ConversationView({
   const [messages, setMessages] = useState<ChatMessage[]>(session.messages);
   const [streamedExtra, setStreamedExtra] = useState<ChatMessage[]>([]);
   const [typingAgent, setTypingAgent] = useState<string | null>(null);
-  const [paused, setPaused] = useState(false);
 
   const phase = phaseOf(session);
   const pendingCandidate = session.pending_script?.find(
     (m) => m.flagged?.requires_human,
   );
-  const canStream =
-    session.status === "ACTIVE" &&
-    (session.pending_script ?? []).some((m) => !m.flagged?.requires_human);
-
   const clearTimer = () => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -184,12 +174,12 @@ export function ConversationView({
     setStreamedExtra([]);
     setTypingAgent(null);
     clearTimer();
-    if (!paused && session.status === "ACTIVE" && queueRef.current.length > 0) {
+    if (session.status === "ACTIVE" && queueRef.current.length > 0) {
       timerRef.current = setTimeout(revealNext, TURN_DELAY_MS);
     }
     return clearTimer;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.session_id, session.status, session.pending_script, paused]);
+  }, [session.session_id, session.status, session.pending_script]);
 
   const allMessages = [...messages, ...streamedExtra];
   const visibleMessages = allMessages.slice(-5);
@@ -268,15 +258,6 @@ export function ConversationView({
             ) : null}
           </div>
 
-          {canStream ? (
-            <button
-              type="button"
-              onClick={() => setPaused((p) => !p)}
-              className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-1.5 text-xs font-semibold transition hover:brightness-110"
-            >
-              {paused ? "Continuar" : "Pausar"}
-            </button>
-          ) : null}
         </div>
 
         <div className="conversation-transcript flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
