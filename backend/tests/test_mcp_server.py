@@ -56,11 +56,14 @@ def test_server_catalog_and_health_are_explicit() -> None:
             json={"jsonrpc": "2.0", "id": "1", "method": "tools/list", "params": {"_meta": meta}},
         )
         assert response.status_code == 200
-        assert {tool["name"] for tool in response.json()["result"]["tools"]} == {
+        tools = response.json()["result"]["tools"]
+        assert {tool["name"] for tool in tools} == {
             "web.search",
             "market.reference_prices",
             "email.send_notification",
         }
+        email_tool = next(tool for tool in tools if tool["name"] == "email.send_notification")
+        assert "to" in email_tool["inputSchema"]["required"]
 
 
 def test_unconfigured_provider_fails_closed() -> None:
@@ -183,7 +186,7 @@ def test_serpapi_normalizes_google_shopping_results(monkeypatch: pytest.MonkeyPa
     assert "api_key=secret" in captured["request"].full_url
 
 
-def test_resend_sends_owner_notification_without_exposing_addresses(
+def test_resend_sends_per_call_recipient_without_exposing_addresses(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     captured = {}
@@ -197,15 +200,31 @@ def test_resend_sends_owner_notification_without_exposing_addresses(
         endpoint=None,
         token_env=None,
         from_address="agent@example.com",
-        to_address="owner@example.com",
         timeout_seconds=5,
         max_response_bytes=10_000,
         environ={"RESEND_API_KEY": "secret"},
-    ).send("Decision", "Please approve", idempotency_key="call-1")
+    ).send("Decision", "Please approve", "owner@example.com", idempotency_key="call-1")
     assert result == {"delivery_id": "email-1", "status": "accepted"}
     assert captured["request"].headers["Authorization"] == "Bearer secret"
     assert "owner@example.com" in captured["request"].data.decode()
     assert "secret" not in captured["request"].data.decode()
+
+
+def test_resend_rejects_invalid_per_call_recipient(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "mcp_servers.agentsync.upstream.urlopen",
+        lambda request, timeout: pytest.fail("provider must not be called"),
+    )
+    adapter = ResendAdapter(
+        endpoint=None,
+        token_env=None,
+        from_address="agent@example.com",
+        timeout_seconds=5,
+        max_response_bytes=10_000,
+        environ={"RESEND_API_KEY": "secret"},
+    )
+    with pytest.raises(UpstreamError, match="INVALID_EMAIL_RECIPIENT"):
+        adapter.send("Decision", "Please approve", "not-an-email", idempotency_key="call-1")
 
 
 def test_http_client_emits_current_mcp_headers_and_meta() -> None:

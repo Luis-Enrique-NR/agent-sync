@@ -45,7 +45,6 @@ class MCPSettings:
     email_endpoint: str | None = None
     email_token_env: str | None = None
     email_from: str | None = None
-    email_to: str | None = None
     upstream_timeout_seconds: int = 15
     upstream_max_response_bytes: int = 1_000_000
 
@@ -104,7 +103,6 @@ class MCPSettings:
             email_endpoint=(env.get("AGENTSYNC_MCP_EMAIL_ENDPOINT") or None),
             email_token_env=(env.get("AGENTSYNC_MCP_EMAIL_TOKEN_ENV") or None),
             email_from=(env.get("AGENTSYNC_MCP_EMAIL_FROM") or None),
-            email_to=(env.get("AGENTSYNC_MCP_EMAIL_TO") or None),
             upstream_timeout_seconds=_int_env(
                 env, "AGENTSYNC_MCP_UPSTREAM_TIMEOUT_SECONDS", 15, minimum=1
             ),
@@ -117,7 +115,6 @@ class MCPSettings:
         return {
             "search": self.search_provider != "generic" or bool(self.search_endpoint),
             "prices": self.prices_provider != "generic" or bool(self.prices_endpoint),
-            "email": self.email_provider == "resend"
-            and bool(self.email_from and self.email_to)
+            "email": (self.email_provider == "resend" and bool(self.email_from))
             or bool(self.email_endpoint),
         }

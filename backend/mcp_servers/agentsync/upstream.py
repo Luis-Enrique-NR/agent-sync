@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
@@ -17,6 +18,18 @@ class UpstreamError(RuntimeError):
     def __init__(self, code: str, message: str | None = None) -> None:
         self.code = code
         super().__init__(message or code)
+
+
+_EMAIL_ADDRESS_PATTERN = re.compile(r"^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$")
+
+
+def validate_recipient_address(value: str) -> str:
+    """Validate a per-call recipient before it reaches an email provider."""
+
+    normalized = value.strip()
+    if len(normalized) > 320 or not _EMAIL_ADDRESS_PATTERN.fullmatch(normalized):
+        raise UpstreamError("INVALID_EMAIL_RECIPIENT")
+    return normalized
 
 
 def sanitize_output(value: Any, *, max_string_length: int = 4_000) -> Any:
@@ -268,24 +281,31 @@ class ResendAdapter:
     endpoint: str | None
     token_env: str | None
     from_address: str | None
-    to_address: str | None
     timeout_seconds: int
     max_response_bytes: int
     environ: Mapping[str, str]
 
-    def send(self, subject: str, body: str, *, idempotency_key: str) -> dict[str, Any]:
+    def send(
+        self,
+        subject: str,
+        body: str,
+        to_address: str,
+        *,
+        idempotency_key: str,
+    ) -> dict[str, Any]:
         token_name = self.token_env or "RESEND_API_KEY"
         token = self.environ.get(token_name)
         if not token:
             raise UpstreamError("UPSTREAM_TOKEN_NOT_CONFIGURED")
-        if not self.from_address or not self.to_address:
+        recipient = validate_recipient_address(to_address)
+        if not self.from_address:
             raise UpstreamError("UPSTREAM_DESTINATION_NOT_CONFIGURED")
         request = Request(
             self.endpoint or "https://api.resend.com/emails",
             data=json.dumps(
                 {
                     "from": self.from_address,
-                    "to": [self.to_address],
+                    "to": [recipient],
                     "subject": subject,
                     "text": body,
                 },
