@@ -70,6 +70,7 @@ def _build_app() -> "FastAPI":  # noqa: F821
         settings=settings,
         secret_provider=secret_provider,
         bus=bus,
+        portal_secret=secret_key,
         sse_broadcaster=sse_broadcaster,
     )
 
