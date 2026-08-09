@@ -1,0 +1,164 @@
+{
+  "events": [
+    {
+      "step": "agent_registration",
+      "buyer": {
+        "agent_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+        "user_id": "b669bffd-3c85-4e79-84ae-07b4d6876b4a",
+        "display_name": "Trace Buyer",
+        "entity_type": "person",
+        "status": "AVAILABLE",
+        "public_description": "Busca laptop",
+        "interests": [
+          "buy_laptop"
+        ],
+        "capabilities": [
+          "cash_payment"
+        ],
+        "price_range": null,
+        "logistics_preferences": [],
+        "objectives": [
+          "Comprar laptop"
+        ],
+        "created_at": "2026-08-09T13:15:41.730335",
+        "updated_at": "2026-08-09T13:15:41.730375"
+      },
+      "seller": {
+        "agent_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+        "user_id": "0d250479-2ef3-4fd1-a6f9-28d777a4f8c6",
+        "display_name": "Trace Seller",
+        "entity_type": "person",
+        "status": "AVAILABLE",
+        "public_description": "Vende laptop",
+        "interests": [
+          "sell_laptop"
+        ],
+        "capabilities": [
+          "buy_laptop",
+          "sell_electronics"
+        ],
+        "price_range": null,
+        "logistics_preferences": [],
+        "objectives": [
+          "Vender laptop"
+        ],
+        "created_at": "2026-08-09T13:15:41.766321",
+        "updated_at": "2026-08-09T13:15:41.766363"
+      }
+    },
+    {
+      "step": "bus_envelope",
+      "index": 0,
+      "envelope": {
+        "schema_version": 1,
+        "event_id": "29bc6671-2b1f-4968-8324-9e6cb8c13ab0",
+        "event_type": "agent.registered",
+        "event_time": "2026-08-09T13:15:41.731280Z",
+        "environment": "api",
+        "channel": "agent_a9624c8c",
+        "message": {
+          "id": "agent_a9624c8c",
+          "text": "agent registered: Trace Buyer",
+          "author_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "seq": 0
+        },
+        "retracted": false
+      }
+    },
+    {
+      "step": "bus_envelope",
+      "index": 1,
+      "envelope": {
+        "schema_version": 1,
+        "event_id": "00be78fc-b5ea-4216-8d1b-7ba4ce9b60ce",
+        "event_type": "agent.registered",
+        "event_time": "2026-08-09T13:15:41.767083Z",
+        "environment": "api",
+        "channel": "agent_6c559cb1",
+        "message": {
+          "id": "agent_6c559cb1",
+          "text": "agent registered: Trace Seller",
+          "author_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+          "seq": 0
+        },
+        "retracted": false
+      }
+    },
+    {
+      "step": "session_created",
+      "session_id": "fe33bbd9-a9e8-413a-92a7-3016f60b2d4a",
+      "status": "PENDING_HUMAN_APPROVAL",
+      "turn_count": 8,
+      "transcript": [
+        {
+          "speaker_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "turn": 1,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+          "turn": 2,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "turn": 3,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+          "turn": 4,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "turn": 5,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+          "turn": 6,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "turn": 7,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        },
+        {
+          "speaker_id": "6c559cb1-32da-46fa-b1f8-cdfe0185ee99",
+          "turn": 8,
+          "text": "oferta de prueba",
+          "intent": "OFFER"
+        }
+      ]
+    },
+    {
+      "step": "portal_dispatch",
+      "portal_secret_used": true,
+      "envelope": {
+        "schema_version": 1,
+        "event_id": "4b593bfb-5f48-4f8f-851f-d41ec85ac020",
+        "event_type": "message.published",
+        "event_time": "2026-08-09T13:15:41.893454Z",
+        "environment": "production",
+        "channel": "ch_trace_a9624c8c",
+        "message": {
+          "id": "msg_trace_1",
+          "text": "Negotiation started successfully",
+          "author_id": "a9624c8c-871e-48a5-a52e-a6d44c7f8a41",
+          "seq": 1
+        },
+        "retracted": false
+      }
+    }
+  ],
+  "timestamp": "2026-08-09T13:15:41.615414+00:00"
+}
