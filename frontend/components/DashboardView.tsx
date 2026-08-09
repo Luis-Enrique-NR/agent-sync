@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { CommercialHome } from "@/components/CommercialHome";
 import {
@@ -138,6 +138,21 @@ export function DashboardView() {
   const agentB = agentsById[featured?.agent_2_id];
   const ownerAgent = agentsById[ownerAgentId];
 
+  useEffect(() => {
+    if (!openSwitcher) return;
+
+    const closeOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const switcher = target.closest<HTMLElement>("[data-route-switcher]");
+      if (switcher?.dataset.routeSwitcher === openSwitcher) return;
+      setOpenSwitcher(null);
+    };
+
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [openSwitcher]);
+
   if (!signedIn) {
     return (
       <CommercialHome
@@ -271,7 +286,7 @@ export function DashboardView() {
             return (
               <article
                 key={objective.id}
-                className={`live-lane ${status.className}`}
+                className={`live-lane ${status.className} ${switcherOpen ? "has-open-route" : ""}`}
                 style={{ animationDelay: `${index * 110}ms` }}
               >
                 <header>
@@ -287,6 +302,7 @@ export function DashboardView() {
                 {selectedSession ? (
                   <div
                     className={`live-route-picker ${switcherOpen ? "is-open" : ""} ${laneSessions.length === 1 ? "is-single" : ""}`}
+                    data-route-switcher={objective.id}
                     onKeyDown={(event) => {
                       if (event.key === "Escape") setOpenSwitcher(null);
                     }}
