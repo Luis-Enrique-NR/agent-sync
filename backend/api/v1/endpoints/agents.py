@@ -17,7 +17,7 @@ from api.v1.schemas import (
 from persistence.database import get_session
 from persistence.models import AgentProfileRow
 from persistence.repository import create_agent_profile, write_audit
-from transport.models import TransportEnvelopeV1
+from transport.models import TransportEnvelopeV1, MessageSnapshot
 
 router = APIRouter(prefix="/agents", tags=["agents"])
 
@@ -80,13 +80,19 @@ async def register_agent(
 
     # Publish agent.registered event to the bus → triggers matchmaking
     bus = request.app.state.bus
+    agent_id_str = str(row.agent_id)
     envelope = TransportEnvelopeV1(
         event_id=str(uuid4()),
         event_type="agent.registered",  # type: ignore[arg-type]
         event_time=datetime.now(timezone.utc),
         environment="api",
         channel=f"agent_{row.agent_id.hex[:8]}",
-        message=None,
+        message=MessageSnapshot(
+            id=f"agent_{agent_id_str[:8]}",
+            text=f"agent registered: {body.display_name}",
+            author_id=agent_id_str,
+            seq=0,
+        ),
         retracted=False,
     )
     await bus.accept(envelope)

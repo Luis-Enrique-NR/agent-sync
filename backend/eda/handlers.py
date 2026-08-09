@@ -298,15 +298,21 @@ class NegotiationHandler:
             author = envelope.message.author_id if envelope.message else None
             if author and _is_uuid(author):
                 agent_uuid = UUID(author)
-                row = session.get(AgentProfileRow, agent_uuid)  # noqa: F821
+                logger.info("[EDA Worker] Extracted agent_id: %s. Executing process_agent_matching...", agent_uuid)
+                trace("MATCHMAKING", f"triggering matchmaking for agent={agent_uuid}")
+                row = session.get(AgentProfileRow, agent_uuid)
                 if row is not None:
-                    trace("MATCHMAKING", f"triggering matchmaking for agent={agent_uuid}")
                     await process_agent_matching(
                         agent_uuid,
                         session=session,
                         engine=self._engine,
                         portal=self._portal,
                     )
+            else:
+                logger.warning(
+                    "[EDA Worker] Event '%s' received without valid agent_id in message (author=%s)",
+                    envelope.event_type, author,
+                )
 
             session.commit()
         except Exception:
