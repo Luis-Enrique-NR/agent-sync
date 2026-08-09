@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import mockData from "@/data/mockData.json";
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -11,21 +10,32 @@ import {
   UserIcon,
 } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent } from "@/lib/demo";
-import { useAgentSync } from "@/lib/store";
+import { belongsToAgent, useAgentSync } from "@/lib/store";
 import type {
   AgentObjectiveContext,
   AgentProfile,
   AgentTool,
   EscalationRule,
-  MockData,
   SensitiveCategory,
   SensitiveDataCategory,
 } from "@/lib/types";
 
-const data = mockData as unknown as MockData;
-const PERSON_AGENT = data.agents.find((agent) => agent.entity_type === "person");
-const COMPANY_AGENT = data.agents.find((agent) => agent.entity_type === "company");
+// ── Hardcoded sensible-category defaults (was mockData.json) ───────────
+
+const DEFAULT_SENSITIVE = {
+  default_required: [
+    { id: "cat-contacto", label: "Cualquier dato de contacto (teléfono, email)", required: true, enabled: true, ruleType: "SHARE_PERSONAL_DATA" as const, categories: ["PHONE", "EMAIL"] as SensitiveDataCategory[] },
+    { id: "cat-direccion", label: "Dirección exacta", required: true, enabled: true, ruleType: "SHARE_PERSONAL_DATA" as const, categories: ["EXACT_ADDRESS"] as SensitiveDataCategory[] },
+    { id: "cat-ubicacion", label: "Ubicación en tiempo real", required: true, enabled: true, ruleType: "SHARE_PERSONAL_DATA" as const, categories: ["LIVE_LOCATION"] as SensitiveDataCategory[] },
+    { id: "cat-fecha", label: "Cualquier compromiso de fecha", required: false, enabled: true, ruleType: "COMMIT_DATE" as const, categories: [] },
+  ],
+  editable: [
+    { id: "cat-precio", label: "Cualquier precio final", required: false, enabled: true, ruleType: "ANY_FINAL_PRICE" as const, categories: [] },
+    { id: "cat-monto-sobre", label: "Montos sobre un valor definido por mí", required: false, enabled: false, ruleType: "AMOUNT_ABOVE" as const, categories: [], key: "amount", threshold: 10000 },
+    { id: "cat-contrato", label: "Cualquier compromiso contractual", required: false, enabled: true, ruleType: "FINAL_AGREEMENT" as const, categories: [] },
+    { id: "cat-encuentro", label: "Punto de encuentro físico", required: false, enabled: true, ruleType: "SHARE_PERSONAL_DATA" as const, categories: ["MEETING_POINT"] as SensitiveDataCategory[] },
+  ],
+};
 
 const TOOL_OPTIONS: AgentTool[] = [
   {
@@ -141,8 +151,8 @@ function objectiveContextsFromAgent(agent?: AgentProfile): AgentObjectiveContext
 
 function allCategories(): SensitiveCategory[] {
   return [
-    ...data.sensitive_categories.default_required,
-    ...data.sensitive_categories.editable,
+    ...DEFAULT_SENSITIVE.default_required,
+    ...DEFAULT_SENSITIVE.editable,
   ];
 }
 
@@ -591,12 +601,12 @@ function SafetyFields({
   draft: ConfigurationDraft;
   onChange: (draft: ConfigurationDraft) => void;
 }) {
-  const requiredRules = data.sensitive_categories.default_required.filter(
+  const requiredRules = DEFAULT_SENSITIVE.default_required.filter(
     (category) => category.required,
   );
   const editableRules = [
-    ...data.sensitive_categories.default_required.filter((category) => !category.required),
-    ...data.sensitive_categories.editable,
+    ...DEFAULT_SENSITIVE.default_required.filter((category) => !category.required),
+    ...DEFAULT_SENSITIVE.editable,
   ];
   const privateOptions: {
     category: SensitiveDataCategory;
@@ -750,9 +760,8 @@ function SafetyFields({
 function CreationWizard({ ownerName }: { ownerName: string }) {
   const { registerAgent } = useAgentSync();
   const { attachAgent } = useAuth();
-  const initialSeed = PERSON_AGENT ?? COMPANY_AGENT;
   const [draft, setDraft] = useState<ConfigurationDraft>(() => {
-    const initial = draftFromAgent(initialSeed, "person");
+    const initial = draftFromAgent(undefined, "person");
     return {
       ...initial,
       displayName: ownerName || initial.displayName,
@@ -780,8 +789,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
         : true;
 
   const changeEntityType = (entityType: EntityType) => {
-    const seed = entityType === "company" ? COMPANY_AGENT : PERSON_AGENT;
-    const next = draftFromAgent(seed, entityType);
+    const next = draftFromAgent(undefined, entityType);
     setDraft({
       ...next,
       displayName:
@@ -797,9 +805,18 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
       ...draft,
       objectiveContexts: validObjectives,
     });
-    registerAgent(profile);
-    await new Promise((resolve) => setTimeout(resolve, 650));
-    attachAgent(profile.agent_id);
+    const agentId = await registerAgent({
+      display_name: profile.display_name,
+      entity_type: profile.entity_type,
+      public_description: profile.public_description,
+      personality: profile.personality,
+      objectives: profile.objectives,
+      interests: profile.interests,
+      capabilities: profile.capabilities,
+      price_range: profile.price_range ?? null,
+      logistics_preferences: profile.logistics_preferences,
+    });
+    attachAgent(agentId);
     setSaving(false);
   };
 
@@ -978,7 +995,7 @@ function formatHardLimit(agent: AgentProfile) {
 }
 
 function AgentControlCenter({ agent }: { agent: AgentProfile }) {
-  const { sessions, updateAgent } = useAgentSync();
+  const { sessions } = useAgentSync();
   const [draft, setDraft] = useState(() => draftFromAgent(agent));
   const [editSection, setEditSection] = useState<EditSection | null>(null);
   const [editorWidth, setEditorWidth] = useState(700);
@@ -1051,11 +1068,11 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
       objective.goal.trim(),
     );
     if (validObjectives.length === 0) return;
-    updateAgent(
-      profileFromDraft(
-        { ...draft, objectiveContexts: validObjectives },
-        { agentId: agent.agent_id, status: agent.status, previous: agent },
-      ),
+    // Agent editing not yet available via the consolidated API.
+    // The store keeps the canonical copy from listAgents(); local edits
+    // would be overwritten on the next refresh.  UI reflects read-only state.
+    console.warn(
+      "Agent editing via the API is not yet available. Only registration (POST) is supported.",
     );
     setEditSection(null);
   };

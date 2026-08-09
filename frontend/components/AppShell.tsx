@@ -2,19 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, ViewTransition } from "react";
+import { useLayoutEffect, ViewTransition } from "react";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
+import { belongsToAgent, useAgentSync } from "@/lib/store";
 import {
-  INCOMING_DECISION_DELAY_MS,
-  useAgentSync,
-} from "@/lib/store";
-import {
-  ArrowRightIcon,
   HomeIcon,
   InboxIcon,
   LogoMark,
-  RotateIcon,
   SlidersIcon,
   UserIcon,
 } from "@/components/Icons";
@@ -33,28 +27,12 @@ function isCurrent(pathname: string, href: string) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { signedIn, agentId, attachAgent } = useAuth();
-  const {
-    sessions,
-    incomingDecision,
-    simulateIncomingDecision,
-    dismissIncomingDecision,
-    resetDemo,
-  } = useAgentSync();
+  const { sessions } = useAgentSync();
   const pendingCount = sessions.filter(
     (session) =>
       belongsToAgent(session, agentId) &&
       session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
-  const incomingDecisionHref = incomingDecision
-    ? (() => {
-        const session = sessions.find(
-          (item) => item.session_id === incomingDecision.session_id,
-        );
-        return session?.pending_decision
-          ? `/bandeja#decision-card-${session.pending_decision.decision_id}`
-          : "/bandeja";
-      })()
-    : "/bandeja";
 
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -65,16 +43,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     return () => window.cancelAnimationFrame(frame);
   }, [pathname]);
-
-  useEffect(() => {
-    if (!signedIn || agentId !== DEMO_OWNER_AGENT_ID) return;
-
-    const timer = window.setTimeout(
-      simulateIncomingDecision,
-      INCOMING_DECISION_DELAY_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [agentId, signedIn, simulateIncomingDecision]);
 
   return (
     <div className={`app-shell ${signedIn ? "is-authenticated" : "is-guest"}`}>
@@ -109,20 +77,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           ) : null}
 
           <div className="header-actions">
-            {signedIn ? (
-              <button
-                type="button"
-                className="reset-button"
-                onClick={() => {
-                  resetDemo();
-                  attachAgent(DEMO_OWNER_AGENT_ID);
-                }}
-                title="Restablecer los datos de la demo"
-              >
-                <RotateIcon size={16} />
-                <span>Reiniciar demo</span>
-              </button>
-            ) : null}
             <Link
               href="/perfil"
               className={`profile-button ${!signedIn ? "is-entry" : ""} ${pathname.startsWith("/perfil") ? "is-active" : ""}`}
@@ -152,39 +106,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <span>AgentSync · entorno de demostración</span>
         <span>Los límites duros nunca se negocian.</span>
       </footer>
-
-      {signedIn && incomingDecision ? (
-        <aside
-          className="incoming-decision-toast"
-          role="status"
-          aria-live="polite"
-          aria-label="Nueva decisión pendiente"
-        >
-          <span className="incoming-decision-icon">
-            <InboxIcon size={18} />
-          </span>
-          <div className="incoming-decision-copy">
-            <span>Nueva decisión · {incomingDecision.counterpart_name}</span>
-            <strong>{incomingDecision.category}</strong>
-            <p>{incomingDecision.summary}</p>
-            <Link
-              href={incomingDecisionHref}
-              onClick={dismissIncomingDecision}
-            >
-              Revisar ahora <ArrowRightIcon size={13} />
-            </Link>
-          </div>
-          <button
-            type="button"
-            className="incoming-decision-close"
-            onClick={dismissIncomingDecision}
-            aria-label="Cerrar aviso"
-          >
-            ×
-          </button>
-          <span className="incoming-decision-signal" aria-hidden="true" />
-        </aside>
-      ) : null}
 
       {signedIn ? (
         <nav className="mobile-nav" aria-label="Navegación móvil">
