@@ -41,12 +41,6 @@ class MCPSettings:
     prices_provider: str = "generic"
     prices_endpoint: str | None = None
     prices_token_env: str | None = None
-    inventory_provider: str = "generic"
-    inventory_endpoint: str | None = None
-    inventory_token_env: str | None = None
-    airtable_base_id: str | None = None
-    airtable_table_name: str | None = None
-    airtable_view: str | None = None
     email_provider: str = "generic"
     email_endpoint: str | None = None
     email_token_env: str | None = None
@@ -69,7 +63,6 @@ class MCPSettings:
         for name in (
             "search_endpoint",
             "prices_endpoint",
-            "inventory_endpoint",
             "email_endpoint",
         ):
             endpoint = getattr(self, name)
@@ -85,9 +78,6 @@ class MCPSettings:
         prices_provider = env.get("AGENTSYNC_MCP_PRICES_PROVIDER", "generic").strip().lower()
         if prices_provider not in {"generic", "serpapi"}:
             raise ValueError("AGENTSYNC_MCP_PRICES_PROVIDER must be generic or serpapi")
-        inventory_provider = env.get("AGENTSYNC_MCP_INVENTORY_PROVIDER", "generic").strip().lower()
-        if inventory_provider not in {"generic", "airtable"}:
-            raise ValueError("AGENTSYNC_MCP_INVENTORY_PROVIDER must be generic or airtable")
         email_provider = env.get("AGENTSYNC_MCP_EMAIL_PROVIDER", "generic").strip().lower()
         if email_provider not in {"generic", "resend"}:
             raise ValueError("AGENTSYNC_MCP_EMAIL_PROVIDER must be generic or resend")
@@ -110,12 +100,6 @@ class MCPSettings:
             prices_provider=prices_provider,
             prices_endpoint=(env.get("AGENTSYNC_MCP_PRICES_ENDPOINT") or None),
             prices_token_env=(env.get("AGENTSYNC_MCP_PRICES_TOKEN_ENV") or None),
-            inventory_provider=inventory_provider,
-            inventory_endpoint=(env.get("AGENTSYNC_MCP_INVENTORY_ENDPOINT") or None),
-            inventory_token_env=(env.get("AGENTSYNC_MCP_INVENTORY_TOKEN_ENV") or None),
-            airtable_base_id=(env.get("AGENTSYNC_MCP_AIRTABLE_BASE_ID") or None),
-            airtable_table_name=(env.get("AGENTSYNC_MCP_AIRTABLE_TABLE_NAME") or None),
-            airtable_view=(env.get("AGENTSYNC_MCP_AIRTABLE_VIEW") or None),
             email_provider=email_provider,
             email_endpoint=(env.get("AGENTSYNC_MCP_EMAIL_ENDPOINT") or None),
             email_token_env=(env.get("AGENTSYNC_MCP_EMAIL_TOKEN_ENV") or None),
@@ -133,9 +117,6 @@ class MCPSettings:
         return {
             "search": self.search_provider != "generic" or bool(self.search_endpoint),
             "prices": self.prices_provider != "generic" or bool(self.prices_endpoint),
-            "inventory": self.inventory_provider == "airtable"
-            and bool(self.airtable_base_id and self.airtable_table_name)
-            or bool(self.inventory_endpoint),
             "email": self.email_provider == "resend"
             and bool(self.email_from and self.email_to)
             or bool(self.email_endpoint),

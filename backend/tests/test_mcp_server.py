@@ -9,7 +9,6 @@ from ai.tools.mcp_http import HTTPMCPClient, MCPProtocolError
 from mcp_servers.agentsync.config import MCPSettings
 from mcp_servers.agentsync.server import build_server
 from mcp_servers.agentsync.upstream import (
-    AirtableAdapter,
     HTTPUpstream,
     ResendAdapter,
     SearchAdapter,
@@ -60,7 +59,6 @@ def test_server_catalog_and_health_are_explicit() -> None:
         assert {tool["name"] for tool in response.json()["result"]["tools"]} == {
             "web.search",
             "market.reference_prices",
-            "inventory.check_stock",
             "email.send_notification",
         }
 
@@ -183,42 +181,6 @@ def test_serpapi_normalizes_google_shopping_results(monkeypatch: pytest.MonkeyPa
         }
     ]
     assert "api_key=secret" in captured["request"].full_url
-
-
-def test_airtable_filters_inventory_records(monkeypatch: pytest.MonkeyPatch) -> None:
-    def fake_urlopen(request, timeout):
-        assert request.headers["Authorization"] == "Bearer secret"
-        return _Response(
-            json.dumps(
-                {
-                    "records": [
-                        {
-                            "id": "rec-1",
-                            "fields": {
-                                "product_id": "bike-1",
-                                "name": "Bike",
-                                "available_units": 3,
-                                "location": "Bogota",
-                            },
-                        },
-                        {"id": "rec-2", "fields": {"product_id": "other"}},
-                    ]
-                }
-            ).encode()
-        )
-
-    monkeypatch.setattr("mcp_servers.agentsync.upstream.urlopen", fake_urlopen)
-    result = AirtableAdapter(
-        token_env=None,
-        base_id="app123",
-        table_name="Inventory",
-        view=None,
-        timeout_seconds=5,
-        max_response_bytes=10_000,
-        environ={"AIRTABLE_TOKEN": "secret"},
-    ).check_stock("bike-1", "Bogota")
-    assert result["items"][0]["available"] == 3
-    assert len(result["items"]) == 1
 
 
 def test_resend_sends_owner_notification_without_exposing_addresses(

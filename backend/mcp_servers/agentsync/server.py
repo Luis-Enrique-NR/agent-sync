@@ -27,7 +27,6 @@ from starlette.routing import Route
 from .config import MCPSettings
 from .security import BearerTokenMiddleware
 from .upstream import (
-    AirtableAdapter,
     HTTPUpstream,
     ResendAdapter,
     SearchAdapter,
@@ -103,31 +102,6 @@ class AgentSyncMCP:
             raw = await asyncio.to_thread(
                 self._upstream(self.settings.prices_endpoint, self.settings.prices_token_env).post_json,
                 {"item": item, "region": region, "currency": currency},
-                idempotency_key=str(uuid4()),
-            )
-            return self._collection(raw, "items")
-        except UpstreamError as exc:
-            _raise_tool_error(exc)
-
-    async def inventory_check_stock(self, product_id: str, location: str = "") -> dict[str, Any]:
-        try:
-            if self.settings.inventory_provider == "airtable":
-                return await asyncio.to_thread(
-                    AirtableAdapter(
-                        token_env=self.settings.inventory_token_env,
-                        base_id=self.settings.airtable_base_id,
-                        table_name=self.settings.airtable_table_name,
-                        view=self.settings.airtable_view,
-                        timeout_seconds=self.settings.upstream_timeout_seconds,
-                        max_response_bytes=self.settings.upstream_max_response_bytes,
-                        environ=self.environ,
-                    ).check_stock,
-                    product_id,
-                    location,
-                )
-            raw = await asyncio.to_thread(
-                self._upstream(self.settings.inventory_endpoint, self.settings.inventory_token_env).post_json,
-                {"product_id": product_id, "location": location},
                 idempotency_key=str(uuid4()),
             )
             return self._collection(raw, "items")
@@ -216,26 +190,6 @@ def build_server(
         return await service.market_reference_prices(item, region, currency.upper())
 
     @mcp.tool(
-        name="inventory.check_stock",
-        title="Check inventory availability",
-        annotations=ToolAnnotations(
-            title="Check inventory availability",
-            readOnlyHint=True,
-            destructiveHint=False,
-            idempotentHint=True,
-            openWorldHint=False,
-        ),
-        structured_output=True,
-    )
-    async def inventory_check_stock(
-        product_id: Annotated[str, Field(min_length=1, max_length=160)],
-        location: Annotated[str, Field(max_length=120)] = "",
-    ) -> dict[str, Any]:
-        """Read stock levels before an agent makes a proposal."""
-
-        return await service.inventory_check_stock(product_id, location)
-
-    @mcp.tool(
         name="email.send_notification",
         title="Send owner notification",
         annotations=ToolAnnotations(
@@ -265,7 +219,6 @@ def build_server(
                 "tools": [
                     "web.search",
                     "market.reference_prices",
-                    "inventory.check_stock",
                     "email.send_notification",
                 ],
             }
