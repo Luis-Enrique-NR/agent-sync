@@ -45,6 +45,7 @@ class MCPSettings:
     email_endpoint: str | None = None
     email_token_env: str | None = None
     email_from: str | None = None
+    email_logo_path: str | None = None
     upstream_timeout_seconds: int = 15
     upstream_max_response_bytes: int = 1_000_000
 
@@ -103,6 +104,7 @@ class MCPSettings:
             email_endpoint=(env.get("AGENTSYNC_MCP_EMAIL_ENDPOINT") or None),
             email_token_env=(env.get("AGENTSYNC_MCP_EMAIL_TOKEN_ENV") or None),
             email_from=(env.get("AGENTSYNC_MCP_EMAIL_FROM") or None),
+            email_logo_path=(env.get("AGENTSYNC_MCP_EMAIL_LOGO_PATH") or None),
             upstream_timeout_seconds=_int_env(
                 env, "AGENTSYNC_MCP_UPSTREAM_TIMEOUT_SECONDS", 15, minimum=1
             ),
