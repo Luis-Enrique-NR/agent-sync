@@ -1,46 +1,109 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type {
-  ChatMessage,
-  DecisionStatus,
-  MatchSession,
-} from "@/lib/types";
+import type { ChatMessage, MatchSession } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
-import { DecisionPanel } from "@/components/DecisionPanel";
+import { HumanEscalationModal, maskSensitiveContent } from "@/components/HumanEscalationModal";
+import { AuditTrail } from "@/components/AuditTrail";
 
 const TURN_DELAY_MS = 1800;
 
-type Phase = "idle" | "live" | "paused" | "waiting_approval" | "resolved" | "rejected";
+type Phase =
+  | "searching"
+  | "live"
+  | "paused"
+  | "waiting_approval"
+  | "resolved"
+  | "rejected"
+  | "failed"
+  | "withdrawn"
+  | "expired";
+
+function phaseOf(session: MatchSession): Phase {
+  switch (session.status) {
+    case "PENDING_HUMAN_APPROVAL":
+      return "waiting_approval";
+    case "RESOLVED":
+      return "resolved";
+    case "REJECTED":
+      return "rejected";
+    case "FAILED":
+      return "failed";
+    case "WITHDRAWN":
+      return "withdrawn";
+    case "EXPIRED":
+      return "expired";
+    case "SEARCHING":
+      return session.messages.length === 0 ? "searching" : "live";
+    case "ACTIVE":
+      return "live";
+    default:
+      return "live";
+  }
+}
+
+const PHASE_BADGES: Record<Phase, { label: string; className: string } | null> = {
+  searching: {
+    label: "Buscando agentes compatibles…",
+    className: "text-[var(--muted)]",
+  },
+  live: {
+    label: "Conversación en vivo",
+    className: "text-[var(--accent-2)]",
+  },
+  paused: {
+    label: "Pausada",
+    className: "text-[var(--warning)]",
+  },
+  waiting_approval: {
+    label: "⏸ Esperando tu decisión",
+    className: "text-[var(--warning)]",
+  },
+  resolved: {
+    label: "✓ Match confirmado",
+    className: "text-[var(--accent-2)]",
+  },
+  rejected: {
+    label: "✕ Negociación descartada",
+    className: "text-[var(--danger)]",
+  },
+  failed: {
+    label: "✕ Sesión falló",
+    className: "text-[var(--danger)]",
+  },
+  withdrawn: {
+    label: "Retirada por la contraparte",
+    className: "text-[var(--warning)]",
+  },
+  expired: {
+    label: "Expirada",
+    className: "text-[var(--muted)]",
+  },
+};
 
 export function ConversationView({
   session,
   agentsById,
 }: {
   session: MatchSession;
-  agentsById: Record<
-    string,
-    { display_name: string; entity_type: "empresa" | "persona" }
-  >;
+  agentsById: Record<string, { display_name: string; entity_type: "company" | "person" }>;
 }) {
-  const queueRef = useRef<ChatMessage[]>(session.pending_script ?? []);
-  const [messages, setMessages] = useState<ChatMessage[]>(session.messages);
-  const [phase, setPhase] = useState<Phase>(() => {
-    if (session.status === "RESOLVED") return "resolved";
-    if (session.status === "REJECTED") return "rejected";
-    return queueRef.current.length > 0 ? "live" : "idle";
-  });
-  const [typingAgent, setTypingAgent] = useState<string | null>(null);
-  const [resolvedStatus, setResolvedStatus] =
-    useState<DecisionStatus | null>(
-      session.pending_decision?.status &&
-        session.pending_decision.status !== "PENDING"
-        ? session.pending_decision.status
-        : null,
-    );
+  const { dispatchHumanDecision } = useAgentSync();
+  const queueRef = useRef<ChatMessage[]>([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const { resolveDecision } = useAgentSync();
+  const [messages, setMessages] = useState<ChatMessage[]>(session.messages);
+  const [streamedExtra, setStreamedExtra] = useState<ChatMessage[]>([]);
+  const [typingAgent, setTypingAgent] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
+
+  const phase = phaseOf(session);
+  const pendingCandidate = session.pending_script?.find(
+    (m) => m.flagged?.requires_human,
+  );
+  const canStream =
+    session.status === "ACTIVE" &&
+    (session.pending_script ?? []).some((m) => !m.flagged?.requires_human);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -52,100 +115,75 @@ export function ConversationView({
   const revealNext = () => {
     const next = queueRef.current.shift();
     if (!next) return;
-
-    setMessages((prev) => [...prev, next]);
     setTypingAgent(next.sender_agent_id);
-
-    if (next.flagged?.requires_human) {
-      setPhase("waiting_approval");
-      return;
+    setStreamedExtra((prev) => [...prev, next]);
+    window.setTimeout(() => setTypingAgent(null), 900);
+    if (queueRef.current.length > 0) {
+      timerRef.current = setTimeout(revealNext, TURN_DELAY_MS);
     }
-    if (queueRef.current.length === 0) {
-      setPhase("resolved");
-      return;
-    }
-    timerRef.current = setTimeout(revealNext, TURN_DELAY_MS);
   };
 
+  // Re-sincroniza el transcript desde el store (fuente de verdad).
   useEffect(() => {
-    if (phase !== "live") return;
-    timerRef.current = setTimeout(revealNext, TURN_DELAY_MS);
+    setMessages(session.messages);
+  }, [session.messages]);
+
+  // Streaming local solo para turnos NO sensibles de sesiones ACTIVE.
+  useEffect(() => {
+    queueRef.current = (session.pending_script ?? []).filter(
+      (m) => !m.flagged?.requires_human,
+    );
+    setStreamedExtra([]);
+    setTypingAgent(null);
+    clearTimer();
+    if (!paused && session.status === "ACTIVE" && queueRef.current.length > 0) {
+      timerRef.current = setTimeout(revealNext, TURN_DELAY_MS);
+    }
     return clearTimer;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
+  }, [session.session_id, session.status, session.pending_script, paused]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [messages, typingAgent]);
+  }, [messages, streamedExtra, typingAgent]);
 
-  const togglePause = () => {
-    if (phase === "live") {
-      clearTimer();
-      setPhase("paused");
-    } else if (phase === "paused") {
-      setPhase("live");
-    }
-  };
+  const allMessages = [...messages, ...streamedExtra];
 
-  const handleResolve = (status: DecisionStatus) => {
-    resolveDecision(session.session_id, status);
-    setResolvedStatus(status);
-    if (status === "REJECTED") {
-      clearTimer();
-      setPhase("rejected");
-      return;
-    }
-    if (queueRef.current.length === 0) {
-      setPhase("resolved");
-    } else {
-      setPhase("live");
-    }
-  };
-
-  const hasScript = (session.pending_script?.length ?? 0) > 0;
-  const searching = !hasScript && messages.length === 0;
+  const badge = PHASE_BADGES[phase];
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          {phase === "live" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-2)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-2)]">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent-2)]" />
-              Conversación en vivo
-            </span>
-          ) : phase === "paused" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--warning)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--warning)]">
-              Pausada
-            </span>
-          ) : phase === "waiting_approval" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--warning)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--warning)]">
-              ⏸ Esperando tu decisión
-            </span>
-          ) : phase === "resolved" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-2)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-2)]">
-              ✓ Match confirmado
-            </span>
-          ) : phase === "rejected" ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--danger)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--danger)]">
-              ✕ Negociación descartada
+          {badge ? (
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${badge.className} ${
+                badge.className.includes("text-[var(--muted)]")
+                  ? "bg-[var(--surface-2)]"
+                  : "bg-[var(--surface-2)]/70"
+              }`}
+            >
+              {phase === "live" ? (
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent-2)]" />
+              ) : null}
+              {badge.label}
             </span>
           ) : null}
         </div>
 
-        {hasScript && (phase === "live" || phase === "paused") ? (
+        {canStream ? (
           <button
             type="button"
-            onClick={togglePause}
+            onClick={() => setPaused((p) => !p)}
             className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3.5 py-1.5 text-xs font-semibold transition hover:brightness-110"
           >
-            {phase === "live" ? "Pausar" : "Continuar"}
+            {paused ? "Continuar" : "Pausar"}
           </button>
         ) : null}
       </div>
 
       <div className="flex flex-col gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
-        {messages.map((message) => {
+        {allMessages.map((message) => {
           const sender = agentsById[message.sender_agent_id];
           const isAgent1 = message.sender_agent_id === session.agent_1_id;
           return (
@@ -190,7 +228,7 @@ export function ConversationView({
           );
         })}
 
-        {searching ? (
+        {phase === "searching" ? (
           <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
             <span className="flex gap-1">
               <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--accent)]" />
@@ -227,15 +265,25 @@ export function ConversationView({
             </div>
           </div>
         ) : null}
+
+        {phase === "waiting_approval" && pendingCandidate ? (
+          <div className="self-start max-w-[82%] rounded-2xl border border-dashed border-[var(--warning)]/50 bg-[var(--background)] px-4 py-2.5">
+            <p className="text-xs font-semibold text-[var(--warning)]">
+              Propuesta pendiente de aprobación
+            </p>
+            <p className="mt-1 text-sm leading-relaxed">
+              {maskSensitiveContent(pendingCandidate)}
+            </p>
+            {pendingCandidate.flagged?.value_ref ? (
+              <p className="mt-1.5 font-mono text-[10px] text-[var(--warning)]">
+                ◈ {pendingCandidate.flagged.value_ref} (referencia opaca)
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
         <div ref={endRef} />
       </div>
-
-      {phase === "waiting_approval" && session.pending_decision ? (
-        <DecisionPanel
-          decision={session.pending_decision}
-          onResolve={handleResolve}
-        />
-      ) : null}
 
       {phase === "resolved" ? (
         <div className="rounded-2xl border border-[var(--accent-2)]/40 bg-[var(--accent-2)]/10 p-5">
@@ -243,14 +291,20 @@ export function ConversationView({
             ✓ Match confirmado — siguiente paso
           </p>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Contacto revelado (simulado): en una versión real ambos agentes
-            revelan su email o teléfono de contacto para continuar fuera de la
-            plataforma.
+            El AI Backend reanudó la negociación tras tu aprobación. Los datos
+            sensibles aprobados fueron resueltos por el vault y registrados en
+            la bitácora.
           </p>
-          {resolvedStatus === "REPLACED" ? (
+          {session.pending_decision?.status === "REPLACED" ? (
             <p className="mt-2 text-xs text-[var(--muted)]">
               Tu respuesta manual fue registrada con trazabilidad antes de
               continuar.
+            </p>
+          ) : null}
+          {session.outcome?.agreed_price ? (
+            <p className="mt-2 text-xs text-[var(--muted)]">
+              Acuerdo: USD {session.outcome.agreed_price} ·{" "}
+              {session.outcome.summary}
             </p>
           ) : null}
         </div>
@@ -262,11 +316,46 @@ export function ConversationView({
             ✕ Negociación descartada
           </p>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Rechazaste la propuesta. No se publicó ningún mensaje y la sesión
-            quedó registrada como REJECTED.
+            Rechazaste la propuesta. El AI Backend retiró la sesión; no se
+            publicó ningún mensaje y quedó registrada como REJECTED.
           </p>
         </div>
       ) : null}
+
+      {phase === "failed" || phase === "withdrawn" || phase === "expired" ? (
+        <div className="rounded-2xl border border-[var(--warning)]/40 bg-[var(--warning)]/10 p-5">
+          <p className="text-sm font-semibold text-[var(--warning)]">
+            {phase === "failed"
+              ? "✕ Sesión falló"
+              : phase === "withdrawn"
+                ? "Retirada por la contraparte"
+                : "Sesión expirada"}
+          </p>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Los agentes fueron liberados y el motor puede volver a intentar el
+            matchmaking con otro candidato.
+          </p>
+        </div>
+      ) : null}
+
+      {phase === "waiting_approval" && session.pending_decision ? (
+        <HumanEscalationModal
+          decision={session.pending_decision}
+          candidate={pendingCandidate}
+          onResolve={(humanDecision) =>
+            dispatchHumanDecision(session.session_id, humanDecision)
+          }
+        />
+      ) : null}
+
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-5">
+        <h2 className="text-base font-semibold">Bitácora / audit trail</h2>
+        <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
+          Trazabilidad notarial con actor (HUMAN / SYSTEM / LLM) de cada
+          transición.
+        </p>
+        <AuditTrail audit={session.audit} />
+      </section>
     </div>
   );
 }

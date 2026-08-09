@@ -2,14 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { PendingDecision } from "@/lib/types";
+import type { PendingDecision, Segment } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
-import { DecisionPanel } from "@/components/DecisionPanel";
+import { HumanEscalationModal } from "@/components/HumanEscalationModal";
 
-type Filter = "todas" | "B2B" | "P2P";
+type Filter = "todas" | Segment;
 
 export function DecisionInbox() {
-  const { sessions, agentsById, resolveDecision } = useAgentSync();
+  const { sessions, agentsById, dispatchHumanDecision } = useAgentSync();
   const [filter, setFilter] = useState<Filter>("todas");
 
   const pending = useMemo(
@@ -20,7 +20,12 @@ export function DecisionInbox() {
           decision: session.pending_decision as PendingDecision | undefined,
         }))
         .filter(
-          (entry): entry is { session: (typeof sessions)[number]; decision: PendingDecision } =>
+          (
+            entry,
+          ): entry is {
+            session: (typeof sessions)[number];
+            decision: PendingDecision;
+          } =>
             Boolean(
               entry.decision &&
                 entry.decision.status === "PENDING" &&
@@ -36,8 +41,7 @@ export function DecisionInbox() {
       : pending.filter(({ session }) => session.segment === filter);
 
   const resolvedThisSession = sessions.filter(
-    (s) =>
-      s.pending_decision && s.pending_decision.status !== "PENDING",
+    (s) => s.pending_decision && s.pending_decision.status !== "PENDING",
   ).length;
 
   const filters: { key: Filter; label: string }[] = [
@@ -85,14 +89,17 @@ export function DecisionInbox() {
               : "No hay decisiones pendientes."}
           </p>
           <p className="text-sm text-[var(--muted)]">
-            Cuando un agente quiera publicar algo sensible, la propuesta
-            aparecerá aquí para tu aprobación.
+            Cuando un agente quiera publicar algo sensible (precio, PII o
+            compromiso), la propuesta aparecerá aquí para tu aprobación.
           </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-4">
           {visible.map(({ session, decision }) => {
             const requester = agentsById[decision.requested_by];
+            const candidate = session.pending_script?.find(
+              (m) => m.flagged?.requires_human,
+            );
             return (
               <li
                 key={session.session_id}
@@ -119,15 +126,15 @@ export function DecisionInbox() {
                   {session.summary}
                 </p>
                 <p className="mt-0.5 text-xs text-[var(--muted)]">
-                  Solicitada por{" "}
-                  {requester?.display_name ?? decision.requested_by}
+                  Solicitada por {requester?.display_name ?? decision.requested_by}
                 </p>
 
                 <div className="mt-4">
-                  <DecisionPanel
+                  <HumanEscalationModal
                     decision={decision}
-                    onResolve={(status) =>
-                      resolveDecision(session.session_id, status)
+                    candidate={candidate}
+                    onResolve={(humanDecision) =>
+                      dispatchHumanDecision(session.session_id, humanDecision)
                     }
                   />
                 </div>

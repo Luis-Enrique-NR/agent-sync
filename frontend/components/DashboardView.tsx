@@ -31,6 +31,24 @@ function statusBadge(status: MatchSession["status"]) {
           Rechazada
         </span>
       );
+    case "FAILED":
+      return (
+        <span className="rounded-full bg-[var(--danger)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--danger)]">
+          Falló
+        </span>
+      );
+    case "WITHDRAWN":
+      return (
+        <span className="rounded-full bg-[var(--warning)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--warning)]">
+          Retirada
+        </span>
+      );
+    case "EXPIRED":
+      return (
+        <span className="rounded-full bg-[var(--muted)]/10 px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
+          Expirada
+        </span>
+      );
     default:
       return (
         <span className="rounded-full bg-[var(--surface-2)] px-2.5 py-0.5 text-xs font-semibold text-[var(--muted)]">
@@ -51,7 +69,7 @@ export function DashboardView() {
   const pending = sessions.filter(
     (s) => s.status === "PENDING_HUMAN_APPROVAL" && s.pending_decision,
   );
-  const activeAgents = agents.filter((a) => a.active).length;
+  const activeAgents = agents.filter((a) => a.status !== "PAUSED").length;
   const activeSessions = sessions.filter(
     (s) => s.status === "ACTIVE" || s.status === "PENDING_HUMAN_APPROVAL",
   );

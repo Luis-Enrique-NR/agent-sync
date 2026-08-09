@@ -1,21 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import mockData from "@/data/mockData.json";
-import type { AgentProfile, MockData } from "@/lib/types";
+import type {
+  AgentProfile,
+  EscalationRule,
+  MockData,
+  SensitiveCategory,
+  SensitiveDataCategory,
+} from "@/lib/types";
+import { useAgentSync } from "@/lib/store";
 
 const data = mockData as unknown as MockData;
 
-const PERSONA_AGENT = data.agents.find((a) => a.entity_type === "persona");
-const EMPRESA_AGENT = data.agents.find((a) => a.entity_type === "empresa");
+const PERSON_AGENT = data.agents.find((a) => a.entity_type === "person");
+const COMPANY_AGENT = data.agents.find((a) => a.entity_type === "company");
 
-type EntityType = "empresa" | "persona";
+type EntityType = "company" | "person";
 
 interface HardLimitsState {
   maxUnitPrice: string;
   minAnnualVolume: string;
-  noPersonalData: boolean;
   minSalePrice: string;
+  noPersonalData: boolean;
   noShareAddress: boolean;
   noSharePhone: boolean;
 }
@@ -24,59 +31,85 @@ interface SensitiveRules {
   [categoryId: string]: boolean;
 }
 
-function initialSensitiveRules(): SensitiveRules {
-  const rules: SensitiveRules = {};
-  const categories = [
+function allCategories(): SensitiveCategory[] {
+  return [
     ...data.sensitive_categories.default_required,
     ...data.sensitive_categories.editable,
   ];
-  for (const category of categories) {
+}
+
+function initialSensitiveRules(): SensitiveRules {
+  const rules: SensitiveRules = {};
+  for (const category of allCategories()) {
     rules[category.id] = category.required || category.enabled;
   }
   return rules;
 }
 
 function hardLimitsFromAgent(agent: AgentProfile | undefined): HardLimitsState {
-  const limits = agent?.hard_limits ?? {};
+  const limits = agent?.hard_limits ?? [];
+  const valueOf = (key: string) =>
+    String(limits.find((l) => l.key === key)?.value ?? "");
+  const disclose = (category: SensitiveDataCategory) =>
+    (agent?.never_disclose ?? []).includes(category);
   return {
-    maxUnitPrice: String(limits.max_unit_price_usd ?? ""),
-    minAnnualVolume: String(limits.min_annual_volume_units ?? ""),
-    noPersonalData: Boolean(limits.no_personal_data),
-    minSalePrice: String(limits.min_sale_price_usd ?? ""),
-    noShareAddress: Boolean(limits.no_share_address_without_approval),
-    noSharePhone: Boolean(limits.no_share_phone_without_approval),
+    maxUnitPrice: valueOf("max_unit_price_usd"),
+    minAnnualVolume: valueOf("min_annual_volume_units"),
+    minSalePrice: valueOf("min_sale_price_usd"),
+    noPersonalData: disclose("EMAIL"),
+    noShareAddress: disclose("EXACT_ADDRESS"),
+    noSharePhone: disclose("PHONE"),
   };
 }
 
 function defaultFields(entityType: EntityType) {
-  const agent = entityType === "empresa" ? EMPRESA_AGENT : PERSONA_AGENT;
+  const agent = entityType === "company" ? COMPANY_AGENT : PERSON_AGENT;
   return {
     displayName: agent?.display_name ?? "",
+    publicDescription: agent?.public_description ?? "",
     personality: agent?.personality ?? "",
     objectives: agent?.objectives.join("\n") ?? "",
+    interests: agent?.interests.join("\n") ?? "",
+    capabilities: agent?.capabilities.join("\n") ?? "",
     hardLimits: hardLimitsFromAgent(agent),
   };
 }
 
 const inputClass =
   "w-full rounded-xl border border-[var(--border)] bg-[var(--background)] px-3.5 py-2.5 text-sm text-[var(--foreground)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30";
-const labelClass =
-  "mb-1.5 block text-sm font-semibold text-[var(--muted)]";
+const labelClass = "mb-1.5 block text-sm font-semibold text-[var(--muted)]";
 
 export function AgentSetupForm() {
-  const [entityType, setEntityType] = useState<EntityType>("persona");
-  const [displayName, setDisplayName] = useState(PERSONA_AGENT?.display_name ?? "");
-  const [personality, setPersonality] = useState(PERSONA_AGENT?.personality ?? "");
+  const { registerAgent } = useAgentSync();
+  const [entityType, setEntityType] = useState<EntityType>("person");
+  const [displayName, setDisplayName] = useState(PERSON_AGENT?.display_name ?? "");
+  const [publicDescription, setPublicDescription] = useState(
+    PERSON_AGENT?.public_description ?? "",
+  );
+  const [personality, setPersonality] = useState(PERSON_AGENT?.personality ?? "");
   const [objectives, setObjectives] = useState(
-    PERSONA_AGENT?.objectives.join("\n") ?? "",
+    PERSON_AGENT?.objectives.join("\n") ?? "",
+  );
+  const [interests, setInterests] = useState(
+    PERSON_AGENT?.interests.join("\n") ?? "",
+  );
+  const [capabilities, setCapabilities] = useState(
+    PERSON_AGENT?.capabilities.join("\n") ?? "",
   );
   const [hardLimits, setHardLimits] = useState<HardLimitsState>(
-    hardLimitsFromAgent(PERSONA_AGENT),
+    hardLimitsFromAgent(PERSON_AGENT),
   );
   const [sensitiveRules, setSensitiveRules] =
     useState<SensitiveRules>(initialSensitiveRules);
+  const [amountThreshold, setAmountThreshold] = useState("10000");
   const [saving, setSaving] = useState(false);
-  const [savedProfile, setSavedProfile] = useState<unknown>(null);
+  const [saved, setSaved] = useState<{
+    agent_id: string;
+    entity_type: EntityType;
+    matches: number;
+    event: string;
+    profile: AgentProfile;
+  } | null>(null);
 
   const requiredRules = data.sensitive_categories.default_required.filter(
     (c) => c.required,
@@ -90,8 +123,11 @@ export function AgentSetupForm() {
     setEntityType(type);
     const fields = defaultFields(type);
     setDisplayName(fields.displayName);
+    setPublicDescription(fields.publicDescription);
     setPersonality(fields.personality);
     setObjectives(fields.objectives);
+    setInterests(fields.interests);
+    setCapabilities(fields.capabilities);
     setHardLimits(fields.hardLimits);
   };
 
@@ -110,57 +146,101 @@ export function AgentSetupForm() {
     setHardLimits((prev) => ({ ...prev, [key]: value }));
   };
 
+  const buildEscalationRules = useMemo(
+    (): EscalationRule[] => {
+      const rules: EscalationRule[] = [];
+      for (const category of allCategories()) {
+        if (!sensitiveRules[category.id]) continue;
+        rules.push({
+          rule_id: `esc-${category.id}`,
+          rule_type: category.ruleType,
+          key: category.ruleType === "AMOUNT_ABOVE" ? category.key ?? "amount" : category.key,
+          threshold:
+            category.ruleType === "AMOUNT_ABOVE"
+              ? Number(amountThreshold) || category.threshold
+              : category.threshold,
+          categories: category.categories ?? [],
+          enabled: true,
+        });
+      }
+      return rules;
+    },
+    [sensitiveRules, amountThreshold],
+  );
+
+  const buildNeverDisclose = useMemo((): SensitiveDataCategory[] => {
+    const categories = new Set<SensitiveDataCategory>();
+    if (hardLimits.noPersonalData) categories.add("EMAIL");
+    if (hardLimits.noShareAddress) categories.add("EXACT_ADDRESS");
+    if (hardLimits.noSharePhone) categories.add("PHONE");
+    return [...categories];
+  }, [hardLimits]);
+
+  const buildProfile = (): AgentProfile => ({
+    agent_id: `agent-${entityType}-${Date.now().toString(36)}`,
+    display_name: displayName,
+    entity_type: entityType,
+    public_description: publicDescription,
+    personality,
+    objectives: objectives
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+    interests: interests
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+    capabilities: capabilities
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean),
+    hard_limits:
+      entityType === "company"
+        ? [
+            {
+              key: "max_unit_price_usd",
+              operator: "lte",
+              value: Number(hardLimits.maxUnitPrice) || 0,
+              unit: "usd",
+            },
+            {
+              key: "min_annual_volume_units",
+              operator: "gte",
+              value: Number(hardLimits.minAnnualVolume) || 0,
+              unit: "units",
+            },
+          ]
+        : [
+            {
+              key: "min_sale_price_usd",
+              operator: "gte",
+              value: Number(hardLimits.minSalePrice) || 0,
+              unit: "usd",
+            },
+          ],
+    never_disclose: buildNeverDisclose,
+    escalation_rules: buildEscalationRules,
+    status: "AVAILABLE",
+    logistics_preferences: [],
+    tools: [],
+  });
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSaving(true);
 
-    const payload = {
-      profile: {
-        agent_id: `agent-${entityType}-demo`,
-        entity_type: entityType,
-        display_name: displayName,
-        personality,
-        objectives: objectives
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean),
-        hard_limits: {
-          ...(entityType === "empresa"
-            ? {
-                max_unit_price_usd: Number(hardLimits.maxUnitPrice) || undefined,
-                min_annual_volume_units:
-                  Number(hardLimits.minAnnualVolume) || undefined,
-                no_personal_data: hardLimits.noPersonalData,
-              }
-            : {
-                min_sale_price_usd: Number(hardLimits.minSalePrice) || undefined,
-                no_share_address_without_approval: hardLimits.noShareAddress,
-                no_share_phone_without_approval: hardLimits.noSharePhone,
-              }),
-        },
-        sensitive_categories: {
-          default_required: data.sensitive_categories.default_required.map(
-            (c) => ({ ...c, enabled: sensitiveRules[c.id] ?? false }),
-          ),
-          editable: data.sensitive_categories.editable.map((c) => ({
-            ...c,
-            enabled: sensitiveRules[c.id] ?? false,
-          })),
-        },
-      },
-      consumption: {
-        source: "POST /api/agents (simulado)",
-        merged_with_mock: data.meta.source,
-        segment: entityType === "empresa" ? "B2B" : "P2P",
-        reference_session:
-          entityType === "empresa"
-            ? data.sessions.find((s) => s.segment === "B2B")?.session_id
-            : data.sessions.find((s) => s.segment === "P2P")?.session_id,
-      },
-    };
+    const profile = buildProfile();
+    const matches = registerAgent(profile);
 
+    // Simula el round-trip POST /api/agents → worker → evento agent.registered
     await new Promise((resolve) => setTimeout(resolve, 700));
-    setSavedProfile(payload);
+    setSaved({
+      agent_id: profile.agent_id,
+      entity_type: profile.entity_type,
+      matches,
+      event: "agent.registered",
+      profile,
+    });
     setSaving(false);
   };
 
@@ -170,22 +250,30 @@ export function AgentSetupForm() {
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="text-base font-semibold">Tipo de entidad</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          El motor es el mismo para ambos. Solo cambia la data de configuración.
+          Un solo motor agnóstico. B2B (empresa) y P2P (persona) solo cambian la
+          data de configuración y el segmento derivado.
         </p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {(
             [
               {
-                type: "persona",
+                type: "person",
+                segment: "P2P",
                 title: "P2P — Persona",
                 desc: "Vender un artículo, buscar roomie, coordinar un trueque.",
               },
               {
-                type: "empresa",
+                type: "company",
+                segment: "B2B",
                 title: "B2B — Empresa",
                 desc: "Buscar proveedores, distribuidores o socios comerciales.",
               },
-            ] as { type: EntityType; title: string; desc: string }[]
+            ] as {
+              type: EntityType;
+              segment: string;
+              title: string;
+              desc: string;
+            }[]
           ).map((option) => {
             const selected = entityType === option.type;
             return (
@@ -225,14 +313,26 @@ export function AgentSetupForm() {
         <div className="mt-4 grid grid-cols-1 gap-4">
           <div>
             <label className={labelClass} htmlFor="displayName">
-              {entityType === "empresa" ? "Nombre de la empresa" : "Nombre"}
+              {entityType === "company" ? "Nombre de la empresa" : "Nombre"}
             </label>
             <input
               id="displayName"
               className={inputClass}
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              placeholder={entityType === "empresa" ? "Mi empresa S.A." : "Mi nombre"}
+              placeholder={entityType === "company" ? "Mi empresa S.A." : "Mi nombre"}
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="publicDescription">
+              Descripción pública
+            </label>
+            <input
+              id="publicDescription"
+              className={inputClass}
+              value={publicDescription}
+              onChange={(e) => setPublicDescription(e.target.value)}
+              placeholder="Una línea visible para el resto del ecosistema."
             />
           </div>
           <div>
@@ -262,19 +362,55 @@ export function AgentSetupForm() {
         </div>
       </section>
 
-      {/* Límites duros */}
+      {/* Tags: interests ∩ capabilities (motor agnóstico B2B/P2P) */}
+      <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
+        <h2 className="text-base font-semibold">Intereses y capacidades</h2>
+        <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
+          El matchmaking cruza <code className="font-mono">interests</code> de un
+          agente con <code className="font-mono">capabilities</code> de otro en
+          ambas direcciones. Etiquetas separadas por línea.
+        </p>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClass} htmlFor="interests">
+              Intereses (busco…)
+            </label>
+            <textarea
+              id="interests"
+              className={`${inputClass} min-h-28`}
+              value={interests}
+              onChange={(e) => setInterests(e.target.value)}
+              placeholder="comprar tela organica&#10;descuentos por volumen"
+            />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="capabilities">
+              Capacidades (ofrezco…)
+            </label>
+            <textarea
+              id="capabilities"
+              className={`${inputClass} min-h-28`}
+              value={capabilities}
+              onChange={(e) => setCapabilities(e.target.value)}
+              placeholder="venta de tela organica&#10;contratos de suministro"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Límites duros (NumericLimit[]) */}
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="text-base font-semibold">Límites duros</h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
           No negociables. Se validan fuera del modelo de lenguaje antes de emitir
-          cualquier mensaje.
+          cualquier mensaje (NumericLimit con operador).
         </p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {entityType === "empresa" ? (
+          {entityType === "company" ? (
             <>
               <div>
                 <label className={labelClass} htmlFor="maxUnitPrice">
-                  Precio máximo por unidad (USD)
+                  Precio máximo por unidad (USD) — lte
                 </label>
                 <input
                   id="maxUnitPrice"
@@ -289,7 +425,7 @@ export function AgentSetupForm() {
               </div>
               <div>
                 <label className={labelClass} htmlFor="minAnnualVolume">
-                  Volumen anual mínimo (unidades)
+                  Volumen anual mínimo (unidades) — gte
                 </label>
                 <input
                   id="minAnnualVolume"
@@ -310,14 +446,14 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noPersonalData")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir datos personales
+                No compartir datos personales → never_disclose
               </label>
             </>
           ) : (
             <>
               <div>
                 <label className={labelClass} htmlFor="minSalePrice">
-                  Precio mínimo de venta (USD)
+                  Precio mínimo de venta (USD) — gte
                 </label>
                 <input
                   id="minSalePrice"
@@ -337,7 +473,7 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noShareAddress")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir dirección sin aprobación
+                No compartir dirección sin aprobación → never_disclose
               </label>
               <label className="flex items-center gap-3 text-sm">
                 <input
@@ -346,21 +482,21 @@ export function AgentSetupForm() {
                   onChange={() => toggleLimit("noSharePhone")}
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
-                No compartir teléfono sin aprobación
+                No compartir teléfono sin aprobación → never_disclose
               </label>
             </>
           )}
         </div>
       </section>
 
-      {/* Decisiones sensibles */}
+      {/* Reglas de escalamiento humano (EscalationRule[]) */}
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6">
         <h2 className="text-base font-semibold">
-          Qué situaciones se escalan a ti
+          Reglas de escalamiento humano
         </h2>
         <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-          Tú decides qué cuenta como decisión sensible. Las categorías
-          obligatorias no se pueden desactivar.
+          Cada categoría activa se serializa como <code className="font-mono">escalation_rules</code>.
+          El AI Backend pausa la sesión (PENDING_HUMAN_APPROVAL) y pide tu decisión.
         </p>
 
         <fieldset className="mb-5">
@@ -380,6 +516,9 @@ export function AgentSetupForm() {
                   className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
                 />
                 <span className="flex-1">{rule.label}</span>
+                <span className="font-mono text-[10px] text-[var(--muted)]">
+                  {rule.ruleType}
+                </span>
                 <span className="rounded-full bg-[var(--danger)]/10 px-2 py-0.5 text-[10px] font-semibold uppercase text-[var(--danger)]">
                   fija
                 </span>
@@ -396,18 +535,35 @@ export function AgentSetupForm() {
             {editableRules.map((rule) => {
               const checked = sensitiveRules[rule.id] ?? false;
               return (
-                <label
-                  key={rule.id}
-                  className="flex items-center gap-3 rounded-lg bg-[var(--background)] px-3 py-2.5 text-sm"
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleRule(rule.id)}
-                    className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
-                  />
-                  {rule.label}
-                </label>
+                <div key={rule.id}>
+                  <label className="flex items-center gap-3 rounded-lg bg-[var(--background)] px-3 py-2.5 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleRule(rule.id)}
+                      className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
+                    />
+                    <span className="flex-1">{rule.label}</span>
+                    <span className="font-mono text-[10px] text-[var(--muted)]">
+                      {rule.ruleType}
+                    </span>
+                  </label>
+                  {checked && rule.ruleType === "AMOUNT_ABOVE" ? (
+                    <div className="px-11 pb-2">
+                      <label className={labelClass} htmlFor="amountThreshold">
+                        Umbral (USD)
+                      </label>
+                      <input
+                        id="amountThreshold"
+                        type="number"
+                        min="0"
+                        className={inputClass}
+                        value={amountThreshold}
+                        onChange={(e) => setAmountThreshold(e.target.value)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
               );
             })}
           </div>
@@ -420,32 +576,43 @@ export function AgentSetupForm() {
           disabled={saving}
           className="inline-flex items-center gap-2 rounded-xl bg-[var(--accent)] px-5 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {saving ? "Guardando..." : "Guardar configuración"}
+          {saving ? "Registrando agente…" : "Registrar agente"}
         </button>
         <p className="text-xs text-[var(--muted)]">
-          Simula un POST a <code className="font-mono">/api/agents</code> con los
-          datos del mock inicial.
+          Simula un <code className="font-mono">agent.registered</code> →
+          matchmaking automático bidireccional.
         </p>
       </div>
 
-      {savedProfile ? (
+      {saved ? (
         <section className="rounded-2xl border border-[var(--accent-2)]/40 bg-[var(--accent-2)]/10 p-6">
           <h2 className="text-base font-semibold text-[var(--accent-2)]">
-            Perfil simulado guardado
+            Agente registrado — {saved.entity_type === "company" ? "B2B" : "P2P"}
           </h2>
           <p className="mb-4 mt-1 text-sm text-[var(--muted)]">
-            El payload fue consumido con éxito. Fusión de referencia con el mock:
-            {JSON.stringify((savedProfile as { consumption: { segment: string; reference_session?: string } }).consumption, null, 2) ? (
-              <span className="font-mono">
-                {" "}
-                {String((savedProfile as { consumption: { segment: string; reference_session?: string } }).consumption.segment)} ·{" "}
-                {String((savedProfile as { consumption: { segment: string; reference_session?: string } }).consumption.reference_session)}
-              </span>
-            ) : null}
+            Evento <code className="font-mono">{saved.event}</code> emitido para
+            <span className="font-mono"> {saved.agent_id}</span>. El motor
+            encontro{" "}
+            <strong>
+              {saved.matches === 0
+                ? "0 candidatos compatibles"
+                : `${saved.matches} candidato${saved.matches === 1 ? "" : "s"} compatible${saved.matches === 1 ? "" : "s"}`}
+            </strong>
+            ; cada match creo un canal privado en Portal y una negociacion ACTIVE.
+            Revisalo en{" "}
+            <a href="/ecosistema" className="text-[var(--accent)] hover:underline">
+              /ecosistema
+            </a>
+            .
           </p>
-          <pre className="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--background)] p-4 text-xs leading-relaxed text-[var(--muted)]">
-            {JSON.stringify(savedProfile, null, 2)}
-          </pre>
+          <details className="rounded-xl border border-[var(--border)] bg-[var(--background)] p-4">
+            <summary className="cursor-pointer text-sm font-semibold">
+              Ver payload exacto enviado
+            </summary>
+            <pre className="mt-3 overflow-x-auto text-xs leading-relaxed text-[var(--muted)]">
+              {JSON.stringify(saved.profile, null, 2)}
+            </pre>
+          </details>
         </section>
       ) : null}
     </form>
