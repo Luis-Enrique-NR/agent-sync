@@ -183,9 +183,36 @@
       "price_range": null,
       "logistics_preferences": ["zona norte", "modalidad virtual", "entrega local"],
       "tools": [
-        { "id": "avaluo", "name": "Avaluo simulado", "simulated": true, "notes": "Precio de referencia de mercado del vehículo." },
-        { "id": "calendario", "name": "Disponibilidad personal", "simulated": true, "notes": "Horarios libres para clases particulares." },
-        { "id": "inventario", "name": "Consumo de embalaje", "simulated": true, "notes": "Demanda mensual estimada de cartón corrugado." }
+        {
+          "id": "web.search",
+          "name": "Búsqueda de oportunidades",
+          "simulated": true,
+          "notes": "Consulta fuentes públicas simuladas para encontrar oportunidades compatibles.",
+          "effect": "READ",
+          "approval_mode": "AUTO",
+          "connection_status": "SIMULATED",
+          "scope": "Web pública · fuentes registradas"
+        },
+        {
+          "id": "calendar.check_availability",
+          "name": "Disponibilidad de calendario",
+          "simulated": true,
+          "notes": "Consulta horarios libres sin crear ni modificar eventos.",
+          "effect": "READ",
+          "approval_mode": "AUTO",
+          "connection_status": "SIMULATED",
+          "scope": "Calendario principal · solo disponibilidad"
+        },
+        {
+          "id": "email.send_notification",
+          "name": "Enviar una notificación",
+          "simulated": true,
+          "notes": "Simula el envío de una notificación después de recibir aprobación.",
+          "effect": "WRITE",
+          "approval_mode": "ALWAYS",
+          "connection_status": "SIMULATED",
+          "scope": "Correo verificado · notificaciones"
+        }
       ]
     },
     {

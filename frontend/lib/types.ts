@@ -106,6 +106,10 @@ export interface AgentTool {
   name: string;
   simulated: boolean;
   notes?: string;
+  effect?: "READ" | "WRITE";
+  approval_mode?: "AUTO" | "ALWAYS" | "DISABLED";
+  connection_status?: "SIMULATED" | "CONNECTED" | "UNCONFIGURED" | "ERROR";
+  scope?: string;
 }
 
 /**

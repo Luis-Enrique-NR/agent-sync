@@ -4,11 +4,17 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import mockData from "@/data/mockData.json";
 import {
   ArrowRightIcon,
+  BoxIcon,
+  CalendarIcon,
   CheckIcon,
+  MailIcon,
+  MeetingIcon,
   PlusIcon,
+  SearchIcon,
   ShieldIcon,
   SlidersIcon,
   SparkIcon,
+  TrendIcon,
   UserIcon,
 } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
@@ -25,32 +31,115 @@ import type {
 } from "@/lib/types";
 
 const data = mockData as unknown as MockData;
-const TOOL_OPTIONS: AgentTool[] = [
+
+type ToolMode = NonNullable<AgentTool["approval_mode"]>;
+type ToolConnectionStatus = NonNullable<AgentTool["connection_status"]>;
+type ToolIconName = "search" | "calendar" | "prices" | "inventory" | "meeting" | "email";
+
+interface ToolOption extends AgentTool {
+  group: "information" | "actions";
+  effect: "READ" | "WRITE";
+  connection_status: ToolConnectionStatus;
+  scope: string;
+  defaultMode: ToolMode;
+  icon: ToolIconName;
+  lastRun: string;
+  usage: string;
+}
+
+const TOOL_OPTIONS: ToolOption[] = [
   {
-    id: "busqueda",
+    id: "web.search",
     name: "Búsqueda de oportunidades",
     simulated: true,
-    notes: "Encuentra ofertas y referencias públicas compatibles.",
+    notes: "Consulta fuentes públicas para encontrar y validar oportunidades.",
+    group: "information",
+    effect: "READ",
+    connection_status: "SIMULATED",
+    scope: "Web pública · fuentes registradas",
+    defaultMode: "AUTO",
+    icon: "search",
+    lastRun: "Hace 12 min",
+    usage: "1 llamada · ~0,3 s",
   },
   {
-    id: "calendario",
+    id: "calendar.check_availability",
     name: "Disponibilidad de calendario",
     simulated: true,
-    notes: "Consulta horarios libres; reservar siempre requiere aprobación.",
+    notes: "Lee espacios libres sin crear ni modificar eventos.",
+    group: "information",
+    effect: "READ",
+    connection_status: "SIMULATED",
+    scope: "Calendario principal · solo disponibilidad",
+    defaultMode: "AUTO",
+    icon: "calendar",
+    lastRun: "Hoy, 09:42",
+    usage: "1 consulta · ~0,1 s",
   },
   {
-    id: "avaluo",
+    id: "market.reference_prices",
     name: "Precios de referencia",
-    simulated: true,
-    notes: "Compara valores de mercado sin alterar las condiciones de tus objetivos.",
+    simulated: false,
+    notes: "Compara precios de mercado antes de formular una propuesta.",
+    group: "information",
+    effect: "READ",
+    connection_status: "UNCONFIGURED",
+    scope: "Fuente de mercado pendiente de registrar",
+    defaultMode: "DISABLED",
+    icon: "prices",
+    lastRun: "Sin ejecuciones",
+    usage: "0 llamadas",
   },
   {
-    id: "inventario",
-    name: "Inventario o disponibilidad",
+    id: "inventory.check_stock",
+    name: "Inventario y disponibilidad",
+    simulated: false,
+    notes: "Verifica existencias y capacidad antes de comprometer una cantidad.",
+    group: "information",
+    effect: "READ",
+    connection_status: "UNCONFIGURED",
+    scope: "Inventario pendiente de registrar",
+    defaultMode: "DISABLED",
+    icon: "inventory",
+    lastRun: "Sin ejecuciones",
+    usage: "0 llamadas",
+  },
+  {
+    id: "calendar.request_meeting",
+    name: "Solicitar una reunión",
+    simulated: false,
+    notes: "Propone un horario y crea una invitación solo después de tu aprobación.",
+    group: "actions",
+    effect: "WRITE",
+    connection_status: "UNCONFIGURED",
+    scope: "Calendario principal · crear invitaciones",
+    defaultMode: "DISABLED",
+    icon: "meeting",
+    lastRun: "Sin ejecuciones",
+    usage: "0 acciones",
+  },
+  {
+    id: "email.send_notification",
+    name: "Enviar una notificación",
     simulated: true,
-    notes: "Verifica existencias antes de confirmar una propuesta.",
+    notes: "Envía un correo externo únicamente después de que lo apruebes.",
+    group: "actions",
+    effect: "WRITE",
+    connection_status: "SIMULATED",
+    scope: "Correo verificado · notificaciones",
+    defaultMode: "ALWAYS",
+    icon: "email",
+    lastRun: "Ayer, 16:20",
+    usage: "1 acción aprobada",
   },
 ];
+
+const LEGACY_TOOL_IDS: Record<string, string> = {
+  busqueda: "web.search",
+  calendario: "calendar.check_availability",
+  avaluo: "market.reference_prices",
+  inventario: "inventory.check_stock",
+};
 
 const PERSON_INTEREST_SUGGESTIONS = [
   "venta entre personas",
@@ -93,7 +182,7 @@ interface ConfigurationDraft {
   neverDisclose: SensitiveDataCategory[];
   sensitiveRules: SensitiveRules;
   amountThreshold: string;
-  enabledTools: string[];
+  toolModes: Record<string, ToolMode>;
 }
 
 function createObjectiveContext(
@@ -152,6 +241,31 @@ function rulesFromAgent(agent?: AgentProfile): SensitiveRules {
   return rules;
 }
 
+function toolModesFromAgent(agent?: AgentProfile): Record<string, ToolMode> {
+  return Object.fromEntries(
+    TOOL_OPTIONS.map((option) => {
+      const configured = agent?.tools.find(
+        (tool) => (LEGACY_TOOL_IDS[tool.id] ?? tool.id) === option.id,
+      );
+      const configuredMode = configured?.approval_mode;
+      const mode = configuredMode
+        ? configuredMode
+        : configured
+          ? option.effect === "WRITE"
+            ? "ALWAYS"
+            : "AUTO"
+          : agent
+            ? "DISABLED"
+            : option.defaultMode;
+      return [option.id, option.connection_status === "UNCONFIGURED" ? "DISABLED" : mode];
+    }),
+  );
+}
+
+function enabledToolCount(toolModes: Record<string, ToolMode>) {
+  return Object.values(toolModes).filter((mode) => mode !== "DISABLED").length;
+}
+
 function draftFromAgent(
   agent: AgentProfile | undefined,
   fallbackType: EntityType = "person",
@@ -172,7 +286,7 @@ function draftFromAgent(
     neverDisclose: [...(agent?.never_disclose ?? [])],
     sensitiveRules: rulesFromAgent(agent),
     amountThreshold: String(threshold ?? 10000),
-    enabledTools: agent?.tools.map((tool) => tool.id) ?? ["busqueda"],
+    toolModes: toolModesFromAgent(agent),
   };
 }
 
@@ -232,7 +346,18 @@ function profileFromDraft(
     status: options?.status ?? "AVAILABLE",
     price_range: options?.previous?.price_range ?? null,
     logistics_preferences: options?.previous?.logistics_preferences ?? [],
-    tools: TOOL_OPTIONS.filter((tool) => draft.enabledTools.includes(tool.id)),
+    tools: TOOL_OPTIONS.filter(
+      (tool) => draft.toolModes[tool.id] !== "DISABLED",
+    ).map((tool) => ({
+      id: tool.id,
+      name: tool.name,
+      simulated: tool.simulated,
+      notes: tool.notes,
+      effect: tool.effect,
+      approval_mode: draft.toolModes[tool.id],
+      connection_status: tool.connection_status,
+      scope: tool.scope,
+    })),
   };
 }
 
@@ -498,38 +623,174 @@ function TagEditor({
   );
 }
 
+const TOOL_MODE_OPTIONS: Array<{ value: ToolMode; label: string }> = [
+  { value: "AUTO", label: "Automático" },
+  { value: "ALWAYS", label: "Preguntar siempre" },
+  { value: "DISABLED", label: "Deshabilitado" },
+];
+
+const TOOL_STATUS_LABELS: Record<ToolConnectionStatus, string> = {
+  SIMULATED: "Simulado",
+  CONNECTED: "Conectado",
+  UNCONFIGURED: "No configurado",
+  ERROR: "Error",
+};
+
+function ResourceIcon({ name }: { name: ToolIconName }) {
+  if (name === "search") return <SearchIcon size={18} />;
+  if (name === "calendar") return <CalendarIcon size={18} />;
+  if (name === "prices") return <TrendIcon size={18} />;
+  if (name === "inventory") return <BoxIcon size={18} />;
+  if (name === "meeting") return <MeetingIcon size={18} />;
+  return <MailIcon size={18} />;
+}
+
 function ToolSelector({
-  enabledTools,
+  toolModes,
   onChange,
 }: {
-  enabledTools: string[];
-  onChange: (enabledTools: string[]) => void;
+  toolModes: Record<string, ToolMode>;
+  onChange: (toolModes: Record<string, ToolMode>) => void;
 }) {
+  const [testStates, setTestStates] = useState<
+    Record<string, "running" | "success">
+  >({});
+  const groups: Array<{
+    id: ToolOption["group"];
+    eyebrow: string;
+    title: string;
+    copy: string;
+  }> = [
+    {
+      id: "information",
+      eyebrow: "Solo consulta",
+      title: "Fuentes de información",
+      copy: "Ayudan a comparar y verificar datos sin modificar servicios externos.",
+    },
+    {
+      id: "actions",
+      eyebrow: "Puede actuar fuera de AgentSync",
+      title: "Acciones externas",
+      copy: "Crean invitaciones o mensajes y por eso necesitan tu aprobación.",
+    },
+  ];
+
+  const testTool = (toolId: string) => {
+    setTestStates((current) => ({ ...current, [toolId]: "running" }));
+    window.setTimeout(() => {
+      setTestStates((current) => ({ ...current, [toolId]: "success" }));
+    }, 700);
+  };
+
   return (
     <div className="tool-selector">
-      {TOOL_OPTIONS.map((tool) => {
-        const enabled = enabledTools.includes(tool.id);
+      <div className="tool-environment-note">
+        <span><SparkIcon size={15} /></span>
+        <div>
+          <strong>Entorno simulado</strong>
+          <p>Las pruebas usan respuestas mock. No hay cuentas, calendarios ni correos reales conectados.</p>
+        </div>
+        <small>{enabledToolCount(toolModes)} recursos permitidos</small>
+      </div>
+
+      {groups.map((group) => {
+        const tools = TOOL_OPTIONS.filter((tool) => tool.group === group.id);
         return (
-          <button
-            type="button"
-            key={tool.id}
-            className={enabled ? "is-enabled" : ""}
-            aria-pressed={enabled}
-            onClick={() =>
-              onChange(
-                enabled
-                  ? enabledTools.filter((toolId) => toolId !== tool.id)
-                  : [...enabledTools, tool.id],
-              )
-            }
-          >
-            <span className="tool-check">{enabled ? <CheckIcon size={14} /> : null}</span>
-            <span>
-              <strong>{tool.name}</strong>
-              <small>{tool.notes}</small>
-            </span>
-            <em>{tool.simulated ? "Demo" : "Conectado"}</em>
-          </button>
+          <section className="tool-group" key={group.id} aria-labelledby={`tool-group-${group.id}`}>
+            <header>
+              <div>
+                <span>{group.eyebrow}</span>
+                <h3 id={`tool-group-${group.id}`}>{group.title}</h3>
+                <p>{group.copy}</p>
+              </div>
+              <small>{tools.length} recursos</small>
+            </header>
+
+            <div className="tool-card-grid">
+              {tools.map((tool) => {
+                const mode = toolModes[tool.id] ?? tool.defaultMode;
+                const unavailable = tool.connection_status === "UNCONFIGURED";
+                const testState = testStates[tool.id];
+                return (
+                  <article
+                    className={`tool-card is-${tool.connection_status.toLowerCase()} ${mode === "DISABLED" ? "is-disabled" : ""}`}
+                    key={tool.id}
+                  >
+                    <header>
+                      <span className="tool-card-icon"><ResourceIcon name={tool.icon} /></span>
+                      <span className="tool-card-title">
+                        <strong>{tool.name}</strong>
+                        <small>{tool.effect === "READ" ? "Solo lectura" : "Acción externa"}</small>
+                      </span>
+                      <em>{TOOL_STATUS_LABELS[tool.connection_status]}</em>
+                    </header>
+
+                    <p className="tool-card-description">{tool.notes}</p>
+
+                    <div className="tool-scope">
+                      <small>Alcance</small>
+                      <span>{tool.scope}</span>
+                    </div>
+
+                    <div className="tool-mode">
+                      <span>Cómo puede usarlo</span>
+                      <div role="group" aria-label={`Modo de ${tool.name}`}>
+                        {TOOL_MODE_OPTIONS.map((option) => {
+                          const automaticWrite =
+                            tool.effect === "WRITE" && option.value === "AUTO";
+                          return (
+                            <button
+                              type="button"
+                              key={option.value}
+                              className={mode === option.value ? "is-selected" : ""}
+                              aria-pressed={mode === option.value}
+                              disabled={unavailable || automaticWrite}
+                              title={
+                                automaticWrite
+                                  ? "Las acciones externas siempre requieren aprobación"
+                                  : unavailable
+                                    ? "Este recurso todavía no está registrado en el backend"
+                                    : undefined
+                              }
+                              onClick={() =>
+                                onChange({ ...toolModes, [tool.id]: option.value })
+                              }
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <footer>
+                      <span>
+                        <small>Última ejecución</small>
+                        <strong>{tool.lastRun}</strong>
+                        <i>{tool.usage}</i>
+                      </span>
+                      <button
+                        type="button"
+                        disabled={unavailable || mode === "DISABLED" || testState === "running"}
+                        className={testState === "success" ? "is-success" : ""}
+                        onClick={() => testTool(tool.id)}
+                      >
+                        {unavailable
+                          ? "Pendiente"
+                          : mode === "DISABLED"
+                            ? "Deshabilitado"
+                          : testState === "running"
+                            ? "Probando…"
+                            : testState === "success"
+                              ? "Prueba correcta"
+                              : "Probar recurso"}
+                      </button>
+                    </footer>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
         );
       })}
     </div>
@@ -846,17 +1107,17 @@ function CreationWizard({
                   <div className="field-heading">
                     <div>
                       <strong>Recursos permitidos</strong>
-                      <span>En la demo son simulados y nunca cambian las condiciones de tus objetivos.</span>
+                      <span>Configura qué puede consultar o ejecutar. En esta versión, cada prueba usa respuestas simuladas.</span>
                     </div>
                   </div>
                   <ToolSelector
-                    enabledTools={draft.enabledTools}
-                    onChange={(enabledTools) => setDraft({ ...draft, enabledTools })}
+                    toolModes={draft.toolModes}
+                    onChange={(toolModes) => setDraft({ ...draft, toolModes })}
                   />
                 </div>
                 <div className="activation-summary">
                   <span><strong>{validObjectives.length}</strong> objetivos en paralelo</span>
-                  <span><strong>{draft.enabledTools.length}</strong> recursos permitidos</span>
+                  <span><strong>{enabledToolCount(draft.toolModes)}</strong> recursos permitidos</span>
                   <span><strong>{Object.values(draft.sensitiveRules).filter(Boolean).length}</strong> situaciones bajo tu control</span>
                 </div>
               </div>
@@ -1059,7 +1320,7 @@ function AgentControlCenter({
           </button>
           <button type="button" onClick={() => setEditSection("tools")}>
             <SlidersIcon size={19} />
-            <span><strong>Recursos permitidos</strong><small>Elige qué herramientas puede consultar mientras trabaja por ti.</small></span>
+            <span><strong>Recursos permitidos</strong><small>Define sus fuentes, acciones externas y cuándo debe pedirte aprobación.</small></span>
             <ArrowRightIcon size={15} />
           </button>
         </div>
@@ -1132,7 +1393,7 @@ function AgentControlCenter({
                 />
               ) : null}
               {editSection === "safety" ? <SafetyFields draft={draft} onChange={setDraft} /> : null}
-              {editSection === "tools" ? <ToolSelector enabledTools={draft.enabledTools} onChange={(enabledTools) => setDraft({ ...draft, enabledTools })} /> : null}
+              {editSection === "tools" ? <ToolSelector toolModes={draft.toolModes} onChange={(toolModes) => setDraft({ ...draft, toolModes })} /> : null}
             </div>
             <footer>
               <button type="button" className="secondary-action" onClick={closeEditor}>Cancelar</button>
