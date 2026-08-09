@@ -5,6 +5,7 @@ import mockData from "@/data/mockData.json";
 import {
   ArrowRightIcon,
   CheckIcon,
+  PlusIcon,
   ShieldIcon,
   SlidersIcon,
   SparkIcon,
@@ -24,9 +25,6 @@ import type {
 } from "@/lib/types";
 
 const data = mockData as unknown as MockData;
-const PERSON_AGENT = data.agents.find((agent) => agent.entity_type === "person");
-const COMPANY_AGENT = data.agents.find((agent) => agent.entity_type === "company");
-
 const TOOL_OPTIONS: AgentTool[] = [
   {
     id: "busqueda",
@@ -658,12 +656,19 @@ function SafetyFields({
   );
 }
 
-function CreationWizard({ ownerName }: { ownerName: string }) {
+function CreationWizard({
+  ownerName,
+  onCancel,
+  onCreated,
+}: {
+  ownerName: string;
+  onCancel?: () => void;
+  onCreated?: () => void;
+}) {
   const { registerAgent } = useAgentSync();
   const { attachAgent } = useAuth();
-  const initialSeed = PERSON_AGENT ?? COMPANY_AGENT;
   const [draft, setDraft] = useState<ConfigurationDraft>(() => {
-    const initial = draftFromAgent(initialSeed, "person");
+    const initial = draftFromAgent(undefined, "person");
     return {
       ...initial,
       displayName: ownerName || initial.displayName,
@@ -691,8 +696,7 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
         : true;
 
   const changeEntityType = (entityType: EntityType) => {
-    const seed = entityType === "company" ? COMPANY_AGENT : PERSON_AGENT;
-    const next = draftFromAgent(seed, entityType);
+    const next = draftFromAgent(undefined, entityType);
     setDraft({
       ...next,
       displayName:
@@ -712,13 +716,19 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
     await new Promise((resolve) => setTimeout(resolve, 650));
     attachAgent(profile.agent_id);
     setSaving(false);
+    onCreated?.();
   };
 
   return (
     <div className="agent-workspace is-onboarding">
+      {onCancel ? (
+        <button type="button" className="agent-creation-back" onClick={onCancel}>
+          <ArrowRightIcon size={14} /> Volver a mi agente
+        </button>
+      ) : null}
       <header className="agent-workspace-heading">
         <div>
-          <span className="section-eyebrow">Tu primer agente</span>
+          <span className="section-eyebrow">{onCancel ? "Nuevo agente" : "Tu primer agente"}</span>
           <h1>Configura cómo te representará</h1>
           <p>
             Dale varios objetivos, agrega las condiciones de cada uno y deja que
@@ -728,8 +738,10 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
         <aside>
           <SparkIcon size={19} />
           <span>
-            <strong>De 1 a varios objetivos.</strong>
-            Tres suele ser un buen punto de partida.
+            <strong>{onCancel ? "Vista de creación" : "De 1 a varios objetivos."}</strong>
+            {onCancel
+              ? "Al activarlo, pasará a ser tu agente visible en esta demo."
+              : "Tres suele ser un buen punto de partida."}
           </span>
         </aside>
       </header>
@@ -875,7 +887,13 @@ function CreationWizard({ ownerName }: { ownerName: string }) {
   );
 }
 
-function AgentControlCenter({ agent }: { agent: AgentProfile }) {
+function AgentControlCenter({
+  agent,
+  onCreate,
+}: {
+  agent: AgentProfile;
+  onCreate: () => void;
+}) {
   const { sessions, updateAgent } = useAgentSync();
   const [draft, setDraft] = useState(() => draftFromAgent(agent));
   const [editSection, setEditSection] = useState<EditSection | null>(null);
@@ -920,7 +938,6 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
     (session) => session.status === "PENDING_HUMAN_APPROVAL",
   ).length;
   const paused = agent.status === "PAUSED";
-  const negotiating = !paused && activeSessions.length > 0;
 
   const objectiveStatus = (index: number) => {
     if (paused) return { label: "En pausa", className: "is-paused" };
@@ -970,9 +987,11 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
           </div>
         </div>
         <div className="existing-agent-actions">
-          <span className={`existing-agent-status ${paused ? "is-paused" : negotiating ? "is-active" : ""}`}>
-            {paused ? "En pausa" : negotiating ? "Trabajando" : "Disponible"}
-          </span>
+          <button type="button" className="create-agent-button" onClick={onCreate}>
+            <span><PlusIcon size={14} /></span>
+            Crear agente
+            <ArrowRightIcon size={13} />
+          </button>
         </div>
       </header>
 
@@ -1129,11 +1148,21 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
 export function AgentSetupForm() {
   const { profile, agentId, authReady } = useAuth();
   const { agentsById } = useAgentSync();
+  const [isCreating, setIsCreating] = useState(false);
   const agent = agentId ? agentsById[agentId] : undefined;
 
   if (!authReady) {
     return <div className="agent-workspace-loading">Preparando tu agente…</div>;
   }
   if (!agent) return <CreationWizard ownerName={profile.name} />;
-  return <AgentControlCenter agent={agent} />;
+  if (isCreating) {
+    return (
+      <CreationWizard
+        ownerName={profile.name}
+        onCancel={() => setIsCreating(false)}
+        onCreated={() => setIsCreating(false)}
+      />
+    );
+  }
+  return <AgentControlCenter agent={agent} onCreate={() => setIsCreating(true)} />;
 }

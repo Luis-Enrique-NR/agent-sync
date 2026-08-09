@@ -3537,6 +3537,34 @@ h4,
   color: var(--muted);
 }
 
+.agent-creation-back {
+  display: inline-flex;
+  margin-bottom: 18px;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-creation-back svg {
+  transform: rotate(180deg);
+}
+
+.agent-creation-back:hover {
+  color: var(--foreground);
+}
+
+.agent-creation-back:focus-visible {
+  border-radius: 6px;
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
 .agent-workspace-heading {
   display: grid;
   margin-bottom: 24px;
@@ -4599,23 +4627,46 @@ h4,
   gap: 9px;
 }
 
-.existing-agent-status {
-  border-radius: 999px;
-  padding: 6px 10px;
-  color: var(--accent-2);
-  background: var(--accent-2-soft);
-  font-size: 10px;
-  font-weight: 700;
+.create-agent-button {
+  display: inline-grid;
+  min-height: 42px;
+  grid-template-columns: 30px auto 14px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--foreground);
+  border-radius: 13px;
+  padding: 5px 11px 5px 5px;
+  color: white;
+  background: var(--foreground);
+  box-shadow: 0 9px 22px rgba(22, 50, 79, 0.13);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
-.existing-agent-status.is-active {
-  color: var(--accent-dark);
-  background: var(--accent-soft);
+.create-agent-button > span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  color: white;
+  background: var(--accent);
 }
 
-.existing-agent-status.is-paused {
-  color: var(--warning);
-  background: var(--warning-soft);
+.create-agent-button > svg {
+  opacity: 0.66;
+}
+
+.create-agent-button:hover {
+  box-shadow: 0 12px 28px rgba(22, 50, 79, 0.2);
+  transform: translateY(-1px);
+}
+
+.create-agent-button:focus-visible {
+  outline: 3px solid rgba(243, 111, 69, 0.26);
+  outline-offset: 3px;
 }
 
 .representation-contract,
@@ -5730,7 +5781,7 @@ body.is-resizing-agent-editor {
   .setup-stepper {
     position: static;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .setup-stepper > button {
@@ -5767,6 +5818,10 @@ body.is-resizing-agent-editor {
 }
 
 @media (max-width: 560px) {
+  .setup-stepper {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .decision-history-list {
     grid-template-columns: 1fr;
   }
@@ -6005,6 +6060,11 @@ body.is-resizing-agent-editor {
 
   .existing-agent-actions {
     justify-content: space-between;
+  }
+
+  .create-agent-button {
+    width: 100%;
+    grid-template-columns: 30px 1fr 14px;
   }
 
   .existing-agent-identity {
