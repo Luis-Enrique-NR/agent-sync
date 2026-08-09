@@ -1,0 +1,101 @@
+{
+  "timestamp": "2026-08-09T13:48:57.267127+00:00",
+  "scenarios": [
+    {
+      "scenario": "1_Buyer_vs_Buyer",
+      "domain": "E-Commerce",
+      "condition": "Rol Invalido",
+      "match_detected": false,
+      "session_count": 0,
+      "agent_statuses": {
+        "ff16f436": "AVAILABLE",
+        "efe735f5": "AVAILABLE"
+      },
+      "expected_match": false,
+      "pass": true,
+      "transcript_sample": [],
+      "has_ecommerce_terms": false,
+      "has_recruitment_terms": false
+    },
+    {
+      "scenario": "2_Exact_Boundary",
+      "domain": "E-Commerce",
+      "condition": "$850 vs $850",
+      "match_detected": true,
+      "session_count": 1,
+      "agent_statuses": {
+        "2e5a516c": "BUSY",
+        "3f8882ec": "BUSY"
+      },
+      "expected_match": true,
+      "pass": true,
+      "transcript_sample": [
+        "oferta de prueba",
+        "oferta de prueba",
+        "oferta de prueba",
+        "oferta de prueba"
+      ],
+      "has_ecommerce_terms": false,
+      "has_recruitment_terms": false
+    },
+    {
+      "scenario": "3_Negative_Gap",
+      "domain": "E-Commerce",
+      "condition": "$849 vs $850",
+      "match_detected": false,
+      "session_count": 0,
+      "agent_statuses": {
+        "32e348bc": "AVAILABLE",
+        "ba4822f3": "AVAILABLE"
+      },
+      "expected_match": false,
+      "pass": true,
+      "transcript_sample": [],
+      "has_ecommerce_terms": false,
+      "has_recruitment_terms": false
+    },
+    {
+      "scenario": "4_Multi_Agent",
+      "domain": "E-Commerce",
+      "condition": "2 Buyers vs 1 Seller",
+      "match_detected": true,
+      "session_count": 2,
+      "agent_statuses": {
+        "0790fc43": "BUSY",
+        "3300ae15": "BUSY",
+        "7a9de995": "BUSY"
+      },
+      "expected_match": true,
+      "pass": true,
+      "transcript_sample": [
+        "oferta de prueba",
+        "oferta de prueba",
+        "oferta de prueba",
+        "oferta de prueba"
+      ],
+      "has_ecommerce_terms": false,
+      "has_recruitment_terms": false
+    },
+    {
+      "scenario": "5_Recruitment",
+      "domain": "Laboral",
+      "condition": "Startup vs Dev Rust",
+      "match_detected": true,
+      "session_count": 1,
+      "agent_statuses": {
+        "835a8588": "BUSY",
+        "8b4302f2": "BUSY"
+      },
+      "expected_match": true,
+      "pass": true,
+      "transcript_sample": [],
+      "has_ecommerce_terms": false,
+      "has_recruitment_terms": false
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0
+  }
+}
