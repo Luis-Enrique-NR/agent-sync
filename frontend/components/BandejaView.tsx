@@ -4,7 +4,7 @@ import { useAgentSync } from "@/lib/store";
 import { DecisionInbox } from "@/components/DecisionInbox";
 import { ShieldIcon } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent } from "@/lib/demo";
+import { belongsToAgent } from "@/lib/store";
 
 export function BandejaView() {
   const { sessions } = useAgentSync();

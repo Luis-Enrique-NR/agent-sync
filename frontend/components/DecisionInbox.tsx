@@ -6,7 +6,7 @@ import type { PendingDecision } from "@/lib/types";
 import { useAgentSync } from "@/lib/store";
 import { HumanEscalationModal } from "@/components/HumanEscalationModal";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent } from "@/lib/demo";
+import { belongsToAgent } from "@/lib/store";
 
 const PAGE_SIZE = 6;
 

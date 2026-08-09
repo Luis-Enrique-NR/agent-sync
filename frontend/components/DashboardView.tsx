@@ -11,9 +11,9 @@ import {
   SparkIcon,
 } from "@/components/Icons";
 import { useAuth } from "@/lib/auth";
-import { belongsToAgent, DEMO_OWNER_AGENT_ID } from "@/lib/demo";
+import { belongsToAgent } from "@/lib/store";
 import { useAgentSync } from "@/lib/store";
-import type { MatchSession } from "@/lib/types";
+import type { AgentObjectiveContext, MatchSession } from "@/lib/types";
 
 const statusCopy: Record<
   MatchSession["status"],
@@ -123,7 +123,7 @@ export function DashboardView() {
     Record<string, "continue" | "complete">
   >({});
   const [goalContext, setGoalContext] = useState<Record<string, string>>({});
-  const ownerAgentId = agentId ?? DEMO_OWNER_AGENT_ID;
+  const ownerAgentId = agentId;
   const ownerSessions = sessions.filter((session) =>
     belongsToAgent(session, ownerAgentId),
   );
@@ -132,9 +132,9 @@ export function DashboardView() {
     sessions.find((session) => session.segment === "P2P") ??
     ownerSessions[0] ??
     sessions[0];
-  const agentA = agentsById[featured?.agent_1_id];
-  const agentB = agentsById[featured?.agent_2_id];
-  const ownerAgent = agentsById[ownerAgentId];
+  const agentA = agentsById[featured?.agent_1_id ?? ""];
+  const agentB = agentsById[featured?.agent_2_id ?? ""];
+  const ownerAgent = agentId ? agentsById[agentId] : undefined;
 
   useEffect(() => {
     if (!openSwitcher) return;
@@ -187,14 +187,14 @@ export function DashboardView() {
     ["SEARCHING", "ACTIVE", "PENDING_HUMAN_APPROVAL"].includes(session.status),
   );
   const paused = ownerAgent.status === "PAUSED";
-  const objectiveContexts = ownerAgent.objective_contexts ?? [];
+  const objectiveContexts: AgentObjectiveContext[] = ownerAgent.objective_contexts ?? [];
   const objectives = (
     objectiveContexts.length > 0
-      ? objectiveContexts.map((objective) => ({
+      ? objectiveContexts.map((objective: AgentObjectiveContext) => ({
           id: objective.objective_id,
           goal: objective.goal,
         }))
-      : ownerAgent.objectives.map((goal, index) => ({
+      : ownerAgent.objectives.map((goal: string, index: number) => ({
           id: `objective-${index + 1}`,
           goal,
         }))
@@ -204,9 +204,9 @@ export function DashboardView() {
     if (priority !== 0) return priority;
     return Date.parse(right.started_at) - Date.parse(left.started_at);
   });
-  const lanes = objectives.map((objective, index) => {
+  const lanes = objectives.map((objective: { id: string; goal: string }, index: number) => {
     const matchingSessions = sortedSessions.filter((session) => {
-      const linkedObjectiveId = objectiveIdFor(session, ownerAgentId);
+      const linkedObjectiveId = objectiveIdFor(session, agentId);
       return linkedObjectiveId
         ? linkedObjectiveId === objective.id
         : index === 0;
@@ -244,7 +244,7 @@ export function DashboardView() {
               ? statusCopy[selectedSession.status]
               : statusCopy.SEARCHING;
             const counterpart = selectedSession
-              ? agentsById[counterpartId(selectedSession, ownerAgentId)]
+              ? agentsById[counterpartId(selectedSession, agentId)]
               : undefined;
             const counterpartName = counterpart?.display_name.split(" — ")[0] ?? "Otra parte";
             const decisionHref = selectedSession?.pending_decision
@@ -320,9 +320,9 @@ export function DashboardView() {
                           Elige una negociación
                           <small>Cada una avanza por separado</small>
                         </span>
-                        {laneSessions.map((session) => {
+                        {laneSessions.map((session: MatchSession) => {
                           const optionCounterpart =
-                            agentsById[counterpartId(session, ownerAgentId)];
+                            agentsById[counterpartId(session, agentId)];
                           const optionName =
                             optionCounterpart?.display_name.split(" — ")[0] ?? "Otra parte";
                           const optionStatus = statusCopy[session.status];
