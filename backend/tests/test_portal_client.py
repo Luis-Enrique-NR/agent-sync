@@ -16,6 +16,7 @@ from transport.portal import (
     PublishedMessage,
     PublishMessage,
     RemoveChannelMember,
+    TokenResponse,
     UnbanChannelUser,
     parse_authorized_command,
 )
@@ -177,4 +178,85 @@ async def test_transient_portal_responses_are_retryable_without_automatic_retry(
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="https://api.useportal.co") as client:
         outcome = await HttpPortalClient("test-secret", client).execute(publish())
     assert outcome == PortalRetryable(code=code)
+    assert calls == 1
+
+
+# ── Mint token RED tests ─────────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_mint_token_returns_token_and_expiry() -> None:
+    """mint_token() calls POST /v1/tokens with userId and returns TokenResponse."""
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"token": "tok_abc123", "expiresAt": "2026-08-10T00:00:00Z"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="https://api.useportal.co") as client:
+        outcome = await HttpPortalClient("test-secret", client).mint_token(user_id="user-1")
+
+    assert isinstance(outcome, TokenResponse)
+    assert outcome.token == "tok_abc123"
+    assert outcome.expires_at == "2026-08-10T00:00:00Z"
+    assert requests[0].method == "POST"
+    assert requests[0].url.path == "/v1/tokens"
+    assert requests[0].headers["authorization"] == "Bearer test-secret"
+    assert json.loads(requests[0].content) == {"userId": "user-1", "ttl": "1h"}
+
+
+@pytest.mark.asyncio
+async def test_mint_token_with_optional_fields() -> None:
+    """mint_token() sends claims, channels, and ttl when provided."""
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"token": "tok_xyz", "expiresAt": "2026-08-10T01:00:00Z"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="https://api.useportal.co") as client:
+        outcome = await HttpPortalClient("test-secret", client).mint_token(
+            user_id="user-2",
+            claims={"role": "admin"},
+            channels={"ch_1": "read"},
+            ttl="2h",
+        )
+
+    assert outcome.token == "tok_xyz"
+    assert outcome.expires_at == "2026-08-10T01:00:00Z"
+    body = json.loads(requests[0].content)
+    assert body["userId"] == "user-2"
+    assert body["claims"] == {"role": "admin"}
+    assert body["channels"] == {"ch_1": "read"}
+    assert body["ttl"] == "2h"
+
+
+@pytest.mark.asyncio
+async def test_mint_token_rejected_on_error_response() -> None:
+    """mint_token() returns PortalRejected on non-200 response."""
+    def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(401, json={"code": "unauthorized", "reason": "invalid secret"})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handler), base_url="https://api.useportal.co") as client:
+        outcome = await HttpPortalClient("test-secret", client).mint_token(user_id="user-1")
+
+    assert isinstance(outcome, PortalRejected)
+    assert outcome.code == "unauthorized"
+    assert outcome.reason == "invalid secret"
+
+
+@pytest.mark.asyncio
+async def test_mint_token_timeout_returns_uncertain() -> None:
+    """mint_token() returns PortalUncertain on timeout."""
+    calls = 0
+
+    def timeout(_: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        raise httpx.ReadTimeout("timed out")
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(timeout), base_url="https://api.useportal.co") as client:
+        outcome = await HttpPortalClient("test-secret", client).mint_token(user_id="user-1")
+
+    assert isinstance(outcome, PortalUncertain)
     assert calls == 1

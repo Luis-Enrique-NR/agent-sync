@@ -123,23 +123,3 @@ def list_agents(session: Session = Depends(_session)) -> AgentListResponseDTO:
         agents=[_row_to_dto(r) for r in rows],
         total=len(rows),
     )
-
-
-
-@router.get("/{agent_id}", response_model=AgentProfileResponseDTO)
-def get_agent(agent_id: UUID, session: Session = Depends(_session)) -> AgentProfileResponseDTO:
-    """Retrieve agent profile and current status."""
-    row = session.get(AgentProfileRow, agent_id)
-    if row is None:
-        raise HTTPException(status_code=404, detail="agent not found")
-    return _row_to_dto(row)
-
-
-@router.get("", response_model=AgentListResponseDTO)
-def list_agents(session: Session = Depends(_session)) -> AgentListResponseDTO:
-    """List all registered agents."""
-    rows = session.exec(select(AgentProfileRow)).all()
-    return AgentListResponseDTO(
-        agents=[_row_to_dto(r) for r in rows],
-        total=len(rows),
-    )

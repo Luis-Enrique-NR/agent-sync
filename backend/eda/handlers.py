@@ -10,6 +10,7 @@ transport adapters directly.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlmodel import select
@@ -32,9 +33,20 @@ from persistence.repository import (
     write_audit,
 )
 from transport.bus import EventDelivery
-from transport.portal import PortalAdmin, PublishMessage
+from transport.portal import (
+    PortalAdmin,
+    PortalOutcome,
+    PortalRejected,
+    PortalRetryable,
+    PortalUncertain,
+    PublishedMessage,
+    PublishMessage,
+)
 from matchmaking.orchestrator import process_agent_matching
 from eda.trace import trace
+
+if TYPE_CHECKING:
+    from api.v1.endpoints.sse import SessionQueueManager
 
 logger = logging.getLogger(__name__)
 
@@ -142,17 +154,20 @@ async def handle_message_retracted(delivery: EventDelivery) -> None:
 class NegotiationHandler:
     """Dispatches transport deliveries to the AI engine and Portal.
 
-    Receives the AI engine and Portal publisher as constructor
-    dependencies — never imports transport adapters directly.
+    Receives the AI engine, Portal publisher, and optional SSE
+    broadcaster as constructor dependencies — never imports
+    transport adapters directly.
     """
 
     def __init__(
         self,
         engine: NegotiationEngine,
         portal: PortalAdmin | None = None,
+        sse_broadcaster: SessionQueueManager | None = None,
     ) -> None:
         self._engine = engine
         self._portal = portal
+        self._sse_broadcaster = sse_broadcaster
 
     async def handle(self, delivery: EventDelivery) -> None:
         envelope = delivery.envelope
@@ -234,10 +249,42 @@ class NegotiationHandler:
                                     sender_id=str(speaker_id),
                                     content={"text": text},
                                 )
-                                await self._portal.execute(cmd)
-                                trace("OUTBOUND_PUBLISH", f"published to channel={channel}")
+                                outcome = await self._portal.execute(cmd)
+                                action = _decide_outcome_action(outcome)
+                                if action == "fail":
+                                    if isinstance(outcome, PortalRetryable):
+                                        logger.warning(
+                                            "portal retryable channel=%s code=%s", channel, outcome.code
+                                        )
+                                        raise PortalPublishError(f"portal retryable: {outcome.code}")
+                                    if isinstance(outcome, PortalUncertain):
+                                        logger.warning("portal uncertain channel=%s", channel)
+                                        raise PortalPublishError("portal uncertain (timeout)")
+                                    raise PortalPublishError("portal transient failure")
+                                # action == "ack": continue normally
+                                if isinstance(outcome, PortalRejected):
+                                    logger.warning(
+                                        "portal rejected channel=%s code=%s reason=%s",
+                                        channel, outcome.code, outcome.reason,
+                                    )
+                                else:
+                                    trace("OUTBOUND_PUBLISH", f"published to channel={channel}")
+                            except PortalPublishError:
+                                raise
                             except Exception:
-                                logger.exception("portal publish failed channel=%s", channel)
+                                logger.exception("portal publish unexpected error channel=%s", channel)
+                                raise PortalPublishError("unexpected portal error") from None
+
+                    # ── SSE broadcast: notify frontend of new turn events ─
+                    if self._sse_broadcaster is not None and state_row is not None:
+                        for speaker_id, text in _public_turns(result):
+                            dto = {
+                                "speaker_id": str(speaker_id),
+                                "public_message": text,
+                            }
+                            self._sse_broadcaster.notify(
+                                str(state_row.session_id), dto
+                            )
 
             # Write audit
             write_audit(
@@ -382,6 +429,24 @@ class NegotiationHandler:
             raise
         finally:
             session.close()
+
+
+class PortalPublishError(Exception):
+    """Raised when a Portal publish fails transiently and should be retried."""
+
+
+def _decide_outcome_action(outcome: PortalOutcome) -> str:
+    """Decide whether to ack or fail based on the PortalOutcome.
+
+    Returns:
+        "fail" — transient failure, re-raise so consumer calls bus.fail()
+        "ack"  — permanent or successful outcome, continue normally
+    """
+    if isinstance(outcome, (PortalRetryable, PortalUncertain)):
+        return "fail"
+    if isinstance(outcome, (PortalRejected, PublishedMessage)):
+        return "ack"
+    return "fail"  # unknown outcomes fail closed
 
 
 def _is_uuid(value: str) -> bool:

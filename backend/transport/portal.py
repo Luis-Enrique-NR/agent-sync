@@ -89,7 +89,14 @@ class PortalRetryable(StrictModel):
     code: Literal["rate_limited", "transient"]
 
 
+class TokenResponse(StrictModel):
+    token: str
+    expires_at: str
+
+
 PortalOutcome = PublishedMessage | CommandApplied | PortalRejected | PortalRetryable | PortalUncertain
+
+TokenMintOutcome = TokenResponse | PortalRejected | PortalUncertain
 
 
 class PortalAdmin(Protocol):
@@ -188,3 +195,30 @@ class HttpPortalClient:
                 return added
             return CommandApplied(operation=command.operation, added=added)
         return CommandApplied(operation=command.operation)
+
+    async def mint_token(
+        self,
+        user_id: str,
+        claims: dict[str, Any] | None = None,
+        channels: dict[str, Any] | None = None,
+        ttl: str = "1h",
+    ) -> TokenMintOutcome:
+        """Mint a Portal SDK token for the given user."""
+        if self._client is None:
+            raise RuntimeError("HttpPortalClient must be used within its lifespan")
+        headers = {"Authorization": f"Bearer {self._secret}"}
+        body: dict[str, Any] = {"userId": user_id}
+        if claims is not None:
+            body["claims"] = claims
+        if channels is not None:
+            body["channels"] = channels
+        if ttl:
+            body["ttl"] = ttl
+        try:
+            response = await self._client.post("/v1/tokens", headers=headers, json=body)
+        except httpx.TimeoutException:
+            return PortalUncertain()
+        if response.status_code != 200:
+            return _error(response)
+        payload = response.json()
+        return TokenResponse(token=payload["token"], expires_at=payload["expiresAt"])
