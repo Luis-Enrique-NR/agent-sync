@@ -91,6 +91,7 @@ async def register_agent(
     )
     await bus.accept(envelope)
 
+    session.commit()
     return _row_to_dto(row)
 
 
