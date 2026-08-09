@@ -11,6 +11,7 @@ import {
   LogoMark,
   RotateIcon,
   SlidersIcon,
+  UserIcon,
 } from "@/components/Icons";
 
 const navigation = [
@@ -74,13 +75,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <RotateIcon size={16} />
               <span>Reiniciar demo</span>
             </button>
-            <div className="account-chip" title="Cuenta de demostración">
-              <span className="account-avatar">VR</span>
-              <span className="account-copy">
-                <strong>Valentina R.</strong>
-                <small>Cuenta personal</small>
-              </span>
-            </div>
+            <Link
+              href="/perfil"
+              className={`profile-button ${pathname.startsWith("/perfil") ? "is-active" : ""}`}
+              aria-label="Abrir mi perfil"
+              title="Mi perfil"
+            >
+              <UserIcon size={19} />
+            </Link>
           </div>
         </div>
       </header>
