@@ -139,7 +139,7 @@ export class ApiError extends Error {
 
 const BASE =
   typeof window === "undefined"
-    ? process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000"
+    ? process.env.NEXT_PUBLIC_API_BASE ?? "https://agent-sync-production.up.railway.app"
     : ""; // Client-side: empty string → same-origin via Next.js rewrites
 
 function agentIdHeader(): Record<string, string> {
