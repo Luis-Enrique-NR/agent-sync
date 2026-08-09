@@ -91,6 +91,113 @@ def build_mcp_tool_gateway(
     )
     gateway.register(
         ToolDescriptor(
+            name="market.reference_prices",
+            description="Compare reference prices from configured market sources.",
+            risk_level=ToolRiskLevel.READ_ONLY,
+            parameters=[
+                ToolParameterDefinition(
+                    name="item",
+                    value_type=ToolValueType.STRING,
+                    description="Product or service to compare.",
+                    max_length=160,
+                ),
+                ToolParameterDefinition(
+                    name="region",
+                    value_type=ToolValueType.STRING,
+                    description="Optional market region.",
+                    required=False,
+                    max_length=120,
+                ),
+                ToolParameterDefinition(
+                    name="currency",
+                    value_type=ToolValueType.STRING,
+                    description="ISO currency code.",
+                    required=False,
+                    max_length=3,
+                ),
+            ],
+        ),
+        MCPToolAdapter(
+            client=client,
+            server_label=server_label,
+            remote_tool_name="market.reference_prices",
+        ),
+    )
+    gateway.register(
+        ToolDescriptor(
+            name="inventory.check_stock",
+            description="Read stock availability before proposing a deal.",
+            risk_level=ToolRiskLevel.SENSITIVE_READ,
+            parameters=[
+                ToolParameterDefinition(
+                    name="product_id",
+                    value_type=ToolValueType.STRING,
+                    description="Product or stock identifier.",
+                    max_length=160,
+                ),
+                ToolParameterDefinition(
+                    name="location",
+                    value_type=ToolValueType.STRING,
+                    description="Optional stock location.",
+                    required=False,
+                    max_length=120,
+                ),
+            ],
+        ),
+        MCPToolAdapter(
+            client=client,
+            server_label=server_label,
+            remote_tool_name="inventory.check_stock",
+        ),
+    )
+    gateway.register(
+        ToolDescriptor(
+            name="calendar.request_meeting",
+            description="Request a meeting through the configured calendar provider.",
+            risk_level=ToolRiskLevel.EXTERNAL_WRITE,
+            requires_human_approval=True,
+            parameters=[
+                ToolParameterDefinition(
+                    name="title",
+                    value_type=ToolValueType.STRING,
+                    description="Meeting title.",
+                    max_length=160,
+                ),
+                ToolParameterDefinition(
+                    name="start",
+                    value_type=ToolValueType.STRING,
+                    description="Start timestamp in ISO format.",
+                    max_length=64,
+                ),
+                ToolParameterDefinition(
+                    name="end",
+                    value_type=ToolValueType.STRING,
+                    description="End timestamp in ISO format.",
+                    max_length=64,
+                ),
+                ToolParameterDefinition(
+                    name="participants",
+                    value_type=ToolValueType.STRING,
+                    description="Comma-separated participant references.",
+                    max_length=1_000,
+                ),
+                ToolParameterDefinition(
+                    name="timezone",
+                    value_type=ToolValueType.STRING,
+                    description="IANA timezone.",
+                    required=False,
+                    max_length=64,
+                ),
+            ],
+        ),
+        MCPToolAdapter(
+            client=client,
+            server_label=server_label,
+            remote_tool_name="calendar.request_meeting",
+        ),
+    )
+    gateway.register(
+        ToolDescriptor(
             name="calendar.check_availability",
             description="Read configured calendar availability.",
             risk_level=ToolRiskLevel.SENSITIVE_READ,
