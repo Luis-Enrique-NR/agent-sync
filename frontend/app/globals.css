@@ -3689,7 +3689,7 @@ h4,
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   color: var(--muted);
   text-align: center;
 }
@@ -3704,15 +3704,26 @@ h4,
 
 .objective-exchange-connector i {
   display: grid;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   place-items: center;
-  border: 1px solid var(--border-strong);
+  border: 1px solid rgba(243, 111, 69, 0.42);
   border-radius: 999px;
   color: var(--accent-dark);
   background: var(--surface);
-  font-size: 15px;
   font-style: normal;
+  box-shadow: 0 4px 12px rgba(22, 50, 79, 0.06);
+}
+
+.objective-exchange-connector i svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .add-objective {
@@ -3739,18 +3750,33 @@ h4,
   border-radius: 15px;
   padding: 15px;
   background: #fbfcfa;
+  transition: border-color 170ms ease, box-shadow 170ms ease, transform 170ms ease;
 }
 
 .tag-editor.is-seeking {
-  border-color: #c6d7e2;
+  border-color: var(--border);
   border-top-color: var(--foreground);
-  background: var(--surface-blue);
+  background: linear-gradient(180deg, rgba(22, 50, 79, 0.035), #fbfcfa 46%);
 }
 
 .tag-editor.is-offering {
-  border-color: #c5ded6;
-  border-top-color: var(--accent-2);
-  background: var(--accent-2-soft);
+  border-color: var(--border);
+  border-top-color: var(--accent);
+  background: linear-gradient(180deg, rgba(243, 111, 69, 0.045), #fbfcfa 46%);
+}
+
+.tag-editor:hover,
+.tag-editor:focus-within {
+  border-color: var(--border-strong);
+  box-shadow: 0 10px 26px rgba(22, 50, 79, 0.07);
+}
+
+.tag-editor.is-seeking:focus-within {
+  border-top-color: var(--foreground);
+}
+
+.tag-editor.is-offering:focus-within {
+  border-top-color: var(--accent);
 }
 
 .tag-editor > label strong,
@@ -3768,7 +3794,7 @@ h4,
 }
 
 .tag-editor.is-offering > label .tag-editor-eyebrow {
-  color: var(--accent-2);
+  color: var(--accent-dark);
 }
 
 .tag-editor .tag-input-wrap input {
@@ -3799,6 +3825,24 @@ h4,
   background: var(--foreground);
   font-size: 18px;
   cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.tag-input-wrap button:hover,
+.tag-input-wrap button:focus-visible {
+  background: var(--accent);
+  box-shadow: 0 6px 14px rgba(243, 111, 69, 0.2);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.tag-editor.is-offering .tag-input-wrap button {
+  background: var(--accent);
+}
+
+.tag-editor.is-offering .tag-input-wrap button:hover,
+.tag-editor.is-offering .tag-input-wrap button:focus-visible {
+  background: var(--accent-dark);
 }
 
 .tag-list,
@@ -3814,25 +3858,44 @@ h4,
 
 .tag-list button,
 .tag-suggestions button {
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 999px;
   padding: 5px 8px;
   font-size: 9px;
   cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease, background 150ms ease, transform 150ms ease;
 }
 
 .tag-list button {
   color: var(--foreground);
-  background: var(--surface-blue);
+  border-color: rgba(22, 50, 79, 0.14);
+  background: rgba(22, 50, 79, 0.08);
 }
 
 .tag-editor.is-offering .tag-list button {
-  background: #d9eee8;
+  color: var(--accent-dark);
+  border-color: rgba(243, 111, 69, 0.22);
+  background: var(--accent-soft);
 }
 
 .tag-list button span {
   margin-left: 3px;
-  color: var(--muted);
+  color: currentColor;
+  opacity: 0.58;
+}
+
+.tag-list button:hover,
+.tag-list button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-dark);
+  background: #fff4ef;
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.tag-list button:hover span,
+.tag-list button:focus-visible span {
+  opacity: 1;
 }
 
 .tag-suggestions {
@@ -3840,13 +3903,18 @@ h4,
 }
 
 .tag-suggestions button {
-  color: var(--muted);
-  background: transparent;
+  border-color: var(--border);
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.72);
 }
 
-.tag-suggestions button:hover {
+.tag-suggestions button:hover,
+.tag-suggestions button:focus-visible {
+  border-color: rgba(243, 111, 69, 0.34);
   color: var(--accent-dark);
   background: var(--accent-soft);
+  outline: none;
+  transform: translateY(-1px);
 }
 
 .safety-grid {

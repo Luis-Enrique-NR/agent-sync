@@ -408,7 +408,12 @@ function ObjectivesEditor({
                     />
                     <div className="objective-exchange-connector" aria-hidden="true">
                       <span>Debe encajar con</span>
-                      <i>↔</i>
+                      <i>
+                        <svg viewBox="0 0 24 24" fill="none">
+                          <path d="M4 8h15m0 0-3-3m3 3-3 3" />
+                          <path d="M20 16H5m0 0 3-3m-3 3 3 3" />
+                        </svg>
+                      </i>
                     </div>
                     <TagEditor
                       eyebrow="Tu lado"
