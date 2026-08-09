@@ -3409,7 +3409,7 @@ h4,
 .agent-setting-grid {
   display: grid;
   margin-top: 16px;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -3450,6 +3450,7 @@ h4,
   margin-top: 3px;
   color: var(--muted);
   font-size: 9px;
+  line-height: 1.45;
 }
 
 .agent-setting-grid > button > svg:last-child {

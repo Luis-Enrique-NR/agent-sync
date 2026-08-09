@@ -8,7 +8,6 @@ import {
   CheckIcon,
   PauseIcon,
   PlayIcon,
-  SearchIcon,
   ShieldIcon,
   SlidersIcon,
   SparkIcon,
@@ -1119,27 +1118,22 @@ function AgentControlCenter({ agent }: { agent: AgentProfile }) {
             <span className="section-eyebrow">Configuración</span>
             <h2 id="agent-settings-title">Ajusta solo lo que necesitas</h2>
           </div>
-          <p>Los cambios se aplican a nuevas intervenciones del agente.</p>
+          <p>Aquí defines sus límites, su voz y las herramientas que puede usar.</p>
         </div>
         <div className="agent-setting-grid">
-          <button type="button" onClick={() => setEditSection("objectives")}>
-            <SearchIcon size={19} />
-            <span><strong>Objetivos y oportunidades</strong><small>{agent.objectives.length} objetivos explorándose en paralelo</small></span>
-            <ArrowRightIcon size={15} />
-          </button>
           <button type="button" onClick={() => setEditSection("safety")}>
             <ShieldIcon size={19} />
-            <span><strong>Límites y decisiones</strong><small>{agent.hard_limits.length} límites · {agent.escalation_rules.length} consultas</small></span>
+            <span><strong>Límites y decisiones</strong><small>Define precios, datos privados y cuándo debe consultarte.</small></span>
             <ArrowRightIcon size={15} />
           </button>
           <button type="button" onClick={() => setEditSection("voice")}>
             <SparkIcon size={19} />
-            <span><strong>Forma de comunicarse</strong><small>Tono, descripción e instrucciones</small></span>
+            <span><strong>Forma de comunicarse</strong><small>Edita su descripción pública y el tono con el que te representa.</small></span>
             <ArrowRightIcon size={15} />
           </button>
           <button type="button" onClick={() => setEditSection("tools")}>
             <SlidersIcon size={19} />
-            <span><strong>Recursos permitidos</strong><small>{agent.tools.length} herramientas activas</small></span>
+            <span><strong>Recursos permitidos</strong><small>Elige qué herramientas puede consultar mientras trabaja por ti.</small></span>
             <ArrowRightIcon size={15} />
           </button>
         </div>
